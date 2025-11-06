@@ -1,15 +1,11 @@
 ---
 type: showroom
 tabs:
- - name: Terminal 1
-   secondary_name: Terminal 2
-   type: 'double-terminal'
- - name: Codeserver
-   type: 'codeserver'
- - name: Jupyter Lab
-   port: '9443'
-   path: '/'
- - name: Llamastack Docs
-   url: 'https://llama-stack.readthedocs.io/en/latest/'
- - name: Cats
-   url: 'https://cats.com'
+  - name: Bastion
+    path: /wetty
+    port: 443
+    secondary_name: Bastion
+    secondary_path: /wetty
+    secondary_port: 443
+  - name: Llamastack Docs
+    url: 'https://llama-stack.readthedocs.io/en/latest/'
