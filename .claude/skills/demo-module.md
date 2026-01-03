@@ -62,6 +62,12 @@ I'll ask you these key questions:
 8. **Key metrics/business value**:
    - Example: "Reduce deployment time from 6 weeks to 5 minutes"
 
+9. **Diagrams, screenshots, or demo scripts** (optional):
+   - Do you have architecture diagrams, demo screenshots, or scripts?
+   - If yes: Provide file paths or paste content
+   - I'll save them to `content/modules/ROOT/assets/images/`
+   - And reference them properly in Show sections
+
 ### Step 2: Extract AgnosticV UserInfo Variables (if applicable)
 
 If you provided an AgnosticV catalog item, I'll:
@@ -89,7 +95,50 @@ If you provided an AgnosticV catalog item, I'll:
 
 **Result**: I'll use these in Show sections for precise presenter instructions.
 
-### Step 3: Fetch and Analyze References
+### Step 3: Handle Diagrams, Screenshots, and Demo Scripts (if provided)
+
+If you provided visual assets or scripts:
+
+**For presenter screenshots**:
+- Save to `content/modules/ROOT/assets/images/`
+- Use descriptive names showing what presenters will see
+- Reference in Show sections with proper context:
+  ```asciidoc
+  image::console-developer-view.png[align="center",width=700,title="Developer Perspective - What Presenters Will See"]
+  ```
+
+**For architecture diagrams**:
+- Save with business-context names: `retail-transformation-architecture.png`
+- Reference in Know sections to show business value
+- Use larger width (700-800px) for visibility during presentations
+
+**For demo scripts or commands**:
+- Format in code blocks with syntax highlighting
+- Add presenter notes about what to emphasize:
+  ```asciidoc
+  [source,bash]
+  ----
+  oc new-app https://github.com/example/nodejs-ex
+  ----
+
+  [NOTE]
+  ====
+  **Presenter Tip:** Emphasize how this single command eliminates 3-5 days of manual setup.
+  ====
+  ```
+
+**For before/after comparisons**:
+- Save both images: `before-manual-deployment.png`, `after-automated-deployment.png`
+- Use side-by-side or sequential placement
+- Highlight business transformation visually
+
+**Recommended image naming for demos**:
+- Business context: `customer-challenge-overview.png`, `transformation-roadmap.png`
+- UI walkthroughs: `step-1-login-console.png`, `step-2-create-project.png`
+- Results: `deployment-success.png`, `metrics-dashboard.png`
+- Comparisons: `before-state.png`, `after-state.png`
+
+### Step 4: Fetch and Analyze References
 
 Based on your references, I'll:
 - Fetch URLs and extract technical capabilities
@@ -98,8 +147,9 @@ Based on your references, I'll:
 - Extract metrics and quantifiable benefits
 - Map technical features to business outcomes
 - Combine with AgnosticV variables (if provided)
+- Integrate provided diagrams and screenshots strategically
 
-### Step 4: Read Demo Templates
+### Step 5: Read Demo Templates
 
 I'll read these before generating:
 - `content/modules/ROOT/pages/demo/03-module-01.adoc`
@@ -187,11 +237,24 @@ I'll ask if you want me to add the module to `content/modules/ROOT/nav.adoc`.
 ### Step 7: Deliver
 
 You'll get:
+
+**Generated files**:
 - Complete demo module at `content/modules/ROOT/pages/<module-file>.adoc`
-- Screenshot capture guide (with emphasis on presenter view)
+- Images saved to `content/modules/ROOT/assets/images/` (if provided)
+- Proper AsciiDoc references for all visual assets
+
+**Presenter documentation**:
+- Screenshot capture guide (for images you still need to capture)
 - Navigation xref snippet
-- Presenter notes
+- Presenter notes and tips
+- Business talking points for each section
 - Next module suggestions
+
+**Asset summary**:
+- List of diagrams/screenshots included with references
+- List of images still needed (placeholders for you to capture)
+- Demo scripts formatted with presenter tips
+- Before/after comparisons properly placed
 
 ## Example Usage
 
@@ -219,6 +282,75 @@ Q7: Key metrics? → "6 weeks → 5 minutes deployment time"
 ✓ Created: content/modules/ROOT/pages/03-platform-demo.adoc
 ✓ Presenter notes included
 ✓ Screenshot guide provided
+```
+
+### Example 2: Create Demo with Architecture Diagrams
+
+```
+User: Create demo for OpenShift AI value proposition. I have:
+      - Architecture diagram: ~/diagrams/ai-platform-architecture.png
+      - Before/after workflow diagrams
+
+Skill: Excellent! Let me gather details...
+
+Q1: Module file name? → "03-ai-platform-demo.adoc"
+Q2: AgnosticV catalog item? → "ocp4_workload_rhods_demo"
+Q3: Reference materials? → https://www.redhat.com/en/technologies/cloud-computing/openshift/openshift-ai
+Q4: Target audience? → C-level executives
+Q5: Business scenario? → "TechCorp needs faster AI model deployment"
+Q6: Technology? → "Red Hat OpenShift AI"
+Q7: Demo parts? → 3
+Q8: Key metrics? → "Weeks to hours for model deployment"
+Q9: Diagrams/screenshots? → Yes:
+    - Architecture: ~/diagrams/ai-platform-architecture.png
+    - Before workflow: ~/diagrams/before-manual-ml.png
+    - After workflow: ~/diagrams/after-automated-ml.png
+
+Skill: Perfect! Processing diagrams and creating demo...
+
+[Saves diagrams to assets/images/]
+→ ai-platform-architecture.png
+→ before-manual-ml.png
+→ after-automated-ml.png
+
+[Generates demo with:]
+- Part 1 Know section includes architecture diagram
+- Part 1 Show section references the architecture
+- Part 2 Know section uses before/after comparison
+- Each diagram has business-focused captions
+- Presenter tips for discussing diagrams
+
+Example output:
+```asciidoc
+== Part 1 — AI Platform Overview
+
+=== Know
+_TechCorp's data scientists wait weeks for infrastructure, delaying critical AI initiatives._
+
+image::ai-platform-architecture.png[align="center",width=800,title="Red Hat OpenShift AI Platform Architecture"]
+
+**Current Challenge:**
+* 2-3 weeks to provision ML infrastructure
+* Manual environment setup prone to errors
+* Inconsistent tooling across teams
+
+=== Show
+* Show the architecture diagram and explain:
+  "This is how OpenShift AI eliminates infrastructure delays..."
+
+* Log into OpenShift AI Dashboard at {rhods_dashboard_url}
+
+[NOTE]
+====
+**Presenter Tip:** Point to the architecture diagram as you navigate the UI.
+Show how the platform maps to the architectural components.
+====
+```
+
+✓ Created: content/modules/ROOT/pages/03-ai-platform-demo.adoc
+✓ 3 diagrams saved and referenced appropriately
+✓ Before/after comparison integrated in Know section
+✓ Presenter notes tied to visual elements
 ```
 
 ## Know Section Best Practices

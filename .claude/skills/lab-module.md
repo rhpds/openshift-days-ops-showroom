@@ -50,6 +50,12 @@ I'll ask you these key questions:
 7. **Number of exercises**:
    - Recommended: 2-3
 
+8. **Diagrams, screenshots, or code blocks** (optional):
+   - Do you have diagrams, screenshots, or code examples to include?
+   - If yes: Provide file paths or paste content
+   - I'll save them to `content/modules/ROOT/assets/images/`
+   - And reference them properly in AsciiDoc
+
 ### Step 2: Extract AgnosticV UserInfo Variables (if applicable)
 
 If you provided an AgnosticV catalog item, I'll:
@@ -96,7 +102,42 @@ If you provided an AgnosticV catalog item, I'll:
 
 **Result**: I'll use these as Showroom variables in the generated module.
 
-### Step 3: Fetch and Analyze References
+### Step 3: Handle Diagrams, Screenshots, and Code Blocks (if provided)
+
+If you provided visual assets or code:
+
+**For images (diagrams, screenshots)**:
+- If you provide file paths: Copy them to `content/modules/ROOT/assets/images/`
+- If you provide image URLs: Note them for download
+- Generate descriptive filenames: `<topic>-<step>.png` (e.g., `pipeline-execution-1.png`)
+- Create AsciiDoc references:
+  ```asciidoc
+  image::pipeline-execution-1.png[align="center",width=700,title="Pipeline Execution in Progress"]
+  ```
+
+**For code blocks**:
+- If you provide code snippets: Format them in AsciiDoc
+- Detect language (bash, yaml, python, etc.)
+- Add proper syntax highlighting:
+  ```asciidoc
+  [source,bash]
+  ----
+  oc create deployment my-app --image=myimage:latest
+  ----
+  ```
+
+**For architecture diagrams**:
+- Save to assets/images/ with descriptive names
+- Reference with appropriate width (700-800px for diagrams)
+- Add meaningful alt text and titles
+
+**Recommended image naming**:
+- Architecture diagrams: `architecture-overview.png`, `deployment-flow.png`
+- UI screenshots: `console-project-view.png`, `dashboard-metrics.png`
+- Command outputs: `oc-get-pods-output.png`, `build-logs.png`
+- Step-by-step: `step-1-create-task.png`, `step-2-run-pipeline.png`
+
+### Step 4: Fetch and Analyze References
 
 Based on your references, I'll:
 - Fetch URLs with WebFetch
@@ -104,8 +145,9 @@ Based on your references, I'll:
 - Extract procedures, commands, concepts
 - Identify hands-on opportunities
 - Combine with AgnosticV variables (if provided)
+- Integrate provided code blocks and diagrams
 
-### Step 4: Read Templates
+### Step 5: Read Templates
 
 I'll always read these before generating:
 - `content/modules/ROOT/pages/workshop/templates/03-module-01.adoc`
@@ -145,11 +187,22 @@ I'll ask if you want me to add the module to `content/modules/ROOT/nav.adoc` (re
 ### Step 8: Deliver
 
 You'll get:
+
+**Generated files**:
 - Complete module file at `content/modules/ROOT/pages/<module-file>.adoc`
-- Screenshot capture guide
+- Images saved to `content/modules/ROOT/assets/images/` (if provided)
+- Proper AsciiDoc references for all assets
+
+**Documentation**:
+- Screenshot capture guide (for images you still need to capture)
 - Navigation xref snippet
 - Review checklist
 - Next module suggestions
+
+**Asset summary**:
+- List of images included with references
+- List of images still needed (placeholders)
+- Code blocks integrated with syntax highlighting
 
 ## Example Usage
 
@@ -210,6 +263,63 @@ Q7: Exercise count? → 3
 ✓ AgnosticV variables integrated
 ✓ 3 exercises with dynamic variables
 ✓ Screenshot guide provided
+```
+
+### Example 3: Create Module with Diagrams and Code Blocks
+
+```
+User: Create Module 1 for container security. I have an architecture diagram
+      and some example Dockerfiles.
+
+Skill: Great! Let me ask some questions...
+
+Q1: Module file name? → "03-security-intro.adoc"
+Q2: AgnosticV catalog item? → None
+Q3: Reference materials? → https://docs.redhat.com/en/documentation/...
+Q4: Learning objective? → "Implement container security best practices"
+Q5: Business scenario? → ACME Corp
+Q6: Technology? → "Container security, Podman, OpenShift"
+Q7: Exercise count? → 3
+Q8: Diagrams/screenshots/code? → Yes, I have:
+    - Architecture diagram: ~/diagrams/security-architecture.png
+    - Code: Secure Dockerfile examples (paste below)
+
+User provides:
+```dockerfile
+FROM registry.redhat.io/ubi9/ubi-minimal:latest
+USER 1001
+WORKDIR /app
+COPY --chown=1001:0 app.jar .
+RUN chmod 440 app.jar
+CMD ["java", "-jar", "app.jar"]
+```
+
+Skill: Perfect! Processing...
+
+[Copies diagram to assets/images/]
+→ Saved: content/modules/ROOT/assets/images/security-architecture.png
+
+[Formats code blocks with syntax highlighting]
+→ Integrated Dockerfile examples in exercises
+
+[Generates module with:]
+- Architecture diagram referenced:
+  image::security-architecture.png[align="center",width=800,title="Container Security Architecture"]
+
+- Code blocks formatted:
+  [source,dockerfile]
+  ----
+  FROM registry.redhat.io/ubi9/ubi-minimal:latest
+  USER 1001
+  ...
+  ----
+
+- Exercise flow integrates the diagram and code naturally
+
+✓ Created: content/modules/ROOT/pages/03-security-intro.adoc
+✓ Diagram saved and referenced: security-architecture.png
+✓ Code blocks integrated with syntax highlighting
+✓ Screenshot guide for additional captures needed
 ```
 
 ## Tips for Best Results
