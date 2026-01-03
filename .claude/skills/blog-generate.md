@@ -36,24 +36,29 @@ I'll ask you:
 I'll ask:
 
 3. **Target platform**:
-   - Red Hat Developer blog (developers.redhat.com)
-   - Internal Red Hat blogs (Source, Memo, The Stack)
-   - Marketing/announcement format (product launches)
-   - Custom/Other
+   - Red Hat Developer blog (developers.redhat.com) → **Markdown**
+   - Internal Red Hat blogs (Source, Memo, The Stack) → **Markdown or AsciiDoc** (will ask)
+   - Marketing/announcement format (product launches) → **Markdown**
+   - Medium, dev.to, Hashnode → **Markdown**
+   - Custom/Other → **Markdown** (default)
 
-4. **Blog type**:
+4. **Output format** (auto-selected based on platform):
+   - **Markdown (.md)** - DEFAULT for all platforms except specific internal use cases
+   - **AsciiDoc (.adoc)** - Only if explicitly needed for internal Red Hat tooling
+
+5. **Blog type**:
    - Technical tutorial ("How to...")
    - Product announcement ("Introducing...")
    - Thought leadership ("Why...")
    - Case study/success story
    - Quick start guide
 
-5. **Technical depth**:
+6. **Technical depth**:
    - Highly technical (code-heavy, for developers)
    - Moderately technical (balanced, for technical managers)
    - Marketing-focused (business benefits, light on code)
 
-6. **Blog parameters**:
+7. **Blog parameters**:
    - Desired word count (500-800 / 1000-1500 / 2000+)
    - Include code samples? (Yes / Minimal / No)
    - Target audience level (Beginner / Intermediate / Advanced)
@@ -97,44 +102,110 @@ Based on source type and target, I'll transform:
 
 ### Step 5: Generate Blog Structure
 
+**DEFAULT OUTPUT FORMAT: Markdown (.md)**
+
 I'll create a blog post with:
 
-**For Technical Blogs**:
+**For Technical Blogs** (Markdown format):
 ```markdown
-# [Engaging Title]
+# Building Cloud-Native CI/CD Pipelines with OpenShift Pipelines
 
-**Introduction** (100-150 words):
-- Hook: Problem statement or interesting fact
-- What readers will learn
-- Why it matters now
+> **Summary**: Learn how to create production-ready CI/CD pipelines using Tekton on OpenShift in under 30 minutes.
 
-**Background/Context** (150-200 words):
-- Technical landscape
-- Current challenges
-- Solution approach
+## Introduction
 
-**Main Content** (organized by sections):
-- Progressive narrative (not step 1, 2, 3...)
-- Code examples in context
-- Explanatory paragraphs between code
-- Screenshots where helpful
-- Technical insights and tips
+If you've struggled with complex Jenkins configurations or brittle CI/CD scripts, OpenShift Pipelines offers a cloud-native alternative. Built on Tekton, it brings Kubernetes-native CI/CD to your workflows with declarative pipelines that scale with your applications.
 
-**Conclusion** (100 words):
-- Summary of what was covered
-- Key takeaways
-- Next steps or advanced topics
+In this tutorial, you'll learn how to:
+- Create reusable Tekton tasks
+- Build complete CI/CD pipelines
+- Integrate with Git repositories
+- Deploy applications automatically
 
-**Call-to-Action**:
-- Try the full workshop: [Showroom link]
-- Related resources
-- Community links
+## What You'll Build
 
-**Metadata**:
-- Title
-- Description/summary
-- Tags/categories
-- Author info
+By the end of this tutorial, you'll have a working pipeline that:
+- Builds container images from source code
+- Runs automated tests
+- Deploys to OpenShift automatically
+
+Let's dive in.
+
+## Creating Your First Tekton Task
+
+Tekton tasks are the building blocks of pipelines. Here's how to create a simple build task:
+
+\`\`\`yaml
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: build-app
+spec:
+  steps:
+    - name: build
+      image: maven:3.8
+      script: |
+        mvn clean package
+\`\`\`
+
+Apply this to your cluster:
+
+\`\`\`bash
+oc apply -f build-task.yaml
+\`\`\`
+
+This creates a reusable task that can be referenced in any pipeline. What makes this powerful is the ability to chain multiple tasks together...
+
+## Building a Complete Pipeline
+
+Now let's combine multiple tasks into a production-ready pipeline:
+
+\`\`\`yaml
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: build-and-deploy
+spec:
+  tasks:
+    - name: build
+      taskRef:
+        name: build-app
+    - name: test
+      taskRef:
+        name: run-tests
+      runAfter:
+        - build
+    - name: deploy
+      taskRef:
+        name: deploy-to-openshift
+      runAfter:
+        - test
+\`\`\`
+
+The `runAfter` fields ensure tasks execute in the correct order...
+
+## Next Steps
+
+You've built a working CI/CD pipeline with OpenShift Pipelines. From here, you can:
+- Add Git triggers for automatic builds
+- Integrate security scanning
+- Create multi-environment pipelines
+
+## Try It Yourself
+
+Want hands-on practice? Try the complete workshop: [OpenShift Pipelines Workshop](https://showroom.example.com/pipelines)
+
+## Resources
+
+- [OpenShift Pipelines Documentation](https://docs.openshift.com/pipelines/)
+- [Tekton Official Site](https://tekton.dev)
+- [Example Pipelines Repository](https://github.com/...)
+
+---
+
+**Tags**: OpenShift, CI/CD, Tekton, Kubernetes, DevOps
+**Author**: [Your Name]
+**Published**: [Date]
 ```
 
 **For Marketing Blogs**:
@@ -179,25 +250,46 @@ I'll create a blog post with:
 
 ### Step 6: Apply Platform-Specific Formatting
 
-**Red Hat Developer Blog**:
-- Markdown format
-- Code blocks with syntax highlighting
+**Red Hat Developer Blog** (developers.redhat.com):
+- **Format**: Markdown (.md)
+- Code blocks with triple backticks and syntax highlighting
 - Developer-focused tone
 - Technical accuracy paramount
 - Community engagement encouraged
+- Example code blocks:
+  ```markdown
+  \`\`\`bash
+  oc create deployment my-app --image=myimage:latest
+  \`\`\`
 
-**Internal Red Hat Blogs**:
-- AsciiDoc or Markdown (ask preference)
+  \`\`\`yaml
+  apiVersion: apps/v1
+  kind: Deployment
+  \`\`\`
+  ```
+
+**Medium, dev.to, Hashnode**:
+- **Format**: Markdown (.md)
+- Platform supports standard Markdown
+- Add cover images (suggest or use from lab)
+- Engage with canonical URLs
+- Use platform-specific tags
+
+**Internal Red Hat Blogs** (Source, Memo):
+- **Format**: Markdown (.md) DEFAULT
+- **Format**: AsciiDoc (.adoc) - Only if team requires it (will ask)
 - Red Hat product naming standards
 - Internal links to resources
 - Team/org specific context
 
-**Marketing Format**:
+**Marketing/Announcement Format**:
+- **Format**: Markdown (.md)
 - Business language
 - Minimal jargon
-- Visual emphasis (suggest infographics)
+- Visual emphasis (suggest infographics in Markdown: `![alt](url)`)
 - Customer success quotes
 - Lead generation CTAs
+- SEO-optimized headings
 
 ### Step 7: Validate and Deliver
 
@@ -206,13 +298,21 @@ I'll:
 - Run style-enforcer agent for Red Hat standards
 - Verify all code samples are complete
 - Check links and references
+- Validate Markdown syntax
 
 You'll get:
-- Complete blog post file (Markdown or AsciiDoc)
+- **Complete blog post file in Markdown (.md)** - ready to publish
 - Metadata section (title, description, tags, author)
 - Image reference list (what visuals to create/include)
 - SEO recommendations
 - Platform submission checklist
+- Code blocks properly formatted with syntax highlighting
+
+**Output location**: `blog-posts/<topic-slug>.md`
+
+**If AsciiDoc requested** (rare):
+- Output: `blog-posts/<topic-slug>.adoc`
+- Only when specifically needed for internal tooling
 
 ## Transformation Examples
 
@@ -423,10 +523,19 @@ Every generated blog will have:
 - `technical-editor` - Refines tone and clarity
 - `style-enforcer` - Applies Red Hat standards
 
-**Output formats**:
-- Markdown (.md) - Primary format
-- AsciiDoc (.adoc) - If requested
+**Output format**:
+- **Markdown (.md)** - DEFAULT for all platforms
+- AsciiDoc (.adoc) - Only if explicitly needed (rare, internal Red Hat use only)
+
+**Why Markdown**:
+- Universal support: Red Hat Developer, Medium, dev.to, Hashnode, GitHub
+- Easy to write and edit
+- Excellent code block support with syntax highlighting
+- Standard for blog platforms
+- SEO-friendly
+- Platform-agnostic
 
 **Output location**:
 - Default: `blog-posts/<topic-slug>.md`
-- Or user-specified path
+- Example: `blog-posts/openshift-pipelines-tutorial.md`
+- User can specify custom path
