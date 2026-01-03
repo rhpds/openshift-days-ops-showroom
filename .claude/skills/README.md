@@ -1,12 +1,42 @@
 # Claude Skills for Showroom Lab Authoring
 
-**Version**: 1.0
+**Version**: 1.1
 **Last Updated**: 2026-01-03
 **Branch**: feature/claude-skills
 
 ## Overview
 
 This directory contains Claude skills for authoring Red Hat Showroom workshop and demo content. The skills provide a guided, iterative workflow that ensures production-quality, consistent output.
+
+## Shared Contracts
+
+**All skills follow shared contracts defined in `SKILL-COMMON-RULES.md`**:
+
+- **Version pinning or attribute placeholders** - Prevents "works on my cluster" modules
+- **Reference enforcement** - Every claim backed by references or marked "Reference needed"
+- **Attribute file location** - Reusable variables in `_attributes.adoc`
+- **Image path conventions** - Strict paths for accessibility and organization
+- **Navigation update expectations** - nav.adoc updates required (lab/demo skills)
+- **Failure-mode behavior** - Skills stop if cannot proceed safely, no partial/guessed content
+- **Explicit non-goals** - Clear boundaries prevent scope creep
+
+See `SKILL-COMMON-RULES.md` for complete details.
+
+### Skill-Specific Enhancements
+
+**`/lab-module`**:
+- **Learning Outcomes Checkpoint** - Confirms pedagogical understanding (not just technical validation)
+- 3-5 bullet outcomes tied to original learning objective
+- Helps reviewers, instructors, and makes blog transformation cleaner
+
+**`/demo-module`**:
+- **Optional Visual Cues** - Lightweight slide/diagram guidance without forcing asset creation
+- Helps presenters prepare without making demos depend on assets
+
+**`/blog-generate`**:
+- **Source Traceability** (REQUIRED) - Attribution at end of every blog
+- Prevents over-claiming and clarifies authoritative docs vs narrative content
+- Platform-specific patterns (Red Hat Developer, internal, marketing)
 
 ## Available Skills
 
@@ -474,6 +504,9 @@ Skills use these as base:
 - `e4c5d90` - Diagram/screenshot/code handling
 - `7e3cc08` - Story planning + nav.adoc required
 - `24789f5` - Production gaps (all 10 critical guardrails)
+- `d04f048` - README documentation
+- `3982fb4` - Markdown default format for blogs
+- `[pending]` - SKILL-COMMON-RULES.md + production hardening (learning outcomes, visual cues, source traceability)
 
 ---
 

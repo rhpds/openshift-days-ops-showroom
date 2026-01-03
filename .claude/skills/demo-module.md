@@ -15,6 +15,18 @@ Guide you through creating a Red Hat Showroom demo module using the Know/Show st
 - Converting to blog posts → use `/blog-generate`
 - Reviewing existing content → use workshop-reviewer agent
 
+## Shared Rules
+
+**IMPORTANT**: This skill follows shared contracts defined in `.claude/skills/SKILL-COMMON-RULES.md`:
+- Version pinning or attribute placeholders (REQUIRED)
+- Reference enforcement (REQUIRED)
+- Attribute file location (REQUIRED)
+- Image path conventions (REQUIRED)
+- Navigation update expectations (REQUIRED)
+- Failure-mode behavior (stop if cannot proceed safely)
+
+See SKILL-COMMON-RULES.md for complete details.
+
 ## Know/Show Structure
 
 Demos use a different format than workshops:
@@ -247,6 +259,7 @@ A: "Built-in. I'll show that in part 2."
 - Value proposition
 
 **Show Section**:
+- **Optional visual cues** (recommended but not required)
 - Step-by-step presenter instructions
 - Specific commands and UI interactions
 - Expected screens/outputs
@@ -271,6 +284,9 @@ _Customer challenge: Deployment cycles take 6-8 weeks, blocking critical busines
 OpenShift reduces deployment time from weeks to minutes through self-service developer platforms and automated CI/CD pipelines.
 
 === Show
+
+**Optional visual**: Before/after deployment timeline diagram showing 6-8 weeks vs 2 minutes
+
 * Log into OpenShift Console at {openshift_console_url}
   * Username: {user}
   * Password: {password}
@@ -299,6 +315,32 @@ image::deployment-progress.png[align="center",width=700,title="Deployment in Pro
 * Connect to business outcome:
   "This self-service capability means your development team can meet the 4-week Black Friday deadline and ship updates daily instead of quarterly."
 ```
+
+**Optional Visual Cues** (Recommended):
+
+Add lightweight visual guidance without forcing asset creation:
+
+```asciidoc
+=== Show
+
+**Optional visual**: Architecture diagram showing component relationships
+**Optional slide**: Customer pain points - 6-8 week deployment cycles
+**Optional visual**: Before/after comparison of manual vs automated workflow
+
+[...presenter actions follow...]
+```
+
+**Cue Examples**:
+- "Optional visual: Architecture diagram showing component relationships"
+- "Optional slide: Customer pain points - 6-8 week deployment cycles"
+- "Optional visual: Before/after comparison of manual vs automated workflow"
+- "Optional diagram: Pipeline flow from commit to production"
+
+**Guidelines**:
+- Always mark as "Optional visual:" or "Optional slide:"
+- Don't make demo depend on it
+- Helps presenters prepare assets if they want
+- Keeps demos tight without forcing asset creation
 
 ### Step 9: Validate
 

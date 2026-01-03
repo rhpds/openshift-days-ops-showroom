@@ -15,6 +15,17 @@ Transform completed Red Hat Showroom lab modules or demo content into blog posts
 - Creating new demo content → use `/demo-module`
 - Editing existing blog posts → use technical-editor agent
 
+## Shared Rules
+
+**IMPORTANT**: This skill follows shared contracts defined in `.claude/skills/SKILL-COMMON-RULES.md`:
+- Reference enforcement (REQUIRED)
+- **Source traceability** (REQUIRED for trust and attribution)
+- Failure-mode behavior (stop if cannot proceed safely)
+
+Blog generation does NOT directly create lab content, so some shared rules (version pinning, navigation updates, image paths) apply only to source modules.
+
+See SKILL-COMMON-RULES.md for complete details.
+
 ## Workflow
 
 ### Step 1: Identify Source Content
@@ -203,6 +214,10 @@ Want hands-on practice? Try the complete workshop: [OpenShift Pipelines Workshop
 
 ---
 
+**About this tutorial**: This post is based on a hands-on workshop created for Red Hat field demonstrations. [Try the full lab on Red Hat Showroom](https://showroom.example.com/pipelines).
+
+---
+
 **Tags**: OpenShift, CI/CD, Tekton, Kubernetes, DevOps
 **Author**: [Your Name]
 **Published**: [Date]
@@ -299,6 +314,37 @@ I'll:
 - Verify all code samples are complete
 - Check links and references
 - Validate Markdown syntax
+- **Add source traceability attribution** (REQUIRED - see below)
+
+**Source Traceability** (REQUIRED):
+
+Every blog must include attribution to prevent over-claiming and confusion about authoritative docs vs narrative content.
+
+**For Red Hat Developer Blog**:
+```markdown
+---
+
+**About this tutorial**: This post is based on a hands-on workshop created for Red Hat field demonstrations. [Try the full lab on Red Hat Showroom](https://showroom.example.com/...).
+```
+
+**For Internal Blogs**:
+```markdown
+---
+
+**Source**: Adapted from the "OpenShift Pipelines" demo used in customer technical briefings.
+```
+
+**For Marketing Blogs**:
+```markdown
+---
+
+**About**: This article is based on technical demonstrations shown at Red Hat Summit and customer events.
+```
+
+**Rules**:
+- Always include at end of blog, before tags/metadata
+- Link to full lab if publishing externally
+- Use "adapted from" or "based on" language, not "official documentation"
 
 You'll get:
 - **Complete blog post file in Markdown (.md)** - ready to publish

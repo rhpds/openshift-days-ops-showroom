@@ -15,6 +15,18 @@ Guide you through creating a single Red Hat Showroom workshop module from refere
 - Converting to blog posts → use `/blog-generate`
 - Reviewing existing content → use workshop-reviewer agent
 
+## Shared Rules
+
+**IMPORTANT**: This skill follows shared contracts defined in `.claude/skills/SKILL-COMMON-RULES.md`:
+- Version pinning or attribute placeholders (REQUIRED)
+- Reference enforcement (REQUIRED)
+- Attribute file location (REQUIRED)
+- Image path conventions (REQUIRED)
+- Navigation update expectations (REQUIRED)
+- Failure-mode behavior (stop if cannot proceed safely)
+
+See SKILL-COMMON-RULES.md for complete details.
+
 ## Workflow
 
 ### Step 1: Determine Context (First Module vs Continuation)
@@ -301,6 +313,7 @@ I'll create a complete module with:
 - **Verification checkpoints** (REQUIRED - see below)
 - Image placeholders
 - **Troubleshooting section** (REQUIRED - see below)
+- **Learning outcomes checkpoint** (REQUIRED - see below)
 - Module summary
 - **References section** (REQUIRED)
 
@@ -347,6 +360,25 @@ Every module must include:
 . Verify OpenShift CLI installed: `oc version`
 . Expected version: {ocp_version}
 ```
+
+**Mandatory: Learning Outcomes Checkpoint**:
+Every module must include a learning confirmation (not just technical validation):
+```asciidoc
+== Learning Outcomes
+
+By completing this module, you should now understand:
+
+* ✓ How Tekton tasks encapsulate reusable CI/CD steps
+* ✓ The relationship between tasks, pipelines, and pipeline runs
+* ✓ How to troubleshoot failed pipeline executions using logs and status
+* ✓ When to use sequential vs parallel task execution patterns
+```
+
+**Guidelines**:
+- 3-5 bullet outcomes tied to original learning objective
+- Focus on understanding ("understand how X works") not just doing ("created X")
+- Use outcomes later for blog transformation
+- Helps reviewers, instructors, and people skimming modules
 
 **Optional but Recommended: Cleanup**:
 If module changes shared state:
