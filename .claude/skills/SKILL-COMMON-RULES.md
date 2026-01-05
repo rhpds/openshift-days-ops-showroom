@@ -259,16 +259,10 @@ Both lab and demo skills provide intelligent AgnosticV (AgV) configuration assis
 
 ### Access Check Protocol
 
-**Step 1: Check default AgV path**
-
-First, check if AgnosticV repository exists at the default location (`~/work/code/agnosticv/`).
-
-**If NOT found at default path:**
+**Ask for AgnosticV path:**
 
 ```
-ℹ️ **AgnosticV Repository Not Found at Default Path**
-
-Q: Can you provide the AgnosticV directory path on your system?
+Q: Do you have access to the AgnosticV repository? If yes, provide the directory path:
 
 Example paths:
 - ~/work/code/agnosticv/

@@ -106,16 +106,10 @@ AgnosticV (AgV) defines catalog items in Red Hat Demo Platform (RHDP) that provi
 
 #### Access Check
 
-**Step 1: Check default AgV path**
-
-First, I'll check if you have access to the AgnosticV repository at the default location (`~/work/code/agnosticv/`).
-
-**If NOT found at default path:**
+**Ask for AgnosticV path:**
 
 ```
-ℹ️ **AgnosticV Repository Not Found at Default Path**
-
-Q: Can you provide the AgnosticV directory path on your system?
+Q: Do you have access to the AgnosticV repository? If yes, provide the directory path:
 
 Example paths:
 - ~/work/code/agnosticv/
