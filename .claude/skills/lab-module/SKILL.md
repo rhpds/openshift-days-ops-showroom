@@ -36,8 +36,22 @@ See SKILL-COMMON-RULES.md for complete details.
 
 ### Step 1: Determine Context (First Module vs Continuation)
 
-**First, I'll ask**:
-- Is this the first module of a new lab, or continuing an existing lab?
+**CRITICAL: DO NOT read any files or make assumptions before asking this question!**
+
+**First, ask the user**:
+
+```
+Q: Is this the first module of a new lab, or continuing an existing lab?
+
+Options:
+1. First module of a NEW lab
+2. Continuing an EXISTING lab
+3. Something else (please describe)
+
+Your choice? [1/2/3]
+```
+
+**ONLY AFTER user answers, proceed based on their response.**
 
 **If continuing existing lab**:
 - Option 1: Provide path to previous module (I'll read and auto-detect story)

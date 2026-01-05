@@ -45,9 +45,25 @@ This separates what presenters need to **understand** (business value) from what
 
 ### Step 1: Determine Context (First Module vs Continuation)
 
-**First, I'll ask**:
-- Is this the first module of a new demo, or continuing an existing demo?
-- If continuing: Provide path to previous module (I'll auto-detect the story)
+**CRITICAL: DO NOT read any files or make assumptions before asking this question!**
+
+**First, ask the user**:
+
+```
+Q: Is this the first module of a new demo, or continuing an existing demo?
+
+Options:
+1. First module of a NEW demo
+2. Continuing an EXISTING demo
+3. Something else (please describe)
+
+Your choice? [1/2/3]
+```
+
+**ONLY AFTER user answers, proceed based on their response.**
+
+**If continuing existing demo**:
+- Provide path to previous module (I'll read and auto-detect the story)
 
 ### Step 2: Plan Overall Demo Story (if first module)
 
