@@ -803,6 +803,46 @@ ocp4_workload_my_app_api_key: ""
 - Production: After approval
 ```
 
+#### AgV Testing Confirmation (REQUIRED before module creation)
+
+**After AgV catalog is created/selected, MUST ask user:**
+
+```
+Q: Have you tested the AgV catalog in RHDP Integration?
+
+If creating NEW catalog:
+1. PR should be created and merged
+2. Wait ~1 hour for integration deployment
+3. Order catalog in RHDP Integration
+4. Verify all workloads provision successfully
+5. Confirm environment is ready
+
+If using EXISTING catalog:
+1. Catalog should already work in RHDP
+2. Confirm you have access and can order it
+
+**Options:**
+1. Yes, catalog tested and working → Proceed to Step 3 (module creation)
+2. No, I'll test it first → Pause here, user will test and come back
+3. Skip testing (not recommended) → Proceed but warn about potential issues
+
+Your choice? [1/2/3]
+```
+
+**CRITICAL**: Do NOT proceed to Step 3 (module creation) until user confirms AgV catalog is tested (option 1) or explicitly chooses to skip (option 3).
+
+**If user chooses option 2 (test first):**
+```
+✓ Pausing workflow for AgV testing
+
+Please:
+1. Test the catalog in RHDP Integration
+2. Verify all workloads provision correctly
+3. Come back when ready to create module content
+
+When you're ready, say "ready to create module" and I'll continue from Step 3.
+```
+
 ### Git Workflow Requirements (CRITICAL)
 
 **Prerequisites**: User has provided valid AgV path in Access Check Protocol above.
