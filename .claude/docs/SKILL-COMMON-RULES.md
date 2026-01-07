@@ -14,7 +14,11 @@ This document defines shared contracts and rules used by all Showroom authoring 
 **Rule**: Every module must handle versions explicitly.
 
 **For first module of a lab/demo**:
-- Ask: OpenShift version, product versions, cluster type, access level
+- Ask:
+  - OpenShift version (e.g., 4.18, 4.20)
+  - Product versions (e.g., OpenShift Pipelines 1.12, OpenShift AI 2.8)
+  - Cluster type (SNO or multinode)
+  - Access level (admin only, or multi-user with keycloak/htpasswd)
 - If provided: Use in content with attributes (e.g., `{ocp_version}`, `{pipelines_version}`)
 - If NOT provided: Use attribute placeholders and avoid version-specific CLI/UI steps
 
@@ -28,7 +32,7 @@ This document defines shared contracts and rules used by all Showroom authoring 
 This lab is tested on OpenShift {ocp_version} with Pipelines {pipelines_version}.
 
 // Bad - hardcoded version (unless explicitly provided by user)
-This lab requires OpenShift 4.16.2 with Pipelines 1.14.
+This lab requires OpenShift 4.18 with Pipelines 1.14.
 ```
 
 **Why**: Prevents "works on my cluster" modules that break in other environments.
@@ -97,13 +101,13 @@ include::partial$_attributes.adoc[]
 
 ### 4. Image Path Conventions (REQUIRED)
 
-**Rule**: All images go directly in the assets directory.
+**Rule**: All images go in the assets/images directory.
 
-**Path**: `content/modules/ROOT/assets/`
+**Path**: `content/modules/ROOT/assets/images/`
 
 **Example**:
 - Module: `module-01-pipelines-intro.adoc`
-- Screenshot: `content/modules/ROOT/assets/pipeline-execution-1.png`
+- Screenshot: `content/modules/ROOT/assets/images/pipeline-execution-1.png`
 
 **AsciiDoc Syntax** (REQUIRED):
 ```asciidoc
@@ -126,8 +130,8 @@ image::create-task-screenshot.png[OpenShift console showing task creation form,w
 ```asciidoc
 == Assets Needed
 
-. `content/modules/ROOT/assets/pipeline-execution-1.png` - Screenshot of pipeline running in OpenShift console
-. `content/modules/ROOT/assets/task-definition.png` - YAML editor showing task definition
+. `content/modules/ROOT/assets/images/pipeline-execution-1.png` - Screenshot of pipeline running in OpenShift console
+. `content/modules/ROOT/assets/images/task-definition.png` - YAML editor showing task definition
 ```
 
 **Why**: Accessibility, organization, maintainability.
@@ -253,7 +257,7 @@ Both lab and demo skills provide intelligent AgnosticV (AgV) configuration assis
 
 **IMPORTANT**: This is OPTIONAL assistance - always ask first!
 
-**CRITICAL**: If user chooses option 3 or 4 (YES to AgV help), you MUST complete the ENTIRE AgV catalog setup (find existing OR create new) BEFORE proceeding to Step 3 (module creation). The module content will use variables from the AgV catalog.
+**CRITICAL**: If user chooses option 3 (YES to AgV help), you MUST complete the ENTIRE AgV catalog setup (create new) BEFORE proceeding to Step 3 (module creation). The module content will use variables from the AgV catalog.
 
 ### Initial Opt-In Question
 
@@ -263,33 +267,105 @@ Both lab and demo skills provide intelligent AgnosticV (AgV) configuration assis
 Q: Do you need help with AgnosticV catalog configuration?
 
 Options:
-1. "No, RHDP developers already set up my catalog" → Skip to Step 3
-2. "No, I'll handle AgV myself" → Skip to Step 3
-3. "Yes, help me find an existing catalog" → Continue to catalog search ↓
-4. "Yes, help me create a new catalog" → Continue to catalog creation ↓
-5. "What's AgnosticV?" → Explain and ask again
+1. "No, RHDP developers already set up my catalog" → Ask for AgV access to extract UserInfo ↓
+2. "No, I'll handle AgV myself" → Ask for AgV access to extract UserInfo ↓
+3. "Yes, help me create a new catalog" → Continue to catalog creation ↓
+4. "What's AgnosticV?" → Explain and ask again
 
-Your choice? [1/2/3/4/5]
+Your choice? [1/2/3/4]
 ```
 
 **If user chooses 1 or 2 (No help needed):**
 ```
 ✓ Skipping AgV configuration
 
-You can proceed with placeholder attributes in your workshop/demo content:
-- {openshift_console_url}
-- {user}, {password}
-- {openshift_api_url}
+To create accurate showroom content, I need UserInfo variables.
 
-These will be replaced with actual values when deployed via your AgV catalog.
+Q1: Do you have access to a deployed environment on demo.redhat.com?
+
+If YES (RECOMMENDED - easiest and most accurate):
+1. Login to https://demo.redhat.com (or integration.demo.redhat.com)
+2. Order your catalog if not already ordered
+3. Once environment is ready, go to "My services" → Your service
+4. Click "Details" tab
+5. Expand "Advanced settings" section
+6. Copy and paste the output here
+
+This provides exact variables like:
+- openshift_cluster_console_url
+- openshift_cluster_admin_username
+- gitea_console_url
+- [custom workload variables]
+
+Your answer: [Yes and paste Advanced settings / No]
+```
+
+**If user has deployed environment (Yes to Q1):**
+```
+✓ Perfect! Please paste the Advanced settings output.
 
 → Proceeding to Step 3: Module-Specific Details
 ```
 
-**If user chooses 3 or 4 (Yes, help needed):**
+**If user does NOT have deployed environment (No to Q1):**
+```
+ℹ️ No Deployed Environment Access
+
+**Recommended**: Contact RHDP team to get Advanced settings from deployed environment.
+
+They can help you:
+- Get access to deployed catalog on demo.redhat.com
+- Provide Advanced settings output
+- Answer questions about catalog setup
+
+Q2: Would you like to use placeholder attributes for now and get actual values later?
+
+If YES:
+I'll use placeholder attributes:
+- {openshift_console_url}
+- {user}, {password}
+- {openshift_api_url}
+
+You can update these later when you get Advanced settings.
+
+If NO (RHDP internal team only):
+I can extract variables from AgnosticV repository if you have it cloned locally.
+This requires AgV repository access and is more complex.
+
+Your choice: [Use placeholders / Extract from AgV]
+```
+
+**If user chooses "Extract from AgV" (RHDP internal only):**
+```
+Q3: What is your AgnosticV repository directory path?
+
+If not cloned yet:
+git clone https://github.com/rhpds/agnosticv.git
+
+Example: /Users/username/work/code/agnosticv/
+
+Your AgV path: [Enter path]
+```
+
+**Then:**
+```
+Q4: What is your catalog directory path (relative to AgV repo)?
+
+Example: agd_v2/agentic-ai-openshift
+
+Your catalog path: [Enter path]
+
+I'll extract variables from {{ agv_path }}/{{ catalog_path }}/common.yaml
+
+Note: This is less reliable than Advanced settings from deployed environment.
+
+→ Proceeding to Step 3: Module-Specific Details
+```
+
+**If user chooses 3 (Yes, help needed):**
 - **IMMEDIATELY ask for AgnosticV path** (see Access Check Protocol below) ↓
 
-**If user chooses 5 (Explain):**
+**If user chooses 4 (Explain):**
 ```
 **What is AgnosticV?**
 
@@ -315,7 +391,7 @@ Do you need help with AgV configuration? [Yes/No]
 
 ### Access Check Protocol
 
-**CRITICAL: This MUST be asked IMMEDIATELY when user selects option 3 or 4**
+**CRITICAL: This MUST be asked IMMEDIATELY when user selects option 3**
 
 **Before any file operations, ask for AgnosticV path:**
 
@@ -543,6 +619,23 @@ Search again or proceed to keyword recommendations? [Search again/Keywords]
 
 **IMPORTANT**: Showroom workload is automatically selected based on `config` type. Do NOT ask user - detect from infrastructure choice.
 
+**Showroom Git Repository URL Pattern**:
+
+Users will clone showroom content repositories locally to work with skills, so **always use HTTPS URLs** (not SSH).
+
+**Standard Pattern**:
+```
+ocp4_workload_showroom_content_git_repo: https://github.com/rhpds/<workshop-name>-showroom.git
+ocp4_workload_showroom_content_git_repo_ref: main
+```
+
+**Examples from actual catalogs**:
+- `https://github.com/rhpds/showroom-agentic-ai-llamastack.git`
+- `https://github.com/rhpds/ai-driven-automation-showroom.git`
+- `https://github.com/rhpds/automating-ripu-with-ansible-showroom.git`
+
+**Why HTTPS**: Users clone these repositories locally when working with Claude skills, so SSH URLs won't work for most users.
+
 ### Workload Selection Assistant
 
 **Purpose:** Recommend specific workloads based on workshop/demo abstract and keywords
@@ -569,7 +662,76 @@ Search again or proceed to keyword recommendations? [Search again/Keywords]
    Use this catalog? [Yes/Create new based on this/See next]
 ```
 
-**Step 2: When creating new catalog** (user chose "Create new"):
+**If user chooses "Yes" (use catalog as-is):**
+- Skip catalog creation
+- Extract UserInfo variables from this catalog (see UserInfo Variable Extraction section)
+- Proceed to Step 3 (module creation)
+
+**If user chooses "Create new based on this":**
+
+**CRITICAL: Use reference catalog as TEMPLATE**
+
+1. **Read reference catalog files:**
+   ```
+   Reading reference catalog: {{ agv_path }}/{{ reference_catalog_path }}/
+
+   Files found:
+   - common.yaml
+   - dev.yaml
+   - description.adoc (optional)
+   ```
+
+2. **Copy structure from reference:**
+   - Parse reference `common.yaml`
+   - Use it as TEMPLATE for new catalog
+   - Preserve structure, includes, component definitions
+   - Copy `dev.yaml` as-is (can be used unchanged)
+
+3. **Modify only what's needed:**
+   - **UUID**: Replace with user-generated UUID (ask user to generate)
+   - **Display name**: Ask user for new name
+   - **Catalog slug**: Derive from new display name
+   - **Showroom repo**: Use detected repo from cwd
+   - **Workloads**: Review and customize (ask user)
+   - **Multi-user settings**: Keep from reference or ask to change
+   - **Infrastructure**: Keep from reference or ask to change
+
+4. **Ask user for modifications:**
+   ```
+   Q: Reference catalog "{{ reference_name }}" uses:
+   - Multi-user: {{ ref_multiuser }}
+   - Authentication: {{ ref_auth }}
+   - Infrastructure: {{ ref_infra }}
+   - Workloads: {{ ref_workload_count }} workloads
+
+   Keep these settings? [Yes/Customize]
+   ```
+
+   If "Customize":
+   - Ask which settings to change
+   - Show options for each setting
+
+5. **Generate files using reference as template:**
+   - Start with reference `common.yaml` structure
+   - Replace UUID, display_name, catalog slug
+   - Update showroom repo URL
+   - Modify workloads if user customized
+   - Keep all other structure (includes, components, parameters) from reference
+   - Copy `dev.yaml` unchanged (or ask for customizations)
+
+**Why this matters:**
+- Reference catalogs have **proven working structure**
+- Prevents schema validation errors (like invalid `showroom` in `__meta__`)
+- Preserves best practices from reference
+- Only changes what's truly different
+
+**If user chooses "See next":**
+- Show next catalog match from search results
+- Repeat options: [Yes/Create new based on this/See next]
+
+---
+
+**Step 2: When creating new catalog FROM SCRATCH** (user chose "Create new" with no reference):
 
 Extract keywords from abstract → Map to workloads → Present recommendations
 
@@ -780,17 +942,29 @@ ocp4_workload_my_app_api_key: ""
 
 **Next Steps:**
 
-1. Create PR (if not already done):
+1. Create PR:
    gh pr create --title "Add {{ catalog_display_name }}"
 
-2. After PR merged → Test in Integration:
-   - Login to RHDP integration environment
-   - Order your catalog
-   - Verify all workloads provision correctly
-   - Test workshop/demo content
+2. PR will be automatically labelled for integration deployment
 
-3. Troubleshooting provision failures:
-   - Check RHDP portal → Order → Logs
+3. **Test in Integration** (BEFORE requesting PR merge):
+   - Login to https://integration.demo.redhat.com
+   - Search for your catalog by display name: "{{ catalog_display_name }}"
+   - Order the catalog
+   - Wait 1-2 hours for environment provisioning (can take longer)
+   - Once successful, go to "My services" → Your service → "Details" tab
+   - Expand "Advanced settings" section
+   - Copy the UserInfo variables output (for showroom content)
+   - Test workshop/demo content in deployed environment
+
+4. After successful testing:
+   - Share Advanced settings output (helps with showroom content creation)
+   - Update PR with test results
+   - Send PR to RHDP developers requesting merge
+   - After merge, catalog will deploy to stage/production
+
+5. Troubleshooting provision failures:
+   - Check RHDP portal → My services → Your order → Logs
    - Common issues:
      * Missing collection dependency
      * Wrong workload variable name
@@ -798,8 +972,10 @@ ocp4_workload_my_app_api_key: ""
    - Contact RHDP developers if needed
 
 **Timeline:**
-- Integration deploy: ~1 hour after merge
-- Stage deploy: ~4 hours
+- PR labelled for integration: Quick
+- Environment provisioning: 1-2 hours after ordering (can take longer)
+- Testing: Before requesting PR merge
+- Stage deploy: ~4 hours after PR merge
 - Production: After approval
 ```
 
@@ -811,18 +987,24 @@ ocp4_workload_my_app_api_key: ""
 Q: Have you tested the AgV catalog in RHDP Integration?
 
 If creating NEW catalog:
-1. PR should be created and merged
-2. Wait ~1 hour for integration deployment
-3. Order catalog in RHDP Integration
-4. Verify all workloads provision successfully
-5. Confirm environment is ready
+1. Create PR (it will be labelled for integration quickly)
+2. Login to https://integration.demo.redhat.com
+3. Search for your catalog by display name
+4. Order the catalog on integration
+5. Wait 1-2 hours for environment provisioning (can take longer)
+6. Once successful, go to "My services" → Your service → "Details" tab
+7. Expand "Advanced settings" section and copy UserInfo variables
+8. Verify all workloads provision successfully
+9. Test workshop/demo content
+10. After successful testing, send PR to RHDP developers requesting merge
 
 If using EXISTING catalog:
 1. Catalog should already work in RHDP
 2. Confirm you have access and can order it
+3. If possible, share Advanced settings output from deployed environment
 
 **Options:**
-1. Yes, catalog tested and working → Proceed to Step 3 (module creation)
+1. Yes, catalog tested and working (please share Advanced settings output if available) → Proceed to Step 3
 2. No, I'll test it first → Pause here, user will test and come back
 3. Skip testing (not recommended) → Proceed but warn about potential issues
 
@@ -836,9 +1018,17 @@ Your choice? [1/2/3]
 ✓ Pausing workflow for AgV testing
 
 Please:
-1. Test the catalog in RHDP Integration
-2. Verify all workloads provision correctly
-3. Come back when ready to create module content
+1. Create PR (if not already done) - it will be labelled for integration quickly
+2. Login to https://integration.demo.redhat.com
+3. Search for your catalog by display name
+4. Order the catalog on integration
+5. Wait 1-2 hours for environment provisioning (can take longer)
+6. Once successful, go to "My services" → Your service → "Details" tab
+7. Expand "Advanced settings" section and copy UserInfo variables
+8. Verify all workloads provision correctly
+9. Test workshop/demo content
+10. Share the Advanced settings output (helps with showroom content creation)
+11. Come back when ready to create module content
 
 When you're ready, say "ready to create module" and I'll continue from Step 3.
 ```
@@ -890,38 +1080,134 @@ When you're ready, say "ready to create module" and I'll continue from Step 3.
 - No underscores, no slashes (except directory separator)
 - Descriptive and matches catalog slug
 
+### UUID Generation (REQUIRED BEFORE FILE CREATION)
+
+**CRITICAL**: Generate UUID BEFORE creating catalog files so it can be inserted directly into common.yaml.
+
+**Ask user to generate UUID:**
+
+```
+Q: Please generate a unique UUID for this catalog.
+
+Run one of these commands:
+
+macOS/Linux:
+  uuidgen
+
+OR
+
+Python (any platform):
+  python3 -c 'import uuid; print(uuid.uuid4())'
+
+Paste the generated UUID here: [paste UUID]
+```
+
+**UUID Format Validation:**
+- Must be standard UUID format: `XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`
+- Example: `5ac92190-6f0d-4c0e-a9bd-3b20dd3c816f`
+- NOT valid: `gitops-openshift-2026-01` (this is not a UUID!)
+
+**Store UUID for use in common.yaml template below.**
+
+### Showroom Repository Detection (REQUIRED IF USING SHOWROOM)
+
+**CRITICAL**: Auto-detect showroom git repository from current working directory instead of hardcoding.
+
+**Detection workflow:**
+
+```
+Q: Detecting showroom repository...
+
+Running: git -C $(pwd) remote get-url origin
+
+{% if git_remote_found %}
+✓ Found git remote: {{ git_remote_url }}
+
+{% if git_remote_url is SSH format (git@github.com:...) %}
+Converting SSH to HTTPS...
+  SSH:   {{ git_remote_url }}
+  HTTPS: {{ https_url }}
+{% endif %}
+
+Using showroom repo: {{ final_https_url }}
+Confirm this is correct? [Yes/No/Enter different URL]
+
+{% else %}
+⚠️ No git remote found in current directory.
+
+Please provide your showroom repository URL (HTTPS format):
+Example: https://github.com/rhpds/showroom-agentic-ai-llamastack.git
+
+Your showroom repo URL: [Enter URL]
+{% endif %}
+```
+
+**URL Conversion Rules:**
+- If SSH format `git@github.com:rhpds/showroom-name.git` → Convert to `https://github.com/rhpds/showroom-name.git`
+- If HTTPS already → Use as-is
+- Always ensure `.git` suffix is present
+
+**Store detected/provided URL for use in common.yaml template below.**
+
 **Post-creation steps:**
 
-1. **Review changes:**
-   ```bash
-   git status
-   git diff
-   ```
+**⚠️ CRITICAL WARNING: Catalog files created but NOT pushed to git!**
 
-2. **Add catalog files:**
-   ```bash
-   git add agd_v2/{{ catalog_slug }}/
-   ```
+The catalog files have been created locally in:
+- `{{ agv_path }}/{{ selected_dir }}/{{ catalog_slug }}/`
 
-3. **Commit with descriptive message:**
-   ```bash
-   git commit -m "Add {{ catalog_display_name }} catalog
+**You MUST review, commit, and push these changes manually.**
 
-   - Multi-user: {{ multiuser }}
-   - Infrastructure: {{ infra_type }}
-   - Collections: {{ collections_list }}
-   - Target: {{ workshop_type }}"
-   ```
+---
 
-4. **Push branch:**
-   ```bash
-   git push -u origin {{ catalog_slug }}
-   ```
+**Step 1: Review changes locally**
 
-5. **Next steps guidance:**
-   - Test locally: `agnosticv_cli --config agd_v2/{{ catalog_slug }}/dev.yaml`
-   - Open PR when ready for production deployment
-   - Tag RHDP developers for review: @psrivast @tyrell @juliano
+```bash
+cd {{ agv_path }}
+
+# Review what files were created/modified
+git status
+
+# Review the actual changes
+git diff
+
+# Review the complete catalog configuration
+cat {{ selected_dir }}/{{ catalog_slug }}/common.yaml
+```
+
+**Step 2: Add catalog files**
+
+```bash
+git add {{ selected_dir }}/{{ catalog_slug }}/
+```
+
+**Step 3: Commit with descriptive message**
+
+```bash
+git commit -m "Add {{ catalog_display_name }} catalog
+
+- Multi-user: {{ multiuser }}
+- Infrastructure: {{ infra_type }}
+- Collections: {{ collections_list }}
+- Target: {{ workshop_type }}"
+```
+
+**Step 4: Push branch to remote**
+
+```bash
+git push -u origin {{ catalog_slug }}
+```
+
+**Step 5: Create Pull Request**
+
+After pushing:
+- Create PR in AgnosticV repository
+- Request review from RHDP developers
+- After PR merge, test in RHDP Integration (~1 hour deployment time)
+
+---
+
+**⚠️ Remember: Changes are only local until you push! Review carefully before pushing.**
 
 ### AgV Directory Selection
 
@@ -954,49 +1240,304 @@ When you're ready, say "ready to create module" and I'll continue from Step 3.
 
 ### Config File Generation
 
-**Files to create** in `agd_v2/{{ catalog_slug }}/`:
+**REQUIRED: Create ALL THREE files** in `agd_v2/{{ catalog_slug }}/` or `openshift_cnv/{{ catalog_slug }}/`:
 
-1. **common.yaml** - Main configuration
-   - AgnosticV includes (#include statements)
-   - Cluster configuration (CNV pools, SNO, or AWS)
-   - Requirements (collections list)
-   - Workload list with variables
-   - Authentication setup (htpasswd multi-user or Keycloak)
-   - Showroom integration (if selected)
-   - Metadata (`__meta__.catalog` section with display_name, keywords, category)
+#### 1. common.yaml - Main Configuration
 
-2. **description.adoc** - Catalog description
-   - Workshop/demo title
-   - Brief description
-   - Multi-user information (if applicable)
-   - Showroom link (if applicable)
+**Content includes**:
+- AgnosticV includes (#include statements)
+- Cluster configuration (CNV pools, SNO, or AWS)
+- Requirements (collections list)
+- Workload list with variables
+- Authentication setup (htpasswd multi-user or Keycloak)
+- Showroom integration (if selected)
+- Metadata (`__meta__.catalog` section with display_name, keywords, category)
+- **CRITICAL**: `__meta__.asset_uuid` - Must be unique for each catalog
 
-3. **dev.yaml** - Development overrides
-   - Purpose: development
-   - SCM ref override for testing
+**UUID Generation**:
+- **ALWAYS ask user to generate a new UUID** when creating a catalog
+- Command: `uuidgen` (on macOS/Linux) or `python3 -c 'import uuid; print(uuid.uuid4())'`
+- Format: `asset_uuid: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX`
+- Example: `asset_uuid: 5ac92190-6f0d-4c0e-a9bd-3b20dd3c816f`
+- **NEVER reuse UUIDs** from other catalogs
+
+**Template structure** (adapt based on infrastructure type):
+```yaml
+---
+# AgnosticV includes
+#include /includes/agd-v2-mapping.yaml
+#include /includes/sandbox-api.yaml
+#include /includes/catalog-icon-openshift.yaml
+#include /includes/terms-of-service.yaml
+
+#include /includes/parameters/purpose.yaml
+#include /includes/parameters/salesforce-id.yaml
+#include /includes/secrets/letsencrypt_with_zerossl_fallback.yaml
+
+# Repository Tag
+tag: main
+
+cloud_provider: none
+config: openshift-workloads  # OR cloud-vms-base for VM-based
+clusters:
+- default:
+    api_url: "{{ openshift_api_url }}"
+    api_token: "{{ openshift_api_key }}"
+
+# Collections
+requirements_content:
+  collections:
+  - name: https://github.com/agnosticd/core_workloads.git
+    type: git
+    version: "{{ tag }}"
+  - name: https://github.com/agnosticd/showroom.git
+    type: git
+    version: main
+
+# Workloads
+workloads:
+- agnosticd.core_workloads.ocp4_workload_authentication_htpasswd
+- agnosticd.showroom.ocp4_workload_showroom_ocp_integration
+- agnosticd.showroom.ocp4_workload_showroom
+
+# Workload variables
+common_user_password: "{{ (guid[:5] | hash('md5') | int(base=16) | b64encode)[:10] }}"
+common_admin_password: "{{ (guid[:5] | hash('md5') | int(base=16) | b64encode)[:16] }}"
+
+ocp4_workload_authentication_htpasswd_admin_user: admin
+ocp4_workload_authentication_htpasswd_admin_password: "{{ common_admin_password }}"
+ocp4_workload_authentication_htpasswd_user_base: user
+ocp4_workload_authentication_htpasswd_user_password: "{{ common_user_password }}"
+ocp4_workload_authentication_htpasswd_user_count: "{{ (num_users | default('2')) | int }}"
+
+ocp4_workload_showroom_content_git_repo: {{ detected_showroom_repo_url }}
+ocp4_workload_showroom_content_git_repo_ref: main
+
+# Metadata
+__meta__:
+  asset_uuid: {{ user_generated_uuid }}
+  owners:
+    maintainer:
+    - name: Your Name
+      email: your.email@redhat.com
+  anarchy:
+    namespace: babylon-anarchy-7
+  deployer:
+    scm_url: https://github.com/agnosticd/agnosticd-v2
+    scm_ref: main
+    execution_environment:
+      image: quay.io/agnosticd/ee-multicloud:chained-2025-10-09
+      pull: missing
+  catalog:
+    namespace: babylon-catalog-{{ stage | default('?') }}
+    display_name: {{ catalog_display_name }}
+    category: {{ category }}  # Workshops or Demos
+    keywords:
+    - {{ keyword1 }}
+    - {{ keyword2 }}
+    multiuser: {{ true_or_false }}
+    parameters:
+    - name: num_users
+      description: Number of users to provision within the cluster.
+      formLabel: OpenShift User Count
+      openAPIV3Schema:
+        type: integer
+        default: 2
+        minimum: 2
+        maximum: 40
+  components:
+  - name: openshift-base
+    display_name: OpenShift Cluster
+    item: agd-v2/ocp-cluster-cnv-pools/prod  # OR other infrastructure
+    parameter_values:
+      cluster_size: multinode  # OR sno
+      host_ocp4_installer_version: "4.20"
+    propagate_provision_data:
+    - name: openshift_api_ca_cert
+      var: openshift_api_ca_cert
+    - name: openshift_api_url
+      var: openshift_api_url
+    - name: openshift_cluster_admin_token
+      var: openshift_api_key
+```
+
+#### 2. description.adoc - Catalog Description
+
+**REQUIRED content**:
+
+```asciidoc
+= {{ catalog_display_name }}
+
+{{ Brief 1-2 sentence description of workshop/demo purpose }}
+
+{{ If multi-user: }}
+This catalog supports {{ min }}-{{ max }} concurrent users.
+
+{{ If showroom: }}
+Workshop content is delivered via Red Hat Showroom platform.
+
+== Prerequisites
+
+* Basic knowledge of {{ technology }}
+* {{ other prerequisites }}
+
+== What You'll Learn
+
+* {{ learning outcome 1 }}
+* {{ learning outcome 2 }}
+* {{ learning outcome 3 }}
+
+== Environment Details
+
+* OpenShift {{ ocp_version }}
+* {{ Product 1 }} {{ version }}
+* {{ Product 2 }} {{ version }}
+
+{{ If multi-user: }}
+== User Access
+
+Each user receives:
+* Unique username (user1, user2, etc.)
+* Individual project/namespace
+* Access to shared cluster resources
+```
+
+**Example**:
+```asciidoc
+= Agentic AI with Llama Stack
+
+Learn to build agentic AI applications using Llama Stack framework on Red Hat OpenShift AI.
+
+This catalog supports 2-40 concurrent users.
+
+Workshop content is delivered via Red Hat Showroom platform.
+
+== Prerequisites
+
+* Basic knowledge of Python and AI/ML concepts
+* Familiarity with container platforms
+
+== What You'll Learn
+
+* Deploy Llama Stack on OpenShift AI
+* Build agentic workflows with tool integration
+* Implement RAG patterns for enterprise data
+* Monitor and optimize AI workloads
+
+== Environment Details
+
+* OpenShift 4.20
+* OpenShift AI 2.8
+* Llama Stack latest
+
+== User Access
+
+Each user receives:
+* Unique username (user1, user2, etc.)
+* Individual project namespace
+* Access to shared AI infrastructure and models
+```
+
+#### 3. dev.yaml - Development Overrides
+
+**REQUIRED content**:
+
+```yaml
+---
+# Development overrides for testing
+# Use this config for local testing before production deployment
+
+purpose: development
+
+# Override SCM ref for testing showroom content from feature branches
+# Example: Change 'main' to your feature branch name
+# ocp4_workload_showroom_content_git_repo_ref: feature-new-module
+
+# Override collections for testing development versions
+# requirements_content:
+#   collections:
+#   - name: https://github.com/agnosticd/core_workloads.git
+#     type: git
+#     version: develop
+
+# Override num_users for smaller dev deployments
+# num_users: 2
+
+# Override workload versions for testing
+# ocp4_workload_pipelines_channel: pipelines-1.20
+```
+
+**Example**:
+```yaml
+---
+purpose: development
+
+# Test with feature branch
+ocp4_workload_showroom_content_git_repo_ref: feature-module-2
+
+# Smaller deployment for dev
+num_users: 2
+```
 
 ### UserInfo Variable Extraction
 
-**Prerequisites**: User has provided valid AgV path in Access Check Protocol.
+**RECOMMENDED: Get Variables from Deployed Environment**
 
-**When user selects existing catalog:**
+The most accurate way to get UserInfo variables is from a deployed environment:
+
+**Ask user:**
+```
+Q: Do you have access to a deployed environment (on integration.demo.redhat.com or demo.redhat.com)?
+
+If YES:
+Please share the UserInfo variables from your deployed service:
+
+1. Login to https://integration.demo.redhat.com (or demo.redhat.com)
+2. Go to "Services" → Find your service
+3. Click on "Details" tab
+4. Expand "Advanced settings" section
+5. Copy and paste the output here
+
+This shows all available UserInfo variables like:
+- openshift_cluster_console_url
+- openshift_api_server_url
+- openshift_cluster_admin_username
+- openshift_cluster_admin_password
+- gitea_console_url
+- gitea_admin_username
+- gitea_admin_password
+- [custom workload variables]
+
+If NO:
+I can use common variables as placeholders:
+- {openshift_console_url}
+- {openshift_api_url}
+- {user}
+- {password}
+- {bastion_public_hostname}
+```
+
+**When user provides Advanced settings output:**
+- Extract all variables shown
+- Map to Showroom attributes using same names
+- Example: `openshift_cluster_console_url` → `{openshift_cluster_console_url}`
+
+**Alternative: Extract from AgV Catalog (if no deployed environment)**
+
+If user doesn't have deployed environment access:
 
 1. **Read catalog configuration:**
    - Location: `{{ user_provided_agv_path }}/agd_v2/{{ catalog_slug }}/common.yaml`
    - Parse workload list
 
-2. **Identify workload roles:**
-   - AgnosticD v2: `{{ agnosticd_v2_path }}` (user should provide if needed)
-   - AgnosticD v1: `{{ agnosticd_v1_path }}` (legacy, user should provide if needed)
-   - Read workload roles referenced in common.yaml
-   - **Note**: If AgnosticD paths not available, workload extraction may be limited
-
-3. **Extract `agnosticd_user_info` variables:**
-   - Search for `agnosticd_user_info` tasks in workload roles
+2. **Clone and read collections:**
+   - Collections can be from ANY repository (agnosticd, rhpds, etc.)
+   - Clone each collection to temp directory
+   - Read workload roles to find `agnosticd_user_info` tasks
    - Extract variables from `data:` sections
-   - Map to Showroom attributes
+   - **Note**: This is less reliable than deployed environment output
 
-**Common variables:**
+**Common variables (fallback):**
 - `openshift_console_url` → `{openshift_console_url}`
 - `openshift_api_url` → `{openshift_api_url}`
 - `user_name` → `{user}`
@@ -1172,12 +1713,28 @@ All skills reference these files:
 - `.claude/prompts/redhat_style_guide_validation.txt`
 - `.claude/prompts/enhanced_verification_workshop.txt`
 
-**Agents**:
-- `workshop-reviewer` - Validates structure and pedagogy
-- `style-enforcer` - Applies Red Hat style standards
-- `researcher` - Validates reference URLs
-- `content-converter` - Converts formats
-- `technical-editor` - Refines blog tone
+**Verification Prompts** (READ BEFORE generating content):
+
+**For Lab Modules (`/lab-module`)**:
+1. `.claude/prompts/enhanced_verification_workshop.txt` - Complete quality checklist
+2. `.claude/prompts/redhat_style_guide_validation.txt` - Red Hat style rules
+3. `.claude/prompts/verify_workshop_structure.txt` - Structure requirements
+4. `.claude/prompts/verify_technical_accuracy_workshop.txt` - Technical accuracy standards
+5. `.claude/prompts/verify_accessibility_compliance_workshop.txt` - Accessibility requirements
+6. `.claude/prompts/verify_content_quality.txt` - Content quality standards
+
+**For Demo Modules (`/demo-module`)**:
+1. `.claude/prompts/enhanced_verification_demo.txt` - Complete demo quality checklist
+2. `.claude/prompts/redhat_style_guide_validation.txt` - Red Hat style rules
+3. `.claude/prompts/verify_technical_accuracy_demo.txt` - Technical accuracy for demos
+4. `.claude/prompts/verify_accessibility_compliance_demo.txt` - Accessibility requirements
+5. `.claude/prompts/verify_content_quality.txt` - Content quality standards
+
+**CRITICAL: How to Use Verification Prompts**:
+- Skills MUST read ALL verification prompts BEFORE generating content
+- Apply criteria DURING generation (not after)
+- Generate content that ALREADY passes all checks
+- No separate validation step - content is validated during creation
 
 ---
 

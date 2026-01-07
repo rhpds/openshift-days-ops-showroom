@@ -75,13 +75,17 @@ Your choice? [1/2/3]
 
 If this is the first module, I'll gather the big picture:
 
+**IMPORTANT**: Ask these as **open-ended questions** where users type their answers. Do NOT provide multiple choice options.
+
 1. **Lab overview**:
    - What's the overall goal of this lab?
    - Example: "Learn to build and deploy AI/ML workloads on OpenShift AI"
 
 2. **Target audience**:
-   - Who is this lab for? (Developers, Architects, SREs, Data Scientists, etc.)
-   - Experience level? (Beginner, Intermediate, Advanced)
+   - Who is this lab for?
+   - Example: "Developers, Architects, SREs, Data Scientists"
+   - What's their experience level?
+   - Example: "Beginner, Intermediate, Advanced"
 
 3. **Learning journey**:
    - What should learners know by the end?
@@ -89,17 +93,22 @@ If this is the first module, I'll gather the big picture:
 
 4. **Story/scenario**:
    - What company/business scenario should we use?
+   - Example: "ACME Corp" or custom company
    - What's the business challenge driving this?
-   - Default: "ACME Corp" or custom company
 
 5. **Estimated duration**:
-   - How long should the complete lab take? (30min, 1hr, 2hr, etc.)
+   - How long should the complete lab take?
+   - Example: "30min, 1hr, 2hr"
 
 6. **Version and environment scope** (REQUIRED):
-   - OpenShift version? (e.g., 4.14, 4.15, 4.16)
-   - Product versions? (e.g., OpenShift Pipelines 1.12, OpenShift AI 2.8)
-   - Cluster type? (AgnosticV catalog, RHDP, local, etc.)
-   - Access level? (admin, developer/non-admin)
+   - OpenShift version?
+   - Example: "4.18, 4.20" or use placeholder `{ocp_version}`
+   - Product versions?
+   - Example: "OpenShift Pipelines 1.12, OpenShift AI 2.8" or use placeholders
+   - Cluster type?
+   - Example: "SNO or multinode"
+   - Access level?
+   - Example: "admin only, or multi-user with keycloak/htpasswd"
    - If not provided:
      - Use attribute placeholders: `{ocp_version}`, `{pipelines_version}`
      - Avoid version-specific CLI/UI steps
@@ -127,31 +136,164 @@ Q: Do you need help with AgnosticV catalog configuration?
 Options:
 1. No, already set up → Skip to Step 3
 2. No, I'll handle it myself → Skip to Step 3
-3. Yes, help me find existing catalog
-4. Yes, help me create new catalog
-5. What's AgnosticV?
+3. Yes, help me create new catalog → Continue ↓
+4. What's AgnosticV? → Explain
 
-Your choice? [1/2/3/4/5]
+Your choice? [1/2/3/4]
 ```
 
-**If user needs help (options 3-4):**
+**If user chooses option 3 (YES to AgV help):**
 
-See `.claude/docs/SKILL-COMMON-RULES.md` section "AgnosticV Configuration Assistance" for complete workflow including:
-- Access check protocol
-- User-suggested catalog search
-- Keyword-based recommendations
-- Workload selection assistant
-- Catalog creation workflow
-- UserInfo variable extraction
+**Step A: Get AgV Directory Path (REQUIRED)**
 
-**Lab-specific defaults** (when creating new catalog):
-- Multi-user: Recommended (5-50 users)
-- Authentication: Keycloak (recommended) or htpasswd
-- Category: Workshops
-- Infrastructure: CNV with autoscaling
-- Showroom: ocp4_workload_showroom (for OCP-based)
+```
+Q: What is your AgnosticV repository directory path? (REQUIRED)
 
-**If user doesn't need help (options 1-2):**
+This directory is my reference library for:
+- Searching existing catalogs by name or keywords
+- Learning catalog patterns and structures
+- Copying/basing new catalogs on existing ones
+- Understanding workload configurations
+
+Example: /Users/username/work/code/agnosticv/
+
+Your AgV path: [Enter full path]
+```
+
+**Why REQUIRED**: The AgV directory IS the reference material for all catalog work.
+
+**Step B: Ask if User Knows Similar Catalog (Recommended)**
+
+```
+Q: Do you know of an existing catalog that could be a good base for your workshop?
+
+Providing a catalog name helps me:
+- Find the closest match faster
+- Show you exactly what's available
+- Use it as a template if creating new
+
+Options:
+- Yes, I know one → Enter display name or slug
+- No / Not sure → I'll search by keywords
+```
+
+**If YES (user knows catalog name)**:
+- Ask: "What's the catalog display name or slug?"
+- Examples: "Agentic AI on OpenShift" or "agentic-ai-openshift"
+- Search AgV directory by display name and slug
+- Show top matches with full details
+- Options: Use as-is / Create new based on this / See similar
+
+**If NO/Not sure**:
+- Extract keywords from Step 2 (workshop abstract, technology)
+- Search AgV directory by keywords
+- Show top 3-5 recommendations
+
+**Step C: Complete AgV Workflow**
+
+See `.claude/docs/SKILL-COMMON-RULES.md` section "AgnosticV Configuration Assistance" for complete details.
+
+**If creating new catalog, I'll ask:**
+
+1. **Git workflow** - Pull main, create branch (BEFORE generating files):
+   ```
+   Q: Preparing git workflow...
+
+   Running in AgV directory:
+   1. git checkout main
+   2. git pull origin main
+   3. git checkout -b {{ catalog_slug }}
+   ```
+
+2. **UUID Generation** (REQUIRED BEFORE file creation):
+   ```
+   Q: Please generate a unique UUID for this catalog.
+
+   Run one of these commands:
+
+   macOS/Linux:
+     uuidgen
+
+   OR
+
+   Python (any platform):
+     python3 -c 'import uuid; print(uuid.uuid4())'
+
+   Paste the generated UUID here: [paste UUID]
+   ```
+
+   **Validation**: Must be standard UUID format (XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX)
+   **Example**: `5ac92190-6f0d-4c0e-a9bd-3b20dd3c816f`
+   **NOT valid**: `gitops-openshift-2026-01` (this is not a UUID!)
+
+3. **Showroom Repository Detection** (REQUIRED for showroom content):
+   ```
+   Q: Detecting showroom repository from current directory...
+
+   Running: git -C $(pwd) remote get-url origin
+
+   Found: {{ git_remote_url }}
+
+   {% if SSH format %}
+   Converting SSH to HTTPS:
+     SSH:   git@github.com:rhpds/showroom-name.git
+     HTTPS: https://github.com/rhpds/showroom-name.git
+   {% endif %}
+
+   Using showroom repo: {{ https_url }}
+   Confirm this is correct? [Yes/No/Enter different URL]
+   ```
+
+   **If no git remote found**:
+   ```
+   ⚠️ No git remote found in current directory.
+
+   Please provide your showroom repository URL (HTTPS format):
+   Example: https://github.com/rhpds/showroom-agentic-ai-llamastack.git
+
+   Your showroom repo URL: [Enter URL]
+   ```
+
+4. **AgV Directory Selection**:
+   ```
+   Q: Which directory should I create the catalog in?
+
+   Options:
+   1. agd_v2/ (Recommended - most workshops/demos)
+   2. openshift_cnv/ (For CNV-based infrastructure)
+
+   Your choice? [1/2]
+   ```
+
+5. **Lab-specific defaults**:
+   - Multi-user: Recommended (5-50 users)
+   - Authentication: Keycloak (recommended) or htpasswd
+   - Category: Workshops
+   - Infrastructure: CNV with autoscaling
+   - Showroom: Auto-selected based on config type
+
+6. **Workload selection** - Based on workshop abstract and technology keywords
+
+7. **Generate catalog files** - Using UUID and showroom repo URL collected above
+
+8. **Testing confirmation** - Ask user to test in RHDP Integration before proceeding
+
+**Step D: AgV Testing Confirmation (REQUIRED if creating new)**
+
+```
+Q: Have you tested the AgV catalog in RHDP Integration?
+
+Options:
+1. Yes, tested and working → Proceed to Step 3
+2. No, I'll test it first → Pause workflow
+3. Skip testing (not recommended) → Proceed with warning
+
+Your choice? [1/2/3]
+```
+
+**CRITICAL**: Do NOT proceed to Step 3 until AgV workflow is complete or user confirms skip.
+
+**If user chooses option 1 or 2 (NO AgV help):**
 - Use placeholder attributes in module content
 - Proceed directly to Step 3
 
@@ -168,16 +310,46 @@ Now for this specific module:
    - **Conflict detection**: If file exists, suggest next available number
    - **Warning**: Don't overwrite existing modules without confirmation
 
-2. **AgnosticV catalog item** (optional but recommended):
-   - Is this based on an AgnosticV catalog item?
-   - If yes: Provide catalog item name (e.g., "ocp4_workload_rhods_demo")
-   - Default AgnosticV path: `~/work/code/agnosticv/`
-   - I'll read the catalog item to extract UserInfo variables
-
-3. **Reference materials**:
-   - URLs to Red Hat docs
+2. **Reference materials** (optional but recommended):
+   - URLs to Red Hat product documentation
    - Local file paths (Markdown, AsciiDoc, text, PDF)
-   - Or paste content directly
+   - Pasted content
+   - **Better references = better content quality**
+   - If not provided: Generate from templates and common patterns
+
+3. **UserInfo variables** (optional, for accurate showroom content):
+   - If not already provided in Step 2.5, **I must ask the user:**
+
+   ```
+   Q: Do you have access to a deployed environment on demo.redhat.com or integration.demo.redhat.com?
+
+   If YES (RECOMMENDED - easiest and most accurate):
+   Please share the UserInfo variables from your deployed service:
+
+   1. Login to https://demo.redhat.com (or integration.demo.redhat.com)
+   2. Go to "My services" → Your service
+   3. Click "Details" tab
+   4. Expand "Advanced settings" section
+   5. Copy and paste the output here
+
+   This provides exact variables like:
+   - openshift_cluster_console_url
+   - openshift_cluster_admin_username
+   - gitea_console_url
+   - [custom workload variables]
+
+   If NO:
+   Q: Would you like to use placeholder attributes for now?
+
+   If YES:
+   I'll use placeholders: {openshift_console_url}, {user}, {password}
+   You can update these later when you get Advanced settings.
+
+   If NO (RHDP internal team only):
+   I can extract variables from AgnosticV repository if you have it cloned locally.
+   This requires AgV path and catalog name.
+   Note: Less reliable than Advanced settings.
+   ```
 
 4. **Main learning objective**:
    - Example: "Create and run a CI/CD pipeline with Tekton"
@@ -198,67 +370,62 @@ Now for this specific module:
    - I'll save them to `content/modules/ROOT/assets/images/`
    - And reference them properly in AsciiDoc
 
-### Step 4: Extract AgnosticV UserInfo Variables (if applicable)
+### Step 4: Get UserInfo Variables (if applicable)
 
-If you provided an AgnosticV catalog item, I'll:
+If UserInfo variables weren't already provided in Step 2.5 or Step 3, I'll ask for them now.
 
-**Read AgnosticV catalog configuration**:
-- Location: `~/work/code/agnosticv/`
-- Find catalog item directory: `catalogs/<item-name>/`
-- Read `common.yaml` for workload list and variables
+**RECOMMENDED: Get from Deployed Environment (Primary Method)**
 
-**Identify workload roles from AgnosticD**:
-- AgnosticD v2: `~/work/code/agnosticd-v2/`
-- AgnosticD v1: `~/work/code/agnosticd/`
-- Read workload roles referenced in common.yaml
+I'll ask: "Do you have access to a deployed environment on demo.redhat.com or integration.demo.redhat.com?"
 
-**Extract UserInfo variables**:
-- Search for `agnosticd_user_info` tasks in workload roles
+**If YES** (recommended):
+```
+Please share the UserInfo variables from your deployed service:
+
+1. Login to https://integration.demo.redhat.com (or demo.redhat.com)
+2. Go to "My services" → Find your service
+3. Click on "Details" tab
+4. Expand "Advanced settings" section
+5. Copy and paste the output here
+```
+
+This shows all available variables like:
+- `openshift_cluster_console_url`
+- `openshift_api_server_url`
+- `openshift_cluster_admin_username`
+- `openshift_cluster_admin_password`
+- `gitea_console_url`
+- `gitea_admin_username`
+- `gitea_admin_password`
+- Custom workload-specific variables
+
+**If NO** (fallback):
+I'll use common placeholder variables:
+- `{openshift_console_url}`
+- `{openshift_api_url}`
+- `{user}`
+- `{password}`
+- `{bastion_public_hostname}`
+
+**Alternative**: Clone collections from AgV catalog
+- Read `common.yaml` from user-provided AgV path
+- Clone collections from any repository (agnosticd, rhpds, etc.)
+- Read workload roles to find `agnosticd_user_info` tasks
 - Extract variables from `data:` sections
-- Common variables:
-  - `bastion_public_hostname`
-  - `openshift_console_url`
-  - `openshift_api_url`
-  - `user_name`, `user_password`
-  - Custom workload-specific variables
+- Note: Less reliable than deployed environment output
 
 **Map to Showroom attributes**:
 ```asciidoc
-{bastion_public_hostname}
-{openshift_console_url}
-{user}
-{password}
+{openshift_cluster_console_url}
+{openshift_api_server_url}
+{openshift_cluster_admin_username}
+{gitea_console_url}
 {{ custom_variable }}
 ```
 
-**Example extraction**:
-```yaml
-# From workload role tasks/main.yml
-- name: Save cluster info
-  agnosticd.core.agnosticd_user_info:
-    data:
-      openshift_console_url: "{{ r_openshift_console_url }}"
-      openshift_api_url: "{{ r_openshift_api_url }}"
-      bastion_public_hostname: "{{ hostvars['bastion']['public_dns_name'] }}"
-```
-
-**Result**: I'll use these as Showroom variables in the generated module.
-
 **Formalize Attribute Extraction**:
 - Create or update: `content/modules/ROOT/partials/_attributes.adoc`
-- Standard attributes to extract/define:
-  ```asciidoc
-  :console_url: {openshift_console_url}
-  :api_url: {openshift_api_url}
-  :user: {user_name}
-  :password: {user_password}
-  :namespace: {project_namespace}
-  :admin_user: {cluster_admin_user}
-  :bastion_host: {bastion_public_hostname}
-  :git_repo: {git_repository_url}
-  :registry_url: {container_registry_url}
-  :ocp_version: {openshift_version}
-  ```
+- Define attributes based on provided variables
 - If value unknown, keep as `{attribute}` and list in "Attributes Needed"
 - Include attributes file in module:
   ```asciidoc
@@ -269,12 +436,10 @@ If you provided an AgnosticV catalog item, I'll:
 
 If you provided visual assets or code:
 
-**For images (diagrams, screenshots)** - STRICT RULES:
+**For images (diagrams, screenshots)**:
 
-**Path convention** (ENFORCED):
-- All images go under: `content/modules/ROOT/images/<module-slug>/`
-- Example: `content/modules/ROOT/images/pipelines-intro/pipeline-execution-1.png`
-- NOT in `assets/images/` - use `images/` directly
+**Path convention**:
+- All images go in: `content/modules/ROOT/assets/images/`
 
 **Required for every image**:
 1. **Meaningful alt text** (for accessibility)
@@ -283,7 +448,7 @@ If you provided visual assets or code:
 
 **AsciiDoc syntax** (REQUIRED):
 ```asciidoc
-image::pipelines-intro/pipeline-execution-1.png[Tekton pipeline showing three tasks executing in sequence,width=700,title="Pipeline Execution in Progress"]
+image::pipeline-execution-1.png[Tekton pipeline showing three tasks executing in sequence,width=700,title="Pipeline Execution in Progress"]
 ```
 
 **Placeholders**:
@@ -291,7 +456,7 @@ image::pipelines-intro/pipeline-execution-1.png[Tekton pipeline showing three ta
 - Example placeholder:
   ```asciidoc
   // TODO: Add screenshot
-  image::pipelines-intro/create-task-screenshot.png[OpenShift console showing task creation form,width=600,title="Creating a Tekton Task"]
+  image::create-task-screenshot.png[OpenShift console showing task creation form,width=600,title="Creating a Tekton Task"]
   ```
 
 **Assets Needed list**:
@@ -313,11 +478,6 @@ At end of module, include:
   oc create deployment my-app --image=myimage:latest
   ----
   ```
-
-**For architecture diagrams**:
-- Save to assets/images/ with descriptive names
-- Reference with appropriate width (700-800px for diagrams)
-- Add meaningful alt text and titles
 
 **Recommended image naming**:
 - Architecture diagrams: `architecture-overview.png`, `deployment-flow.png`
@@ -354,14 +514,29 @@ Based on your references, I'll:
   * link:https://tekton.dev/...[Tekton documentation] - Task definitions
   ```
 
-### Step 7: Read Templates
+### Step 7: Read Templates and Verification Criteria (BEFORE Generating)
 
-I'll always read these before generating:
+**CRITICAL: I MUST read all these files BEFORE generating content to ensure output meets all standards.**
+
+**Templates to read:**
 - `content/modules/ROOT/pages/workshop/templates/03-module-01.adoc`
 - `content/modules/ROOT/pages/workshop/example/03-module-01.adoc`
-- `.claude/prompts/redhat_style_guide_validation.txt`
 
-### Step 8: Generate Module
+**Verification criteria to read and apply DURING generation:**
+1. `.claude/prompts/enhanced_verification_workshop.txt` - Complete quality checklist
+2. `.claude/prompts/redhat_style_guide_validation.txt` - Red Hat style rules
+3. `.claude/prompts/verify_workshop_structure.txt` - Structure requirements
+4. `.claude/prompts/verify_technical_accuracy_workshop.txt` - Technical accuracy standards
+5. `.claude/prompts/verify_accessibility_compliance_workshop.txt` - Accessibility requirements
+6. `.claude/prompts/verify_content_quality.txt` - Content quality standards
+
+**How I use these:**
+- Read ALL verification prompts BEFORE generating
+- Apply criteria WHILE generating content
+- Generate content that ALREADY passes all checks
+- No separate validation step needed - content is validated during creation
+
+### Step 8: Generate Module (Using Verification Criteria)
 
 I'll create a complete module with:
 
@@ -460,43 +635,33 @@ oc delete project my-project
 - Second-person narrative
 - Code blocks with syntax highlighting
 
-### Step 9: Validate and Quality Gates
+### Step 9: Final Quality Check
 
-**Agent Validation**:
-- **workshop-reviewer** agent: Validates structure and pedagogy
-- **style-enforcer** agent: Applies Red Hat style standards
+**Since verification criteria were applied during generation (Step 7-8), the module should already meet all standards.**
 
-**Quality Gates** (run even if agents unavailable):
+**Quick final checks:**
 
-1. **AsciiDoc Sanity Checks**:
+1. **AsciiDoc Syntax**:
    - ✓ All code blocks have proper syntax: `[source,bash]`
    - ✓ No broken includes
-   - ✓ All attributes are defined or listed in "Attributes Needed"
-   - ✓ Image paths follow convention
-   - ✓ No unclosed blocks
+   - ✓ All attributes defined
 
-2. **Navigation Check**:
-   - ✓ nav.adoc contains the new module
-   - ✓ Module numbering is sequential
-   - ✓ All xrefs are valid
+2. **Completeness**:
+   - ✓ All required sections present (see Step 8)
+   - ✓ Verification checkpoints after major steps
+   - ✓ Troubleshooting section with 3+ scenarios
+   - ✓ Learning outcomes section
+   - ✓ References section
 
-3. **Instruction Clarity Checks**:
-   - ✓ Each step has a clear reason ("why this matters")
-   - ✓ Commands are copy/pasteable (no placeholders in commands without explanation)
-   - ✓ Expected output shown for verification steps
-   - ✓ Verification checkpoints present for each major step
-   - ✓ Troubleshooting section covers top 3 failure modes
+3. **Navigation**:
+   - ✓ nav.adoc will be updated in Step 10
 
-4. **Module Sizing Check**:
-   - ✓ Module targets 20-40 minutes (based on exercise count and complexity)
-   - ✓ Module has 1-2 major outcomes, not 5
-   - ✓ If module is too large (>50 min estimated), flag for split
-   - ✓ Each module builds one clear capability
-
-**If quality gates fail**:
-- List specific issues
-- Suggest fixes
-- Allow user to proceed anyway or regenerate
+**Note:** Content was generated using verification prompts from Step 7, so it should already comply with:
+- Red Hat style guide
+- Workshop structure standards
+- Technical accuracy requirements
+- Accessibility standards
+- Content quality standards
 
 ### Step 10: Update Navigation (REQUIRED)
 
