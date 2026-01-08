@@ -6,7 +6,7 @@ This directory contains setup and documentation for using the Showroom content g
 
 ### 1. Cursor Already Configured! ✅
 
-The `.cursorrules` file in the repository root is automatically loaded by Cursor. You don't need to do anything special - just open this repository in Cursor and start using the skills.
+The `.cursor/rules/` directory is automatically loaded by Cursor. You don't need to do anything special - just open this repository in Cursor and start using the skills.
 
 ### 2. Simple Commands
 
@@ -97,9 +97,10 @@ That's it! Claude will read the skill files and guide you through the workflow.
 
 ### Behind the Scenes
 
-1. **`.cursorrules` file** (in repo root)
+1. **`.cursor/rules/` directory** (Project Rules)
    - Automatically loaded by Cursor when you open this repo
    - Contains skill invocation rules and critical guidelines
+   - Structured format with metadata for each skill
    - Tells Claude which skill to use based on your command
 
 2. **Skill files** (in `.claude/skills/`)
@@ -118,7 +119,7 @@ That's it! Claude will read the skill files and guide you through the workflow.
 ```
 You: "create lab module"
     ↓
-Cursor reads .cursorrules
+Cursor reads .cursor/rules/lab-module/RULE.md
     ↓
 Claude loads .claude/skills/lab-module/SKILL.md
     ↓
@@ -137,7 +138,7 @@ You review files in your editor
 
 ## Important Rules (Automatic in Cursor)
 
-These are enforced automatically by `.cursorrules`:
+These are enforced automatically by `.cursor/rules/showroom-standards/`:
 
 ### ✅ Sequential Questioning
 Claude asks ONE question at a time and waits for your answer. Won't ask all questions at once.
@@ -226,7 +227,7 @@ to create a workshop module. Ask questions one at a time.
 **Reminder to Claude**:
 ```
 Remember to use Write tool for files and show only brief summaries.
-Follow token management rules from .cursorrules.
+Follow token management rules from .cursor/rules/showroom-standards/.
 ```
 
 ### "Questions asked all at once"
@@ -234,7 +235,7 @@ Follow token management rules from .cursorrules.
 **Reminder to Claude**:
 ```
 Remember to ask ONE question at a time and WAIT for my answer.
-Follow sequential questioning rule from .cursorrules.
+Follow sequential questioning rule from .cursor/rules/showroom-standards/.
 ```
 
 ### "Variables replaced with actual values"
@@ -242,7 +243,7 @@ Follow sequential questioning rule from .cursorrules.
 **Reminder to Claude**:
 ```
 Keep all variables as {placeholders}. Do NOT replace with actual values.
-Follow the dynamic variables rule from .cursorrules.
+Follow the dynamic variables rule from .cursor/rules/showroom-standards/.
 ```
 
 ---
@@ -270,14 +271,14 @@ Follow the dynamic variables rule from .cursorrules.
 Skills are defined in `.claude/skills/*/SKILL.md`. To modify a skill:
 
 1. Edit the SKILL.md file
-2. Update `.cursorrules` if adding new trigger commands
+2. Update `.cursor/rules/*/RULE.md` if adding new trigger commands
 3. Test in Cursor
 4. Commit changes
 
 ### Adding New Skills
 
 1. Create `.claude/skills/new-skill-name/SKILL.md`
-2. Add trigger commands to `.cursorrules`
+2. Create `.cursor/rules/new-skill-name/RULE.md` with trigger commands
 3. Update this README with skill documentation
 4. Test and commit
 

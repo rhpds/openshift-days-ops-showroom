@@ -17,7 +17,7 @@ cd showroom_template_nookbag
 cursor .
 ```
 
-**That's it!** The `.cursorrules` file is already in the repository and will be loaded automatically.
+**That's it!** The `.cursor/rules/` directory is already in the repository and will be loaded automatically.
 
 ---
 
