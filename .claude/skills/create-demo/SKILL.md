@@ -632,8 +632,8 @@ Based on your references, I'll:
 **CRITICAL: I MUST read all these files BEFORE generating content to ensure output meets all standards.**
 
 **Templates to read:**
-- `content/modules/ROOT/pages/demo/03-module-01.adoc`
-- `content/modules/ROOT/pages/demo/01-overview.adoc`
+- `.claude/templates/demo/03-module-01.adoc`
+- `.claude/templates/demo/01-overview.adoc`
 
 **Verification criteria to read and apply DURING generation:**
 1. `.claude/prompts/enhanced_verification_demo.txt` - Complete demo quality checklist
@@ -1350,8 +1350,8 @@ Every demo module will have:
 ## Integration Notes
 
 **Templates used**:
-- `content/modules/ROOT/pages/demo/03-module-01.adoc`
-- `content/modules/ROOT/pages/demo/01-overview.adoc`
+- `.claude/templates/demo/03-module-01.adoc`
+- `.claude/templates/demo/01-overview.adoc`
 
 **Agents invoked**:
 - `workshop-reviewer` - Validates structure

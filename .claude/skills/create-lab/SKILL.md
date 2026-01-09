@@ -743,12 +743,12 @@ Based on your references, I'll:
 **CRITICAL: I MUST read all these files BEFORE generating content to ensure output meets all standards.**
 
 **Templates to read:**
-- `content/modules/ROOT/pages/workshop/templates/00-index-learner.adoc` - Learner-facing index template
-- `content/modules/ROOT/pages/workshop/templates/03-module-01.adoc` - Module template
-- `content/modules/ROOT/pages/workshop/example/00-index.adoc` - Example index (but write for LEARNERS, not facilitators)
-- `content/modules/ROOT/pages/workshop/example/01-overview.adoc` - Example overview
-- `content/modules/ROOT/pages/workshop/example/02-details.adoc` - Example details
-- `content/modules/ROOT/pages/workshop/example/03-module-01.adoc` - Example module
+- `.claude/templates/workshop/templates/00-index-learner.adoc` - Learner-facing index template
+- `.claude/templates/workshop/templates/03-module-01.adoc` - Module template
+- `.claude/templates/workshop/example/00-index.adoc` - Example index (but write for LEARNERS, not facilitators)
+- `.claude/templates/workshop/example/01-overview.adoc` - Example overview
+- `.claude/templates/workshop/example/02-details.adoc` - Example details
+- `.claude/templates/workshop/example/03-module-01.adoc` - Example module
 
 **Verification criteria to read and apply DURING generation:**
 1. `.claude/prompts/enhanced_verification_workshop.txt` - Complete quality checklist
