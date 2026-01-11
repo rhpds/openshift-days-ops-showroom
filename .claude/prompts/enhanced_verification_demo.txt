@@ -449,6 +449,26 @@ Reference the comprehensive style guidelines: `prompts/redhat_style_guide_valida
   - Clickable external: `image::roi.png[ROI Analysis,link=https://www.redhat.com/study^]` ✅
   - Regular image: `image::dashboard.png[Dashboard]` ✅ (no link, no caret needed)
 
+**VALIDATION CHECKS - You MUST actively scan content and flag these issues:**
+
+1. **Scan for image macros with external links missing caret:**
+   - Search pattern: `image::[^[]+\[.*link=https?://[^\^]+\]`
+   - Flag as ERROR: Missing `^` caret in clickable image
+   - Example to flag: `image::case-study.png[Case Study,link=https://www.redhat.com]`
+   - Correct version: `image::case-study.png[Case Study,link=https://www.redhat.com^]`
+
+2. **Scan for link macros wrapping images, missing caret:**
+   - Search pattern: `link:https?://[^\^]+\[image:`
+   - Flag as ERROR: Missing `^` caret in image link
+   - Example to flag: `link:https://www.redhat.com/case[image:case-study.png[Case]]`
+   - Correct version: `link:https://www.redhat.com/case^[image:case-study.png[Case]]`
+
+3. **Scan for text links to external URLs missing caret:**
+   - Search pattern: `link:https?://[^\^]+\[[^\]]+\]` (without ^ before bracket)
+   - Flag as ERROR: Missing `^` caret in external link
+   - Example to flag: `link:https://www.redhat.com/solutions[Solutions]`
+   - Correct version: `link:https://www.redhat.com/solutions[Solutions^]`
+
 **Troubleshooting Section Guidance for Demos:**
 - ⚠️ **Optional for most demos**: Presenter-led demos typically handle issues live without documented troubleshooting
 - ✅ **Recommended for self-service demos**: Demos meant for prospect self-exploration benefit from troubleshooting guidance

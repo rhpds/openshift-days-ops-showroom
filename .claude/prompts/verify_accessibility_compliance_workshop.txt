@@ -82,6 +82,28 @@ ACCESSIBILITY VALIDATION FOR WORKSHOPS:
    link:https://docs.redhat.com/architecture^[image:architecture-diagram.png[Architecture]]
    ```
 
+   **VALIDATION CHECKS - You MUST scan for these patterns:**
+
+   1. **Check ALL image macros with link attributes:**
+      - Pattern: `image::*.png[*,link=http*]` or `image::*.png[*,link=http*^]`
+      - FLAG as ERROR if external link without `^` caret
+      - Example error: `image::diagram.png[Diagram,link=https://example.com]` (missing ^)
+
+   2. **Check ALL link macros containing images:**
+      - Pattern: `link:http*[image:*.png[*]]` or `link:http*^[image:*.png[*]]`
+      - FLAG as ERROR if external link without `^` caret
+      - Example error: `link:https://example.com[image:diagram.png[Diagram]]` (missing ^)
+
+   3. **Check ALL text links:**
+      - Pattern: `link:http*[*]` or `link:http*^[*]`
+      - FLAG as ERROR if external link without `^` caret
+      - Example error: `link:https://docs.redhat.com[Documentation]` (missing ^)
+
+   4. **Verify internal xrefs do NOT use caret:**
+      - Pattern: `xref:*.adoc^[*]`
+      - FLAG as ERROR if internal xref uses `^` caret
+      - Example error: `xref:next-module.adoc^[Next Module]` (should not have ^)
+
 ## CRITICAL FILE TYPE DETECTION - MUST FOLLOW:
 
 ### INFRASTRUCTURE FILES (BASIC ACCESSIBILITY ONLY):
