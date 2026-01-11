@@ -111,27 +111,34 @@ include::partial$_attributes.adoc[]
 
 **AsciiDoc Syntax** (REQUIRED):
 ```asciidoc
-image::pipeline-execution-1.png[Tekton pipeline showing three tasks executing in sequence,width=700,title="Pipeline Execution in Progress"]
+image::pipeline-execution-1.png[Tekton pipeline showing three tasks executing in sequence,link=self,window=blank,width=700,title="Pipeline Execution in Progress"]
 ```
+
+**CRITICAL - Clickable Images** (Based on team feedback from Nate Stephany):
+- **ALWAYS** include `link=self,window=blank` in image syntax
+- This makes images clickable and opens full-size version in new tab
+- Details are often too hard to see in inline version
+- Users can click to see full resolution without losing their place
 
 **Required for every image**:
 1. **Meaningful alt text** (accessibility)
-2. **Width guidance** (500-800px typical)
-3. **Descriptive filename** (no `image1.png`)
+2. **Clickable link** (`link=self,window=blank`)
+3. **Width guidance** (500-800px typical, or width=100% for full-width)
+4. **Descriptive filename** (no `image1.png`)
 
 **Placeholders**:
 If image doesn't exist yet:
 ```asciidoc
 // TODO: Add screenshot
-image::create-task-screenshot.png[OpenShift console showing task creation form,width=600,title="Creating a Tekton Task"]
+image::create-task-screenshot.png[OpenShift console showing task creation form,link=self,window=blank,width=600,title="Creating a Tekton Task"]
 ```
 
 **Assets Needed List**:
 ```asciidoc
 == Assets Needed
 
-. `content/modules/ROOT/assets/images/pipeline-execution-1.png` - Screenshot of pipeline running in OpenShift console
-. `content/modules/ROOT/assets/images/task-definition.png` - YAML editor showing task definition
+. `content/modules/ROOT/assets/images/pipeline-execution-1.png` - Screenshot of pipeline running in OpenShift console (clickable full-size)
+. `content/modules/ROOT/assets/images/task-definition.png` - YAML editor showing task definition (clickable full-size)
 ```
 
 **Why**: Accessibility, organization, maintainability.

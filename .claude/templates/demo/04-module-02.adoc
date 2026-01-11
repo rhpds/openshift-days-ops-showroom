@@ -37,16 +37,16 @@ _Effective demos follow a specific timing structure that keeps customers engaged
 +
 [source,asciidoc]
 ----
-image::demo-timing-chart.png[align="center",width=600,title="Demo Timing Structure"]
+image::demo-timing-chart.png[link=self,window=blank,align="center",width=600,title="Demo Timing Structure"]
 ----
 
 * Example timing breakdown with images:
 +
 [source,asciidoc]
 ----
-image::demo-opening.png[align="left",width=300,title="Opening - Business Context"]
-image::demo-technical.png[align="center",width=300,title="Technical Demo - Core Features"]
-image::demo-closing.png[align="right",width=300,title="Closing - Value Recap"]
+image::demo-opening.png[link=self,window=blank,align="left",width=300,title="Opening - Business Context"]
+image::demo-technical.png[link=self,window=blank,align="center",width=300,title="Technical Demo - Core Features"]
+image::demo-closing.png[link=self,window=blank,align="right",width=300,title="Closing - Value Recap"]
 ----
 
 * Practice timing your demo:

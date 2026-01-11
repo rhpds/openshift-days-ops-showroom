@@ -38,13 +38,13 @@ The content balances technical depth with business value, making it suitable for
 [source,asciidoc]
 ----
 // For executive audience
-image::executive-dashboard.png[align="center",width=700,title="Executive Dashboard - Business Metrics"]
+image::executive-dashboard.png[link=self,window=blank,align="center",width=700,title="Executive Dashboard - Business Metrics"]
 
 // For technical audience  
-image::technical-details.png[align="center",width=600,title="Technical Details - Implementation Steps"]
+image::technical-details.png[link=self,window=blank,align="center",width=600,title="Technical Details - Implementation Steps"]
 
 // For security audience
-image::security-compliance.png[align="center",width=600,title="Security & Compliance - Policy Enforcement"]
+image::security-compliance.png[link=self,window=blank,align="center",width=600,title="Security & Compliance - Policy Enforcement"]
 ----
 
 * Practice audience adaptation:
@@ -296,23 +296,23 @@ Remember: The best demos are not just presentations — they are strategic busin
 +
 [source,asciidoc]
 ----
-image::screenshot.png[align="center",width=500]
+image::screenshot.png[link=self,window=blank,align="center",width=500]
 ----
 
 * Image with title and caption:
 +
 [source,asciidoc]
 ----
-image::demo-flow.png[align="center",width=600,title="Demo Flow Diagram"]
+image::demo-flow.png[link=self,window=blank,align="center",width=600,title="Demo Flow Diagram"]
 ----
 
 * Multiple images in a row:
 +
 [source,asciidoc]
 ----
-image::step1.png[align="left",width=250,title="Step 1"]
-image::step2.png[align="center",width=250,title="Step 2"]  
-image::step3.png[align="right",width=250,title="Step 3"]
+image::step1.png[link=self,window=blank,align="left",width=250,title="Step 1"]
+image::step2.png[link=self,window=blank,align="center",width=250,title="Step 2"]  
+image::step3.png[link=self,window=blank,align="right",width=250,title="Step 3"]
 ----
 
 === Tip Note Examples

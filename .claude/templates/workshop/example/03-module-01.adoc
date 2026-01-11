@@ -65,7 +65,7 @@ You should see a test page, confirming that your container is running and servin
 The web server is now running successfully. Container deployment completed in seconds compared to traditional server configuration processes.
 
 // Screenshot showing successful container startup
-image::first-container-running.png[align="center",width=500,title="First Container Successfully Running"]
+image::first-container-running.png[align="center",link=self,window=blank,width=500,title="First Container Successfully Running"]
 
 == Exercise 2: Container lifecycle management
 

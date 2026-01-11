@@ -63,7 +63,7 @@ You prepare to {{ first action }} to meet {{ Company name }}'s business requirem
 {{ Expected outcome description }}.
 
 // Screenshot showing expected output
-image::{{ exercise1-result }}.png[align="center",width=500,title="Expected Exercise 1 Output"]
+image::{{ exercise1-result }}.png[align="center",link=self,window=blank,width=500,title="Expected Exercise 1 Output"]
 
 == Exercise 2: {{ Exercise title }}
 

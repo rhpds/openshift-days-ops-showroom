@@ -100,41 +100,41 @@ Use double curly braces for narrative placeholders that create engaging, persona
 === Basic Image Insertion
 [source,asciidoc]
 ----
-image::screenshot.png[align="center",width=500]
+image::screenshot.png[align="center",link=self,window=blank,width=500]
 ----
 
 === Image with Title
 [source,asciidoc]
 ----
-image::production-architecture.png[align="center",width=700,title="Production Architecture Overview"]
+image::production-architecture.png[align="center",link=self,window=blank,width=700,title="Production Architecture Overview"]
 ----
 
 === Multiple Images Side-by-Side
 [source,asciidoc]
 ----
-image::step1.png[align="left",width=250,title="Step 1"]
-image::step2.png[align="center",width=250,title="Step 2"]
-image::step3.png[align="right",width=250,title="Step 3"]
+image::step1.png[align="left",link=self,window=blank,width=250,title="Step 1"]
+image::step2.png[align="center",link=self,window=blank,width=250,title="Step 2"]
+image::step3.png[align="right",link=self,window=blank,width=250,title="Step 3"]
 ----
 
 === Images for Different Audiences
 [source,asciidoc]
 ----
 // For executive audience
-image::executive-dashboard.png[align="center",width=700,title="Executive Dashboard - Business Metrics"]
+image::executive-dashboard.png[align="center",link=self,window=blank,width=700,title="Executive Dashboard - Business Metrics"]
 
 // For technical audience
-image::technical-details.png[align="center",width=600,title="Technical Details - Implementation Steps"]
+image::technical-details.png[align="center",link=self,window=blank,width=600,title="Technical Details - Implementation Steps"]
 
 // For security audience
-image::security-compliance.png[align="center",width=600,title="Security & Compliance - Policy Enforcement"]
+image::security-compliance.png[align="center",link=self,window=blank,width=600,title="Security & Compliance - Policy Enforcement"]
 ----
 
 === Before/After Comparison Images
 [source,asciidoc]
 ----
-image::before-scaling.png[align="left",width=300,title="Single Instance"]
-image::after-scaling.png[align="right",width=300,title="Multiple Instances"]
+image::before-scaling.png[align="left",link=self,window=blank,width=300,title="Single Instance"]
+image::after-scaling.png[align="right",link=self,window=blank,width=300,title="Multiple Instances"]
 ----
 
 == Code Block Formatting

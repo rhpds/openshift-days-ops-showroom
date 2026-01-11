@@ -95,7 +95,7 @@ A typical module's Show section provides exact field values, button names, and e
 +
 [source,asciidoc]
 ----
-image::tekton-dev-1.png[align="center",width=500]
+image::tekton-dev-1.png[link=self,window=blank,align="center",width=500]
 ----
 
 * Tips for effective images:
