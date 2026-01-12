@@ -70,10 +70,11 @@ This skill will ask you for:
    - These appear after the overview on the UI tile
    - **Smart feature**: Checks guide for prerequisites automatically
 
-3. **Guide Link**
-   - Link to rendered Showroom guide
-   - Or repository/document URL if no Showroom exists
-   - **Smart feature**: Tries to infer Showroom URL from repo path
+3. **Guide Link (GitHub Pages URL)**
+   - Link to rendered Showroom guide (GitHub Pages)
+   - Typically: `https://rhpds.github.io/showroom-{repo-name}`
+   - Or repository/document URL if not using GitHub Pages
+   - **Smart feature**: Auto-detects from git remote and converts to GitHub Pages URL
 
 4. **Featured Technology and Products**
    - Key products/technologies (not everything, just what matters)
@@ -107,8 +108,9 @@ The generated `description.adoc` follows this structure:
    - These come after the brief overview so they don't waste space on the UI tile
    - For example, a message about GPU availability would go here
 
-3. **Link to rendered version of guide**
-   - This should almost always be a link to the rendered Showroom
+3. **Link to rendered version of guide (GitHub Pages)**
+   - This should almost always be a link to the rendered Showroom on GitHub Pages
+   - Format: `https://rhpds.github.io/showroom-{repo-name}`
    - If no Showroom, a link to the repo or document being used
 
 4. **Featured Technology and Products**
@@ -206,9 +208,32 @@ Ask the user:
 ### Step 2: Guide and Technology
 
 Ask the user:
-- **What is the link to the rendered Showroom guide?** (or repo/doc URL if no Showroom)
-  - If guide was read from a repo, try to infer the Showroom URL pattern
-  - Common patterns: `https://rhpds.github.io/showroom-{repo-name}`
+- **What is the link to the rendered Showroom guide (GitHub Pages URL)?**
+  ```
+  What is the GitHub Pages URL for your rendered Showroom guide?
+
+  This is typically published at:
+  https://rhpds.github.io/showroom-{repo-name}
+
+  Where {repo-name} is your repository name without the .git extension.
+
+  Examples:
+  - https://rhpds.github.io/showroom-ai-ml-lab
+  - https://rhpds.github.io/showroom-ansible-automation
+
+  If not using GitHub Pages, provide your guide URL (repo or docs link).
+
+  Your Showroom GitHub Pages URL:
+  ```
+
+  - If Showroom path was provided in Step 0, try to auto-detect from git remote
+  - Run: `git -C {showroom_path} remote get-url origin` to get repo URL
+  - Convert to GitHub Pages format:
+    - From: `git@github.com:rhpds/showroom-ai-ml-lab.git`
+    - Or: `https://github.com/rhpds/showroom-ai-ml-lab.git`
+    - To: `https://rhpds.github.io/showroom-ai-ml-lab`
+  - Show detected URL and ask for confirmation: "Is this correct? [Yes/Edit]"
+
 - **What are the featured technologies and products?** (with versions)
   - If guide was read, suggest technologies found in the content
   - Prompt: "List the key products with versions, e.g., 'OpenShift 4.17, AAP 2.5, PostgreSQL 16'"
