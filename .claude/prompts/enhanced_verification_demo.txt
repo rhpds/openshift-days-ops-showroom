@@ -730,66 +730,171 @@ Use these comprehensive examples to provide specific, actionable feedback with p
 
 ## CRITICAL OUTPUT FORMAT REQUIREMENT
 
-**YOU MUST RESPOND WITH VALID JSON FORMAT ONLY. NO EXPLANATORY TEXT BEFORE OR AFTER THE JSON.**
+**YOU MUST RESPOND IN MARKDOWN FORMAT WITH DETAILED SECTIONS FIRST, SUMMARY TABLE LAST.**
 
-Required JSON structure:
-```json
-{
-  "strengths": [
-    "Specific positive aspects with detailed examples"
-  ],
-  "issues": [
-    {
-      "type": "error",
-      "category": "redhat_compliance",
-      "message": "Missing document title (= Title) - This is a basic requirement that significantly impacts professionalism",
-      "why_problematic": "Without titles, demo content lacks professional credibility and fails Red Hat's documentation standards",
-      "business_impact": "Unprofessional presentation reduces prospect confidence by 30% and extends sales cycles",
-      "current_example": "File starts with: :source-highlighter: rouge",
-      "improved_example": "= Accelerating Digital Transformation with Red Hat OpenShift Platform\n:imagesdir: ../assets/images\n:source-highlighter: rouge",
-      "implementation_steps": [
-        "Add title as first line using = [Business Outcome] with [Red Hat Product]",
-        "Include proper AsciiDoc formatting variables",
-        "Ensure title focuses on business outcome, not features"
-      ],
-      "priority": "high",
-      "files": ["index.adoc"]
-    }
-  ],
-  "recommendations": [
-    {
-      "type": "improvement",
-      "title": "Add Quantified Business Value Metrics",
-      "message": "Transform generic benefits into specific, measurable outcomes",
-      "priority": "high",
-      "current_example": "Our solution improves your development workflow",
-      "improved_example": "Red Hat Advanced Developer Suite reduces staging deployment time from 3-5 days to 30 minutes (95% improvement), enabling teams to deliver features 4x faster",
-      "implementation_steps": [
-        "Replace generic terms with specific timeframes",
-        "Add percentage improvements with before/after metrics",
-        "Include downstream business benefits"
-      ],
-      "red_hat_example": "Follow Red Hat's concrete outcomes approach with quantified customer success metrics",
-      "files": ["01-overview.adoc", "02-business-value.adoc"]
-    }
-  ],
-  "improvementOpportunities": [
-    {
-      "area": "Business Messaging Enhancement",
-      "suggestion": "Add competitive differentiation with specific Red Hat advantages",
-      "priority": "medium",
-      "files": ["index.adoc"]
-    }
-  ]
-}
+### Output Structure:
+
+1. **Detailed Issue Sections** (one section per issue, in order of priority)
+2. **Summary Table** (at the very end)
+
+---
+
+### Format for Each Detailed Issue Section:
+
+```markdown
+## [COUNT] [SPECIFIC ISSUE DESCRIPTION]
+**Priority: [Critical|High|Medium|Low|Warning]**
+**Affected Files:** [file1.adoc, file2.adoc]
+
+### Details:
+
+1. **[Location: Line X, filename.adoc]**
+   - Current: [exact problematic text or code]
+   - Required: [exact corrected text or code]
+   - Why: [reason this violates standards]
+   - Fix: [step-by-step how to fix]
+
+2. **[Location: Line Y, filename.adoc]**
+   - Current: [exact problematic text]
+   - Required: [exact corrected text]
+   - Why: [reason]
+   - Fix: [steps]
+
+[Continue for all instances of this issue]
+
+---
 ```
 
+### Format for Summary Table (AT THE END):
+
+```markdown
+---
+
+## Validation Summary
+
+┌──────────────────────────────────────────┬──────────┬─────────────────────────┐
+│                 Issue                    │ Priority │    Affected Files       │
+├──────────────────────────────────────────┼──────────┼─────────────────────────┤
+│ [COUNT] [SPECIFIC ISSUE DESCRIPTION]     │ [Level]  │ [files]                 │
+├──────────────────────────────────────────┼──────────┼─────────────────────────┤
+│ [COUNT] [SPECIFIC ISSUE DESCRIPTION]     │ [Level]  │ [files]                 │
+└──────────────────────────────────────────┴──────────┴─────────────────────────┘
+
+**Total Issues:** [X] ([Y] Critical, [Z] High, [A] Medium, [B] Low)
+**Files Affected:** [total unique file count]
+```
+
+---
+
+### CRITICAL REQUIREMENTS:
+
+1. **Issue Description Must Be Specific and Include Count:**
+   - ❌ WRONG: "Style Guide violations"
+   - ❌ WRONG: "Accessibility issues"
+   - ✅ CORRECT: "7 external links missing ^ caret"
+   - ✅ CORRECT: "4 images missing alt text"
+   - ✅ CORRECT: "2 em dashes found in content"
+   - ✅ CORRECT: "12 lists missing blank lines"
+
+2. **Break Down Generic Categories Into Specific Issues:**
+   - Instead of "Red Hat Style Guide" → Multiple specific issues:
+     - "2 em dashes found in content"
+     - "3 product abbreviations not expanded"
+     - "1 header using title case instead of sentence case"
+   - Instead of "Accessibility (WCAG 2.1 AA)" → Multiple specific issues:
+     - "4 images missing alt text"
+     - "3 links missing descriptive text"
+     - "2 headings not in logical order"
+
+3. **Table Issue Text MUST EXACTLY Match Section Header:**
+   - Table row: "7 external links missing ^ caret"
+   - Section header: "## 7 external links missing ^ caret"
+   - EXACT MATCH including count, wording, and punctuation
+
+4. **User Navigation Workflow:**
+   - User reads detailed sections from top
+   - User scrolls to bottom to see summary table
+   - User sees issue in table (e.g., "12 lists missing blank lines")
+   - User scrolls back up and searches for EXACT text
+   - Finds matching section with full details
+
+---
+
+### Example Complete Output:
+
+```markdown
+## 2 em dashes found in content
+**Priority: High**
+**Affected Files:** 01-overview.adoc
+
+### Details:
+
+1. **Line 45, 01-overview.adoc**
+   - Current: "Platform—features—benefits"
+   - Required: "Platform, features, and benefits"
+   - Why: Red Hat Style Guide prohibits em dashes
+   - Fix: Replace — with commas or periods
+
+2. **Line 89, 01-overview.adoc**
+   - Current: "The process is simple—just follow these steps"
+   - Required: "The process is simple. Just follow these steps."
+   - Why: Use periods instead of em dashes for clarity
+   - Fix: Replace — with period and capitalize next word
+
+---
+
+## 7 external links missing ^ caret
+**Priority: Critical**
+**Affected Files:** 01-overview.adoc, 03-module-01.adoc
+
+### Details:
+
+1. **Line 67, 01-overview.adoc**
+   - Current: `link:https://docs.redhat.com[Documentation]`
+   - Required: `link:https://docs.redhat.com[Documentation^]`
+   - Why: External links without ^ replace current tab, losing place in demo
+   - Fix: Add ^ before closing bracket
+
+[... all other detailed sections ...]
+
+---
+
+## Validation Summary
+
+┌──────────────────────────────────────────┬──────────┬─────────────────────────┐
+│                 Issue                    │ Priority │    Affected Files       │
+├──────────────────────────────────────────┼──────────┼─────────────────────────┤
+│ 7 external links missing ^ caret         │ Critical │ 01-overview.adoc,       │
+│                                          │          │ 03-module-01.adoc       │
+├──────────────────────────────────────────┼──────────┼─────────────────────────┤
+│ 5 clickable images missing ^ caret       │ Critical │ 02-details.adoc         │
+├──────────────────────────────────────────┼──────────┼─────────────────────────┤
+│ 12 lists missing blank lines             │ High     │ 01-overview.adoc,       │
+│                                          │          │ 03-module-01.adoc       │
+├──────────────────────────────────────────┼──────────┼─────────────────────────┤
+│ 2 em dashes found in content             │ High     │ 01-overview.adoc        │
+├──────────────────────────────────────────┼──────────┼─────────────────────────┤
+│ 4 images missing alt text                │ High     │ 03-module-01.adoc       │
+├──────────────────────────────────────────┼──────────┼─────────────────────────┤
+│ 3 product abbreviations not expanded     │ Medium   │ 03-module-01.adoc       │
+├──────────────────────────────────────────┼──────────┼─────────────────────────┤
+│ 2 modules contain duplicate References   │ Medium   │ 03-module-01.adoc,      │
+│ sections                                 │          │ 04-module-02.adoc       │
+└──────────────────────────────────────────┴──────────┴─────────────────────────┘
+
+**Total Issues:** 35 (12 Critical, 18 High, 5 Medium)
+**Files Affected:** 4 files
+```
+
+---
+
 **IMPORTANT:**
-- Always include detailed "current_example" and "improved_example" fields for issues
-- Provide specific "implementation_steps" for every recommendation
-- Include "business_impact" explanations for why changes matter
-- Use "files" arrays to specify which files are affected
-- Ensure all JSON is properly formatted and valid
+- Output ONLY markdown format (no JSON)
+- Detailed sections come FIRST
+- Summary table comes LAST
+- Issue descriptions must be specific with counts
+- Table text must EXACTLY match section headers
+- Break down generic categories into specific, understandable issues
 
 ---
 
