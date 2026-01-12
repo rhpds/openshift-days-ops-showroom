@@ -56,6 +56,19 @@ cd ~/work/code/showroom-ai-ml-lab
 5. Test in RHDP Integration
 6. Create PR
 
+**CRITICAL FORMATTING RULES (Added 23:45 EST):**
+- ❌ **NEVER** start overview with "This workshop", "This demo", "This hands-on lab", or "This lab"
+- ✅ **ALWAYS** start with the main product/technology name
+- ❌ **NEVER** use the word "workshop" anywhere in catalog descriptions
+- ✅ Use "lab", "demo", "instructor-led", or "self-paced learning" instead
+- 🔍 **Always ask:** Is this a Lab or Demo? (even if auto-detected)
+
+**Example Fix**:
+```
+Before: "This lab demonstrates building a RAG-based chatbot using Red Hat OpenShift AI..."
+After:  "Red Hat OpenShift AI with LiteMaaS provides enterprise-grade model serving for RAG-based chatbots..."
+```
+
 ---
 
 ### 1. AsciiDoc List Formatting Rules (CRITICAL FIX)
