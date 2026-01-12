@@ -19,7 +19,7 @@ Creates properly formatted `description.adoc` files for AgnosticV catalog entrie
 - Auto-detects Showroom content in current directory
 - Extracts module structure, technologies, and agenda from your content
 - Pulls author info from git config
-- Infers Showroom URL patterns
+- **Auto-detects GitHub Pages URL from git remote** (converts repo URL to GitHub Pages format)
 - Suggests technologies found in guide content
 - Auto-generates agenda from module titles
 - Preview before writing

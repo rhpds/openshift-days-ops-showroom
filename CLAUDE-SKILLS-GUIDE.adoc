@@ -255,9 +255,10 @@ Cursor automatically executes the full skills from `.claude/skills/` - no extra 
    - GPU requirements, resource limits, etc.
    - Appears after overview on RHDP catalog tile
 
-4. **🔗 Guide Link**:
-   - Link to rendered Showroom guide
-   - **Smart feature**: Infers URL pattern from repo (e.g., `https://rhpds.github.io/showroom-{name}`)
+4. **🔗 Guide Link (GitHub Pages URL)**:
+   - Link to rendered Showroom guide on GitHub Pages
+   - Format: `https://rhpds.github.io/showroom-{repo-name}`
+   - **Smart feature**: Auto-detects from git remote and converts to GitHub Pages URL
 
 5. **🛠️ Featured Technology**:
    - Key products/technologies with versions
@@ -406,7 +407,7 @@ cd ~/work/code/showroom-ai-ml-lab
 > yes  # Use detected Showroom (current directory)
 > 1  # Auto-generate overview from content
 > [Enter]  # No warnings (or type warning if needed)
-> https://rhpds.github.io/showroom-ai-ml-lab  # Rendered guide URL
+> https://rhpds.github.io/showroom-ai-ml-lab  # GitHub Pages URL (auto-detected, just confirm)
 > OpenShift 4.18, OpenShift AI 2.15, Python 3.11  # Technologies
 > 1  # Auto-generate agenda from modules
 > [Enter]  # Accept git config author name

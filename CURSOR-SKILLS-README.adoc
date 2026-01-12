@@ -131,7 +131,7 @@ That's it! Claude will read the skill files and guide you through the workflow.
 * Complete `description.adoc` file with:
 ** Brief overview (2-3 sentences)
 ** Warning blocks (if needed)
-** Link to rendered Showroom guide
+** Link to rendered Showroom guide (GitHub Pages URL)
 ** Featured technology list
 ** Detailed agenda (auto-generated from modules)
 ** Author contact information
@@ -140,6 +140,7 @@ That's it! Claude will read the skill files and guide you through the workflow.
 
 * Auto-detects Showroom content (asks for path)
 * Extracts module structure and technologies
+* Auto-detects GitHub Pages URL from git remote
 * Pulls author from git config
 * Suggests content based on guide analysis
 * Preview before writing
