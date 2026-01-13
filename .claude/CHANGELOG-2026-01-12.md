@@ -361,6 +361,34 @@ Without blank lines, the renderer treats list markers as inline text, causing fo
 
 ---
 
-**Last Updated**: January 12, 2026
+**Last Updated**: January 13, 2026 (00:10 EST)
 **Repository**: showroom_template_nookbag (main branch)
 **Status**: ✅ Committed
+
+---
+
+## Latest Fix (January 13, 00:10 EST)
+
+**Verification Output Format - ONLY Summary Table at End**
+
+**Problem**: Verification was adding action items or recommendations after the summary table.
+
+**Fix**: Added explicit instructions to both verification prompts:
+- **DO NOT add anything after the summary table**
+- NO action items after table
+- NO next steps after table
+- NO recommendations after table
+- **The summary table is the FINAL OUTPUT** - stop immediately after the table
+
+**Files Updated**:
+```
+.claude/prompts/enhanced_verification_workshop.txt   (+2 lines)
+.claude/prompts/enhanced_verification_demo.txt       (+2 lines)
+```
+
+**Output Format (Now Enforced)**:
+1. Detailed issue sections FIRST (top of output)
+2. Summary table LAST (bottom of output)
+3. **NOTHING after summary table**
+
+**Commit**: `9b5aa06` - "Fix verification output: ONLY summary table at end, no action items"
