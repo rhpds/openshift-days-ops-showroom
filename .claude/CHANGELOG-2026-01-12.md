@@ -453,3 +453,146 @@ Without blank lines, the renderer treats list markers as inline text, causing fo
 - Strengths after summary is acceptable
 
 **Commit**: `05195d8` - "Remove score outputs from all verification prompts"
+
+---
+
+## Latest Fix #3 (January 13, 14:30 EST)
+
+**Add Prompt Location Detection - Choose Which Prompts to Use**
+
+**Problem**: Users couldn't choose which verification prompts to use when multiple sets existed (repo-specific, global, or template).
+
+**What Was Added**:
+
+Added **Step 0: Detect and Select Verification Prompts** to verify-content SKILL.md:
+
+**Detection Priority:**
+1. **Current Git Repo**: `.claude/prompts/` in current repository (highest priority)
+2. **Global Home**: `~/.claude/prompts/` (user's global settings)
+3. **Template Fallback**: `showroom_template_nookbag/.claude/prompts/` (source of truth)
+
+**How It Works:**
+
+1. Checks current directory for git repo: `git rev-parse --show-toplevel`
+2. Checks for local `.claude/prompts/`: `ls [repo-root]/.claude/prompts/*.txt`
+3. Checks global home directory: `ls ~/.claude/prompts/*.txt`
+4. Checks template fallback: `ls ~/work/code/showroom_template_nookbag/.claude/prompts/*.txt`
+5. If multiple locations found, asks user which to use
+6. Shows which prompts will be used before running verification
+
+**Example Prompt Selection Dialog:**
+```
+🔍 Found verification prompts in multiple locations:
+
+1. Current repo: /Users/psrivast/work/showroom-content/aap-selfserv-intro-showroom/.claude/prompts/
+   └─ Last updated: 13 Jan 16:01 (10 prompts)
+
+2. Global home: ~/.claude/prompts/
+   └─ Last updated: 13 Jan 14:47 (10 prompts)
+
+3. Template (source): ~/work/code/showroom_template_nookbag/.claude/prompts/
+   └─ Last updated: 13 Jan 16:04 (10 prompts)
+
+Which prompts should I use for verification?
+
+Options:
+1. Current repo (use repo-specific prompts) - Recommended if customized
+2. Global home (use your personal defaults)
+3. Template (use latest from source of truth)
+
+Your choice: [1/2/3]
+```
+
+**New Section Added:**
+
+Added "Prompt Location Strategy" section explaining:
+- Why multiple prompt locations exist
+- When to use repo-specific vs global prompts
+- How to update prompts from template
+- When to customize prompts in repo
+
+**Files Updated:**
+```
+.claude/skills/verify-content/SKILL.md  (+200 lines - added Step 0 and strategy section)
+```
+
+**Why This Matters:**
+- Allows repo-specific verification rules for special projects
+- Users can choose between customized and standard prompts
+- Transparency about which prompts are being used
+- Easy to update from template when new rules are released
+
+**Commit**: `497c03f` - "Add prompt location detection to verify-content skill"
+
+**Synced to:**
+- `~/.claude/skills/verify-content/SKILL.md`
+- All 5 showroom-content repositories
+
+---
+
+## Latest Fix #4 (January 13, 15:00 EST)
+
+**STOP After Strengths Section - No Extra Summaries**
+
+**Problem**: After strengths section, verification was adding unwanted extra text:
+- "⏺ Verification Complete! 🎉"
+- "Overall Assessment: This is a high-quality workshop (85/100)"
+- "Quick Stats"
+- "Top 3 Critical Fixes Needed"
+
+**What Was Fixed**:
+
+Added explicit **STOP IMMEDIATELY** instructions to Step 4 in verify-content SKILL.md:
+
+**CRITICAL OUTPUT RULES:**
+- Summary table comes LAST, not first
+- Detailed sections are at the TOP
+- **STOP IMMEDIATELY after strengths section**
+- **DO NOT add any additional summaries, assessments, or recaps**
+- **NO "Overall Assessment", NO "Quick Stats", NO "Top 3 Fixes"**
+- **NO text after strengths - that's the END of output**
+
+The output must end with the strengths section. Nothing comes after it.
+
+**Added to Examples:**
+
+Both Example 1 and Example 2 now end with:
+```markdown
+✅ Strengths Worth Highlighting
+
+Your module excels in these areas:
+1. Clear Step-by-Step Instructions
+2. Proper AsciiDoc Formatting
+3. Strong Technical Content
+
+[END OF VERIFICATION OUTPUT - NOTHING AFTER THIS]
+```
+
+**Clean Output Structure (Enforced):**
+1. ✅ Detailed issue sections FIRST (top of output)
+2. ✅ Summary table in MIDDLE
+3. ✅ Strengths section LAST (bottom of output)
+4. ❌ **NOTHING after strengths** - verification ends here
+
+**Files Updated:**
+```
+.claude/skills/verify-content/SKILL.md  (+12 lines - added STOP rules and END markers)
+```
+
+**Why This Matters:**
+- Clean, professional output without redundant summaries
+- No confusing "Overall Assessment" scores after we removed scores
+- Clear end point for verification output
+- Easier to read and act on findings
+
+**Commit**: `e1976e5` - "Fix verification output: STOP after strengths section"
+
+**Synced to:**
+- `~/.claude/skills/verify-content/SKILL.md`
+- All 5 showroom-content repositories
+
+---
+
+**Repository Status**: showroom_template_nookbag (main branch)
+**All Fixes Complete**: ✅
+**Documentation Updated**: January 13, 2026 (15:00 EST)
