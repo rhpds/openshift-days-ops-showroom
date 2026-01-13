@@ -750,6 +750,8 @@ You MUST perform these validation checks and produce ERROR or WARNING findings w
 - Output ONLY markdown format (no JSON)
 - Detailed sections come FIRST
 - Summary table comes LAST
+- **DO NOT add anything after the summary table** - NO action items, NO next steps, NO recommendations
+- **The summary table is the FINAL OUTPUT** - stop immediately after the table
 - Issue descriptions must be specific with counts
 - Table text must EXACTLY match section headers
 - Break down generic categories into specific, understandable issues
