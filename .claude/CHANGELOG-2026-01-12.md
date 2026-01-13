@@ -361,13 +361,13 @@ Without blank lines, the renderer treats list markers as inline text, causing fo
 
 ---
 
-**Last Updated**: January 13, 2026 (00:10 EST)
+**Last Updated**: January 13, 2026 (09:30 EST)
 **Repository**: showroom_template_nookbag (main branch)
 **Status**: ✅ Committed
 
 ---
 
-## Latest Fix (January 13, 00:10 EST)
+## Latest Fix #1 (January 13, 00:10 EST)
 
 **Verification Output Format - ONLY Summary Table at End**
 
@@ -392,3 +392,64 @@ Without blank lines, the renderer treats list markers as inline text, causing fo
 3. **NOTHING after summary table**
 
 **Commit**: `9b5aa06` - "Fix verification output: ONLY summary table at end, no action items"
+
+---
+
+## Latest Fix #2 (January 13, 09:30 EST)
+
+**Remove Score Outputs from All Verification Prompts**
+
+**Problem**: Verification was outputting unwanted "Detailed Scores by Category" table and overall_score/dimension_scores in JSON responses.
+
+**Fix**: Removed all score-related output from 5 verification prompts:
+1. `verify_accessibility_compliance_workshop.txt` - Removed `overall_score` and `dimension_scores`
+2. `verify_accessibility_compliance_demo.txt` - Removed `overall_score` and `dimension_scores`
+3. `verify_content_quality.txt` - Removed `overall_score` and `dimension_scores`
+4. `verify_technical_accuracy_workshop.txt` - Removed `overall_score` and `dimension_scores`
+5. `verify_technical_accuracy_demo.txt` - Removed `overall_score`, `dimension_scores`, and `content_pattern_analysis`
+
+**Files Updated**:
+```
+.claude/prompts/verify_accessibility_compliance_workshop.txt   (-9 lines)
+.claude/prompts/verify_accessibility_compliance_demo.txt       (-9 lines)
+.claude/prompts/verify_content_quality.txt                     (-10 lines)
+.claude/prompts/verify_technical_accuracy_workshop.txt         (-9 lines)
+.claude/prompts/verify_technical_accuracy_demo.txt             (-44 lines)
+.claude/skills/verify-content/SKILL.md                         (+55 lines, -16 lines)
+```
+
+**verify-content SKILL.md Updated**:
+- Updated "Output Format" section to show detailed sections FIRST, summary table LAST
+- Added example showing proper output structure with specific issue counts
+- Removed old format showing summary table at top
+
+**New JSON Response Format**:
+```json
+{
+  "strengths": [...],
+  "issues": [...],
+  "recommendations": [...]
+}
+```
+
+**Old Format (Removed)**:
+```json
+{
+  "overall_score": 85,
+  "dimension_scores": {
+    "technical_accuracy": 8,
+    ...
+  },
+  "strengths": [...],
+  ...
+}
+```
+
+**Why This Matters**:
+- Cleaner output focused on actionable issues
+- No confusing score tables
+- Detailed sections come first for easy navigation
+- Summary table at end provides quick overview
+- Strengths after summary is acceptable
+
+**Commit**: `05195d8` - "Remove score outputs from all verification prompts"
