@@ -182,7 +182,15 @@ I'll provide results in this order:
 - Positive highlights to reinforce good practices
 - Recognition of quality work
 
-**CRITICAL**: Summary table comes LAST, not first. Detailed sections are at the TOP.
+**CRITICAL OUTPUT RULES:**
+- Summary table comes LAST, not first
+- Detailed sections are at the TOP
+- **STOP IMMEDIATELY after strengths section**
+- **DO NOT add any additional summaries, assessments, or recaps**
+- **NO "Overall Assessment", NO "Quick Stats", NO "Top 3 Fixes"**
+- **NO text after strengths - that's the END of output**
+
+The output must end with the strengths section. Nothing comes after it.
 
 ### Step 5: Offer Fixes (Optional)
 
@@ -253,6 +261,8 @@ Your module excels in these areas:
 1. Clear Step-by-Step Instructions - Installation steps are well-structured and easy to follow
 2. Proper AsciiDoc Formatting - Code blocks and syntax highlighting are correctly implemented
 3. Strong Technical Content - Accurate AAP installation procedures for OpenShift
+
+[END OF VERIFICATION OUTPUT - NOTHING AFTER THIS]
 ```
 
 ### Example 2: Verify All Modules in Workshop
@@ -325,6 +335,8 @@ Your workshop excels in these areas:
 2. Progressive Learning Flow - Well-structured progression from basic to advanced concepts
 3. Strong Technical Depth - Comprehensive AAP configuration coverage across modules
 4. Good Documentation Structure - Clear separation of overview, details, and hands-on modules
+
+[END OF VERIFICATION OUTPUT - NOTHING AFTER THIS]
 ```
 
 ## Verification Standards
