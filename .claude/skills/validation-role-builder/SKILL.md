@@ -533,18 +533,26 @@ Read the collection to see if it has the plugin:
 
 If not found, tell user:
 ```
-The collection needs the agnosticd_user_info plugin.
+The collection needs the agnosticd_user_info plugin to save validation results.
 
 Note: agnosticd.core is NOT available on Ansible Galaxy, so we need to copy the plugin
 files directly into this collection.
 
-I can copy it from the AAP collection at:
-~/work/code/rhpds.aap_self_service_portal/plugins/
+Source: AAP collection has the plugin files
+I can copy from: ~/work/code/rhpds.aap_self_service_portal/plugins/
 
 Should I copy it?
 ```
 
-If user says yes, copy both files:
+If user says yes, use Bash to copy both files:
+```bash
+mkdir -p {collection_path}/plugins/modules
+mkdir -p {collection_path}/plugins/action
+cp ~/work/code/rhpds.aap_self_service_portal/plugins/modules/agnosticd_user_info.py {collection_path}/plugins/modules/
+cp ~/work/code/rhpds.aap_self_service_portal/plugins/action/agnosticd_user_info.py {collection_path}/plugins/action/
+```
+
+Verify files were copied:
 - plugins/modules/agnosticd_user_info.py
 - plugins/action/agnosticd_user_info.py
 
@@ -923,20 +931,30 @@ Create PRs manually:
 
 After collection PR is merged, tell user:
 ```
-Once the collection PR is merged, we need to update AgnosticV to use the released version instead of the branch.
+Once the collection PR is merged, we need to update AgnosticV to stop using the branch and use the released version.
 
-Should I update common.yaml to remove the branch reference?
+Should I remove the branch reference from common.yaml?
 ```
 
-If yes, update common.yaml:
+If yes, read the AgnosticV common.yaml and DELETE the `agd_v2_collections` section that was added in Step 4.3:
 ```yaml
-# Remove branch-specific collection reference
-# Use released version instead
-workloads:
-  - {collection_name}.ocp4_workload_{workshop_name}_validation
+# DELETE this entire section:
+agd_v2_collections:
+  - name: {collection_name}
+    source: {collection_repo_url}
+    version: add-{workshop_name}-validation
 ```
 
-Commit and push to AgnosticV branch.
+**Important:**
+- KEEP the validation workload in the workloads list
+- ONLY remove the `agd_v2_collections` override
+- This allows AgnosticV to use the released collection version from Galaxy or default source
+
+Commit and push to AgnosticV branch with message:
+```bash
+git commit -m "Remove collection branch reference - use released version"
+git push origin add-{workshop_name}-validation
+```
 
 ### Step 6.3: Summary
 
