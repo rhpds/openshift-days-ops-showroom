@@ -1,0 +1,182 @@
+# Debugging & Troubleshooting Lab - Broken Applications
+# These apps have intentional misconfigurations for troubleshooting practice
+#
+# Deploy with: oc apply -f https://raw.githubusercontent.com/jnewsome97/openshift-days-ops-track-showroom/main/manifests/debugging/broken-apps.yaml
+#
+# Issues to fix:
+# 1. weather-frontend: Wrong image tag (1.2.1 doesn't exist)
+# 2. weather-api: Startup check fails (missing config file)
+# 3. weather-cache: Resource typo (512Gi instead of 512Mi)
+# 4. weather-backend: Missing ConfigMap reference
+# 5. weather-proxy: Service selector typo (proxi vs proxy)
+---
+# Scenario 1: ImagePullBackOff - Wrong image tag
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-frontend
+  namespace: ops-track-demo
+  labels:
+    app: weather-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-frontend
+  template:
+    metadata:
+      labels:
+        app: weather-frontend
+    spec:
+      containers:
+      - name: weather-frontend
+        image: quay.io/openshifttest/hello-openshift:1.2.1
+        ports:
+        - containerPort: 8080
+---
+# Scenario 2: CrashLoopBackOff - Startup check fails
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-api
+  namespace: ops-track-demo
+  labels:
+    app: weather-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-api
+  template:
+    metadata:
+      labels:
+        app: weather-api
+    spec:
+      containers:
+      - name: weather-api
+        image: quay.io/openshifttest/hello-openshift:1.2.0
+        command: ["/bin/sh", "-c", "echo 'Error: Missing required config file /etc/weather/config.yaml' && exit 1"]
+        ports:
+        - containerPort: 8080
+---
+# Scenario 3: Resource Constraints - LimitRange
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: resource-limits
+  namespace: ops-track-demo
+spec:
+  limits:
+  - type: Container
+    max:
+      cpu: "2"
+      memory: "2Gi"
+    default:
+      cpu: "500m"
+      memory: "512Mi"
+    defaultRequest:
+      cpu: "100m"
+      memory: "128Mi"
+---
+# Scenario 3: Resource Constraints - Typo in resources (512Gi instead of 512Mi)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-cache
+  namespace: ops-track-demo
+  labels:
+    app: weather-cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-cache
+  template:
+    metadata:
+      labels:
+        app: weather-cache
+    spec:
+      containers:
+      - name: weather-cache
+        image: quay.io/openshifttest/hello-openshift:1.2.0
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "512Gi"
+          limits:
+            cpu: "500m"
+            memory: "1Ti"
+        ports:
+        - containerPort: 8080
+---
+# Scenario 4: Missing ConfigMap - References non-existent ConfigMap
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-backend
+  namespace: ops-track-demo
+  labels:
+    app: weather-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-backend
+  template:
+    metadata:
+      labels:
+        app: weather-backend
+    spec:
+      containers:
+      - name: weather-backend
+        image: quay.io/openshifttest/hello-openshift:1.2.0
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+        envFrom:
+        - configMapRef:
+            name: weather-config
+        ports:
+        - containerPort: 8080
+---
+# Scenario 5: Service Selector Mismatch - Deployment (correct labels)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-proxy
+  namespace: ops-track-demo
+  labels:
+    app: weather-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-proxy
+  template:
+    metadata:
+      labels:
+        app: weather-proxy
+        version: v1
+    spec:
+      containers:
+      - name: weather-proxy
+        image: quay.io/openshifttest/hello-openshift:1.2.0
+        ports:
+        - containerPort: 8080
+---
+# Scenario 5: Service Selector Mismatch - Service with typo in selector
+apiVersion: v1
+kind: Service
+metadata:
+  name: weather-proxy
+  namespace: ops-track-demo
+spec:
+  selector:
+    app: weather-proxi  # Typo! Should be weather-proxy
+  ports:
+  - port: 8080
+    targetPort: 8080

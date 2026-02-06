@@ -7,23 +7,15 @@ default_width: 30
 persist_url_state: true
 
 tabs:
-  # OCP Console
+  # OCP Console - uncomment and configure when deployed
   # - name: OCP Console
   #   url: 'https://console-openshift-console.${DOMAIN}'
 
-  # Single terminal
-  # - name: Bastion
+  # Terminal - uncomment and configure when deployed
+  # - name: Terminal
   #   path: /wetty
   #   port: 443
 
-  # Vertical split terminals
-  # - name: Bastion
-  #   path: /wetty
-  #   port: 443
-  #   secondary_name: Bastion
-  #   secondary_path: /wetty
-  #   secondary_port: 443
-
-  # External page
-  - name: Llamastack Docs
-    url: 'https://llama-stack.readthedocs.io/en/latest/'
+  # Useful documentation links
+  - name: OpenShift Docs
+    url: 'https://docs.openshift.com/container-platform/latest/welcome/index.html'

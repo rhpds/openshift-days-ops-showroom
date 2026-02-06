@@ -1,0 +1,39 @@
+# Debugging & Troubleshooting Lab - Working Application
+# This is a correctly configured app for comparison
+#
+# Deploy with: oc apply -f https://raw.githubusercontent.com/jnewsome97/openshift-days-ops-track-showroom/main/manifests/debugging/working-app.yaml
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weathernow
+  namespace: ops-track-demo
+  labels:
+    app: weathernow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weathernow
+  template:
+    metadata:
+      labels:
+        app: weathernow
+    spec:
+      containers:
+      - name: weathernow
+        image: quay.io/openshifttest/hello-openshift:1.2.0
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: weathernow
+  namespace: ops-track-demo
+spec:
+  selector:
+    app: weathernow
+  ports:
+  - port: 8080
+    targetPort: 8080

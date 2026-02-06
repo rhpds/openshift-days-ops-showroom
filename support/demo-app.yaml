@@ -1,0 +1,44 @@
+# Demo Application for Performance Testing
+# A simple application with resource requests for HPA/VPA testing
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-app
+  namespace: performance-demo
+  labels:
+    app: demo-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-app
+  template:
+    metadata:
+      labels:
+        app: demo-app
+    spec:
+      containers:
+      - name: demo-app
+        image: quay.io/openshifttest/hello-openshift:1.2.0
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-app
+  namespace: performance-demo
+spec:
+  selector:
+    app: demo-app
+  ports:
+  - port: 8080
+    targetPort: 8080
