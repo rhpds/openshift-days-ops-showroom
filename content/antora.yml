@@ -1,19 +1,20 @@
-name: modules
-title: Default Title
-version: master
+name: openshift-days-ops-track
+title: OpenShift Days - Ops Track
+version: main
 nav:
   - modules/ROOT/nav.adoc
 
 asciidoc:
   attributes:
-    lab_name: "I'm the lab_name var"
-    release-version: master
+    lab_name: "OpenShift Days - Ops Track"
+    release-version: main
     page-pagination: true
-    my_var: "foo"
     guid: my-guid
-    ssh_user: devops
-    ssh_password: devops
-    ssh_command: ssh someone@example.com
+    ssh_user: lab-user
+    ssh_password: ''
+    ssh_command: ''
     page-links:
-    - url: https://redhat.com
-      text: Red Hat
+    - url: https://docs.openshift.com
+      text: OpenShift Docs
+    - url: https://access.redhat.com
+      text: Red Hat Customer Portal

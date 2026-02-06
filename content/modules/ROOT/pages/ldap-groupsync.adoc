@@ -1,0 +1,744 @@
+= Identity & Users
+
+== Module Overview
+
+**Duration:** 20 minutes +
+**Format:** Hands-on identity provider configuration +
+**Audience:** Platform Engineers, Operations Teams, Security Administrators
+
+**Narrative Context:**
+
+You've verified the cluster is healthy. Now let's replace the temporary `kubeadmin` account with **enterprise user authentication**.
+
+As an operations team, you need to:
+- Integrate with existing identity management systems
+- Configure group-based access control
+- Manage user permissions across projects
+- Remove default administrative accounts for security
+
+== Learning Objectives
+
+By the end of this module, you will be able to:
+
+* Understand OpenShift identity provider options (LDAP, OIDC, SAML, GitHub)
+* Configure LDAP authentication with OAuth
+* Sync LDAP groups to OpenShift groups
+* Implement role-based access control (RBAC)
+* Test user authentication and permissions
+* Manage users and groups via CLI and console
+* Follow security best practices for production authentication
+
+== Understanding OpenShift Authentication
+
+OpenShift uses an **OAuth server** for authentication. The OAuth server validates user credentials against configured identity providers and issues access tokens for API and console access.
+
+**Supported Identity Providers (OpenShift 4.20):**
+
+* **LDAP** - Validate usernames and passwords against LDAPv3 servers (Active Directory, OpenLDAP, Red Hat Directory Server)
+* **HTPasswd** - Validate usernames and passwords against flat file using htpasswd
+* **Keystone** - Integrate OpenStack Keystone v3 server
+* **GitHub** - OAuth authentication with GitHub or GitHub Enterprise
+* **GitLab** - OAuth authentication with GitLab
+* **Google** - OAuth authentication with Google accounts
+* **OpenID Connect** - Integrate with OpenID Connect identity providers (Azure AD, Okta, Keycloak, Red Hat SSO)
+* **Request header** - Proxy authentication for enterprise SSO systems
+* **Basic authentication (deprecated)** - Remote Basic authentication (not recommended)
+
+**When to use each:**
+
+* **LDAP** - Existing LDAP/Active Directory infrastructure (most common enterprise auth)
+* **OpenID Connect** - Modern SSO, cloud identity providers, SAML bridges
+* **Request header** - Front-end proxy doing authentication (Apache mod_auth_mellon, Keycloak Gatekeeper)
+* **GitHub/GitLab** - Developer self-service, public repositories
+* **Google** - Developer workstations, Google Workspace integration
+* **HTPasswd** - Demos, testing, proof-of-concept only
+* **Keystone** - OpenStack platform integration
+
+**This workshop uses LDAP** as the hands-on example - it's the most common enterprise authentication method and demonstrates group synchronization.
+
+For complete identity provider details, see link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/understanding-identity-provider[Understanding identity providers].
+
+== Step 1: Examine Default Authentication
+
+Check the current OAuth configuration:
+
+[source,bash,role="execute"]
+----
+oc get oauth cluster -o yaml
+----
+
+The key thing to look for is an empty `spec: {}`:
+
+[source,yaml]
+----
+apiVersion: config.openshift.io/v1
+kind: OAuth
+metadata:
+  name: cluster
+  # ... additional metadata and annotations can be ignored
+spec: {}
+----
+
+[NOTE]
+====
+You may see additional metadata and annotations (like `kubectl.kubernetes.io/last-applied-configuration`). These are historical records and don't affect authentication. The important thing is that `spec: {}` is empty, meaning no identity providers are currently configured.
+====
+
+**How does `kubeadmin` work then?**
+
+OpenShift looks for a special Secret in `kube-system`. If present, you can view it with:
+
+[source,bash,role="execute"]
+----
+oc get secret -n kube-system kubeadmin -o yaml
+----
+
+This Secret contains the hashed `kubeadmin` password. **Security note:** This account bypasses identity providers and should be removed after configuring real authentication.
+
+**Note:** If the secret doesn't exist, it means kubeadmin has already been removed (which is correct for production security).
+
+== Step 2: Understand LDAP Structure
+
+This lab environment provides LDAP with the following groups:
+
+* **ose-user**: Users with OpenShift access (all users must be in this group)
+* **ose-normal-dev**: Regular developers (normaluser1, teamuser1, teamuser2)
+* **ose-fancy-dev**: Senior developers with elevated privileges (fancyuser1, fancyuser2)
+* **ose-teamed-app**: Project collaboration team (teamuser1, teamuser2)
+
+**LDAP user credentials:** All users have password `Op#nSh1ft`
+
+== Step 3: Configure LDAP Identity Provider
+
+To configure LDAP authentication, we need:
+
+1. **Secret** containing the LDAP bind password
+2. **ConfigMap** containing the LDAP server CA certificate
+3. **OAuth configuration** defining the LDAP identity provider
+
+**Create the LDAP bind password Secret:**
+
+[source,bash,role="execute"]
+----
+oc create secret generic ldap-secret \
+  --from-literal=bindPassword='b1ndP^ssword' \
+  -n openshift-config
+----
+
+**Download and store the CA certificate:**
+
+[source,bash,role="execute"]
+----
+mkdir -p $HOME/support
+wget https://certs.godaddy.com/repository/gd-class2-root.crt -O $HOME/support/ca.crt
+----
+
+**Create ConfigMap with CA certificate:**
+
+[source,bash,role="execute"]
+----
+oc create configmap ca-config-map \
+  --from-file=ca.crt=$HOME/support/ca.crt \
+  -n openshift-config
+----
+
+**Create the OAuth configuration file:**
+
+[source,bash,role="execute"]
+----
+cat <<EOF > $HOME/support/oauth-cluster.yaml
+apiVersion: config.openshift.io/v1
+kind: OAuth
+metadata:
+  name: cluster
+spec:
+  identityProviders:
+  - name: ldap
+    mappingMethod: claim
+    type: LDAP
+    ldap:
+      attributes:
+        id: [dn]
+        email: [mail]
+        name: [cn]
+        preferredUsername: [uid]
+      bindDN: "uid=openshiftworkshop,ou=Users,o=5e615ba46b812e7da02e93b5,dc=jumpcloud,dc=com"
+      bindPassword:
+        name: ldap-secret
+      ca:
+        name: ca-config-map
+      insecure: false
+      url: "ldaps://ldap.jumpcloud.com/ou=Users,o=5e615ba46b812e7da02e93b5,dc=jumpcloud,dc=com?uid?sub?(memberOf=cn=ose-user,ou=Users,o=5e615ba46b812e7da02e93b5,dc=jumpcloud,dc=com)"
+  tokenConfig:
+    accessTokenMaxAgeSeconds: 86400
+EOF
+----
+
+**Apply the OAuth configuration:**
+
+[source,bash,role="execute"]
+----
+oc apply -f $HOME/support/oauth-cluster.yaml
+----
+
+**Understanding the OAuth configuration:**
+
+The `oauth-cluster.yaml` file configures the LDAP identity provider. Key elements:
+
+**Key parameters:**
+
+* **name**: Unique identifier for this identity provider (can have multiple)
+* **mappingMethod: claim**: How usernames are assigned (first identity provider wins)
+* **attributes**: Maps LDAP fields to OpenShift user attributes
+* **bindDN/bindPassword**: Credentials for LDAP searches
+* **ca**: Certificate to validate LDAP server SSL
+* **url**: LDAP server location and search filter
+
+For detailed LDAP configuration, see link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/configuring-ldap-identity-provider[Configuring an LDAP identity provider].
+
+**Monitor the OAuth operator rollout:**
+
+[source,bash,role="execute"]
+----
+oc rollout status deployment/oauth-openshift -n openshift-authentication
+----
+
+Wait for: `deployment "oauth-openshift" successfully rolled out`
+
+**Verify OAuth pods are running:**
+
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-authentication
+----
+
+All oauth-openshift pods should be `Running` and `Ready 1/1`.
+
+== Step 4: Test LDAP Authentication
+
+First, capture the API server URL for login commands:
+
+[source,bash,role="execute"]
+----
+export OCP_SERVER=$(oc whoami --show-server)
+echo "API Server: $OCP_SERVER"
+----
+
+Try logging in as a regular user:
+
+[source,bash,role="execute"]
+----
+oc login -u normaluser1 -p 'Op#nSh1ft' $OCP_SERVER --insecure-skip-tls-verify
+----
+
+You should see:
+
+----
+Login successful.
+
+You don't have any projects. You can try to create a new project, by running
+
+    oc new-project <projectname>
+----
+
+**Check your identity:**
+
+[source,bash,role="execute"]
+----
+oc whoami
+----
+
+Output: `normaluser1`
+
+**Check what you can do:**
+
+[source,bash,role="execute"]
+----
+oc auth can-i create project
+----
+
+Output: `no` (project self-provisioning is disabled in this environment - you'll learn about this in the Governance module)
+
+Notice the user was **automatically created** on first login. Log back in as admin to view the user object.
+
+**Log back in as cluster admin:**
+
+[source,bash,role="execute"]
+----
+oc login --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) --server=https://kubernetes.default.svc --insecure-skip-tls-verify
+----
+
+**View the auto-created user:**
+
+[source,bash,role="execute"]
+----
+oc get users
+----
+
+You'll see `normaluser1` was automatically created on first login.
+
+== Step 5: Sync LDAP Groups to OpenShift
+
+LDAP group synchronization imports LDAP groups as OpenShift Groups, making RBAC management easier.
+
+**Create the group sync configuration:**
+
+[source,bash,role="execute"]
+----
+cat <<EOF > $HOME/support/groupsync.yaml
+kind: LDAPSyncConfig
+apiVersion: v1
+url: ldaps://ldap.jumpcloud.com
+bindDN: uid=openshiftworkshop,ou=Users,o=5e615ba46b812e7da02e93b5,dc=jumpcloud,dc=com
+bindPassword: b1ndP^ssword
+rfc2307:
+  groupsQuery:
+    baseDN: ou=Users,o=5e615ba46b812e7da02e93b5,dc=jumpcloud,dc=com
+    derefAliases: never
+    filter: '(|(cn=ose-*))'
+  groupUIDAttribute: dn
+  groupNameAttributes:
+  - cn
+  groupMembershipAttributes:
+  - member
+  usersQuery:
+    baseDN: ou=Users,o=5e615ba46b812e7da02e93b5,dc=jumpcloud,dc=com
+    derefAliases: never
+  userUIDAttribute: dn
+  userNameAttributes:
+  - uid
+EOF
+----
+
+**View the group sync configuration:**
+
+[source,bash,role="execute"]
+----
+cat $HOME/support/groupsync.yaml
+----
+
+The configuration:
+- Searches for LDAP groups matching `ose-*` pattern
+- Creates OpenShift Groups with matching names
+- Populates group membership from LDAP
+
+**Run the group sync:**
+
+[source,bash,role="execute"]
+----
+oc adm groups sync --sync-config=$HOME/support/groupsync.yaml --confirm
+----
+
+Output shows created groups:
+
+----
+group/ose-fancy-dev
+group/ose-user
+group/ose-normal-dev
+group/ose-teamed-app
+----
+
+**View the synced groups:**
+
+[source,bash,role="execute"]
+----
+oc get groups
+----
+
+You'll see:
+
+----
+NAME             USERS
+ose-fancy-dev    fancyuser1, fancyuser2
+ose-normal-dev   normaluser1, teamuser1, teamuser2
+ose-teamed-app   teamuser1, teamuser2
+ose-user         fancyuser1, fancyuser2, normaluser1, teamuser1, teamuser2
+----
+
+**Examine a specific group:**
+
+[source,bash,role="execute"]
+----
+oc get group ose-fancy-dev -o yaml
+----
+
+The group includes:
+- LDAP metadata (sync time, LDAP DN, LDAP server)
+- List of users in the group
+
+**Check existing users:**
+
+[source,bash,role="execute"]
+----
+oc get users
+----
+
+You'll only see `normaluser1` because **users are created on first login**, not during group sync. The group membership is a placeholder until users authenticate.
+
+== Step 6: Configure RBAC with Groups
+
+Grant the `ose-fancy-dev` group **cluster-reader** privileges to view cluster-wide resources:
+
+[source,bash,role="execute"]
+----
+oc adm policy add-cluster-role-to-group cluster-reader ose-fancy-dev
+----
+
+**What is cluster-reader?** A role that allows viewing administrative information (all projects, nodes, cluster settings) without edit permissions.
+
+For more on roles, see link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/using-rbac[Using RBAC to define and apply permissions].
+
+**Test as a regular user:**
+
+[source,bash,role="execute"]
+----
+oc login -u normaluser1 -p 'Op#nSh1ft' $OCP_SERVER --insecure-skip-tls-verify
+oc get projects
+----
+
+Result: `No resources found.` (Regular users can't see all projects)
+
+**Test as a fancy developer:**
+
+[source,bash,role="execute"]
+----
+oc login -u fancyuser1 -p 'Op#nSh1ft' $OCP_SERVER --insecure-skip-tls-verify
+oc get projects
+----
+
+Now you see **all projects** in the cluster:
+
+----
+NAME                                     STATUS
+default                                  Active
+kube-system                              Active
+openshift-authentication                 Active
+openshift-monitoring                     Active
+...
+----
+
+This demonstrates group-based RBAC working correctly.
+
+**Check current user and groups:**
+
+[source,bash,role="execute"]
+----
+oc whoami
+oc whoami --show-context
+----
+
+== Step 7: Create Projects for Collaboration
+
+Log back in as cluster admin:
+
+[source,bash,role="execute"]
+----
+oc login --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) --server=https://kubernetes.default.svc --insecure-skip-tls-verify
+----
+
+Create a typical SDLC project structure:
+
+[source,bash,role="execute"]
+----
+oc adm new-project app-dev --display-name="Application Development"
+oc adm new-project app-test --display-name="Application Testing"
+oc adm new-project app-prod --display-name="Application Production"
+----
+
+**Verify projects were created:**
+
+[source,bash,role="execute"]
+----
+oc get projects | grep app-
+----
+
+== Step 8: Map Groups to Projects
+
+Grant the `ose-teamed-app` group **edit** access to dev and test:
+
+[source,bash,role="execute"]
+----
+oc adm policy add-role-to-group edit ose-teamed-app -n app-dev
+oc adm policy add-role-to-group edit ose-teamed-app -n app-test
+----
+
+Grant **view** access to production:
+
+[source,bash,role="execute"]
+----
+oc adm policy add-role-to-group view ose-teamed-app -n app-prod
+----
+
+Grant `ose-fancy-dev` group **edit** access to production:
+
+[source,bash,role="execute"]
+----
+oc adm policy add-role-to-group edit ose-fancy-dev -n app-prod
+----
+
+**View role bindings for a project:**
+
+[source,bash,role="execute"]
+----
+oc get rolebindings -n app-dev
+----
+
+**Describe a specific role binding:**
+
+[source,bash,role="execute"]
+----
+oc describe rolebinding -n app-dev | grep -A 5 ose-teamed-app
+----
+
+== Step 9: Test Project Permissions
+
+**Test as normaluser1 (no group access):**
+
+[source,bash,role="execute"]
+----
+oc login -u normaluser1 -p 'Op#nSh1ft' $OCP_SERVER --insecure-skip-tls-verify
+oc get projects
+----
+
+Result: You may see some system namespaces (like `openshift-virtualization-os-images`) but **no application projects** (app-dev, app-test, app-prod). This user is not in any project-specific groups.
+
+**Test as teamuser1 (ose-teamed-app member):**
+
+[source,bash,role="execute"]
+----
+oc login -u teamuser1 -p 'Op#nSh1ft' $OCP_SERVER --insecure-skip-tls-verify
+oc get projects
+----
+
+Now you see:
+
+----
+NAME       DISPLAY NAME              STATUS
+app-dev    Application Development   Active
+app-prod   Application Production    Active
+app-test   Application Testing       Active
+----
+
+**Verify permissions in development (edit access):**
+
+[source,bash,role="execute"]
+----
+oc auth can-i create deployment -n app-dev
+oc auth can-i create pod -n app-dev
+oc auth can-i create service -n app-dev
+----
+
+All should return: `yes` (teamuser1 has **edit** role in app-dev)
+
+**Verify permissions in production (view-only access):**
+
+[source,bash,role="execute"]
+----
+oc auth can-i create deployment -n app-prod
+oc auth can-i create pod -n app-prod
+----
+
+Both should return: `no` (teamuser1 only has **view** role in app-prod)
+
+**Check what view access allows:**
+
+[source,bash,role="execute"]
+----
+oc auth can-i get pods -n app-prod
+oc auth can-i list deployments -n app-prod
+----
+
+Both return: `yes` (view role allows read operations)
+
+**Perfect!** This demonstrates how operations teams verify RBAC is correctly configured without creating test resources.
+
+== Step 10: Manage Users and Groups in Console
+
+The web console provides a graphical interface for user and group management.
+
+[IMPORTANT]
+====
+Make sure you're logged into the OpenShift console as **kubeadmin** (not an LDAP user) to access User Management. Regular users don't have permission to view cluster-wide user and group information.
+====
+
+**View users in console:**
+
+Navigate to: **User Management → Users**
+
+You'll see all users who have logged in, their identities, and associated groups.
+
+**View groups in console:**
+
+Navigate to: **User Management → Groups**
+
+Shows all synced LDAP groups and their members.
+
+**View role bindings in console:**
+
+Navigate to: **User Management → RoleBindings**
+
+Filter by project to see who has access to what.
+
+**Console advantages:**
+- Visual overview of all users/groups
+- Easy role binding management
+- Quick access review
+- No need to remember YAML syntax
+
+== Step 11: Security Best Practices
+
+**Remove kubeadmin after configuring identity provider:**
+
+[source,bash,role="execute"]
+----
+oc login --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) --server=https://kubernetes.default.svc --insecure-skip-tls-verify
+----
+
+First, grant cluster-admin to a real user:
+
+[source,bash,role="execute"]
+----
+oc adm policy add-cluster-role-to-user cluster-admin fancyuser1
+----
+
+Verify it works:
+
+[source,bash,role="execute"]
+----
+oc login -u fancyuser1 -p 'Op#nSh1ft' $OCP_SERVER --insecure-skip-tls-verify
+oc auth can-i '*' '*'
+----
+
+Output: `yes`
+
+**In production, you would remove kubeadmin:**
+
+After verifying your identity provider works and granting cluster-admin to at least one LDAP/OIDC user, you would delete the kubeadmin secret from the `kube-system` namespace. This removes the default administrative account and ensures all cluster access goes through your enterprise identity provider.
+
+**For this lab, we will NOT delete kubeadmin** to ensure you maintain access to the cluster throughout the workshop.
+
+**Automate LDAP group sync with CronJob:**
+
+Instead of running group sync manually, production environments typically create a Kubernetes CronJob that runs the sync operation automatically (for example, every hour). This ensures LDAP group membership changes are reflected in OpenShift without manual intervention.
+
+The CronJob would:
+- Run on a regular schedule (e.g., `*/60 * * * *` for hourly)
+- Use a service account with appropriate permissions
+- Mount the group sync configuration from a ConfigMap
+- Execute `oc adm groups sync` with the `--confirm` flag
+
+For complete implementation details, see the link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/ldap-syncing#ldap-syncing-running-all-ldap-sync_configuring-ldap-syncing[official documentation on automating LDAP sync].
+
+**For this lab, manual group sync is sufficient** for learning purposes.
+
+.Troubleshooting Common Issues (click to expand)
+[%collapsible]
+====
+**Issue: Kubeadmin login no longer works (401 Unauthorized)**
+
+In production environments where kubeadmin has been removed, you would log in with your LDAP admin account instead:
+
+[source,bash,role="copypaste"]
+----
+export OCP_SERVER=$(oc whoami --show-server)
+oc login -u fancyuser1 -p 'Op#nSh1ft' $OCP_SERVER --insecure-skip-tls-verify
+----
+
+Since you granted cluster-admin to `fancyuser1` in Step 11, this account has full administrative privileges and can be used for all cluster administration tasks.
+
+**Production best practice:** Remove kubeadmin after verifying enterprise authentication works and granting cluster-admin to appropriate LDAP/OIDC users.
+
+**Issue: LDAP users can't log in**
+
+Check OAuth pods are running:
+
+[source,bash,role="copypaste"]
+----
+oc get pods -n openshift-authentication
+oc logs -n openshift-authentication -l app=oauth-openshift
+----
+
+Common causes:
+- LDAP server unreachable
+- Incorrect bind credentials
+- Certificate validation failure
+- User not in required LDAP group (ose-user)
+
+**Issue: Group sync fails**
+
+[source,bash,role="copypaste"]
+----
+oc adm groups sync --sync-config=$HOME/support/groupsync.yaml
+----
+
+Look for errors about:
+- LDAP search base incorrect
+- Bind DN doesn't have permission to search groups
+- LDAP filter syntax errors
+
+**Issue: User has wrong permissions**
+
+Check group membership (replace `<username>` with actual username):
+
+[source,bash,role="copypaste"]
+----
+oc get groups | grep <username>
+oc describe user <username>
+----
+
+Check role bindings (replace `<projectname>` and `<bindingname>`):
+
+[source,bash,role="copypaste"]
+----
+oc get rolebindings -n <projectname>
+oc describe rolebinding <bindingname> -n <projectname>
+----
+
+**Issue: OAuth operator not rolling out**
+
+[source,bash,role="copypaste"]
+----
+oc get clusteroperator authentication
+oc describe clusteroperator authentication
+----
+
+Check for degraded conditions and follow remediation steps.
+====
+
+== Summary
+
+**What you configured:**
+
+✅ **LDAP Identity Provider** - Integrated enterprise LDAP authentication +
+✅ **Group Synchronization** - Imported LDAP groups to OpenShift +
+✅ **RBAC with Groups** - Granted cluster-reader and project-specific roles +
+✅ **Project Collaboration** - Created dev/test/prod projects with team access +
+✅ **Permission Testing** - Verified users have correct access levels +
+✅ **Security Hardening** - Learned to remove kubeadmin and automate group sync
+
+**Key takeaway:** OpenShift authentication integrates with existing identity management (LDAP, OIDC, SAML) and uses group-based RBAC for scalable permission management.
+
+**Production recommendations:**
+1. Use LDAP/OIDC, never HTPasswd
+2. Remove kubeadmin after configuring real identity provider
+3. Automate group sync with CronJob
+4. Use groups for RBAC, not individual users
+5. Follow least-privilege principle (view over edit, edit over admin)
+6. Regular access reviews using console User Management
+
+== Additional Resources
+
+* **Authentication and Authorization Guide:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/index[Official documentation]
+* **Identity Providers Overview:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/understanding-identity-provider[Understanding identity providers]
+* **LDAP Configuration:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/configuring-ldap-identity-provider[Configuring LDAP identity provider]
+* **RBAC Documentation:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/using-rbac[Using RBAC]
+* **Group Sync:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/ldap-syncing[Syncing LDAP groups]
+
+---
+
+**Log back in as cluster admin to continue:**
+
+[source,bash,role="execute"]
+----
+oc login --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) --server=https://kubernetes.default.svc --insecure-skip-tls-verify
+----

@@ -1,0 +1,518 @@
+= OpenShift Platform Overview
+
+== Module Overview
+
+**Duration:** 30 minutes +
+**Format:** Hands-on demonstration +
+**Audience:** IT Decision Makers, Infrastructure Architects, IT Operations
+
+== Learning Objectives
+
+By the end of this module, you will understand:
+
+* Key differences between OpenShift and upstream Kubernetes
+* OpenShift's integrated platform approach
+* How the Administrator Console provides operational advantages
+* Built-in capabilities that require manual assembly in vanilla Kubernetes
+
+== Accessing the Cluster
+
+For some commands in this module, you'll need full cluster administrator access. Log in to the bastion host:
+
+[source,bash,role="execute",subs="attributes"]
+----
+ssh -l {ssh_username} {bastion_fqdn} -o ServerAliveInterval=120
+----
+
+When prompted to confirm the host key, type:
+
+[source,bash,role="execute"]
+----
+yes
+----
+
+Then enter the password:
+
+[source,bash,role="execute",subs="attributes"]
+----
+{ssh_password}
+----
+
+Then become the `ec2-user`:
+
+[source,bash,role="execute"]
+----
+sudo su - ec2-user
+----
+
+Set your GUID environment variable:
+
+[source,bash,role="execute"]
+----
+export GUID=`hostname | cut -d. -f2`
+----
+
+Verify you're logged in as cluster admin:
+
+[source,bash,role="execute"]
+----
+oc whoami
+----
+
+You should see `system:admin`.
+
+NOTE: The web terminal runs as `lab-user` with limited permissions. For commands requiring cluster admin access, use the bastion host SSH session.
+
+== What is OpenShift?
+
+OpenShift Container Platform is an **enterprise Kubernetes platform** that includes:
+
+* **Kubernetes** - The container orchestration engine
+* **Integrated Developer Tools** - S2I builds, CI/CD pipelines
+* **Enterprise Operations** - Monitoring, logging, registry, networking
+* **Security** - Built-in RBAC, SELinux, secrets management
+* **Full Support** - Red Hat enterprise support and SLAs
+
+Think of it as: **Kubernetes + Everything Ops Teams Need**
+
+== OpenShift vs Vanilla Kubernetes
+
+=== 1. Integrated vs. Assembled
+
+[cols="1,1"]
+|===
+|Vanilla Kubernetes |OpenShift
+
+|**You assemble** the stack
+|**Integrated** platform
+
+|Install K8s, then add: +
+- Container registry (Harbor, Artifactory) +
+- Monitoring (Prometheus) +
+- Logging (ELK stack) +
+- Ingress (NGINX, Traefik) +
+- CI/CD tools (Jenkins, GitLab) +
+- Security scanning
+|**All included:** +
+- Integrated image registry +
+- Prometheus & Grafana +
+- Loki logging +
+- Ingress routing +
+- Tekton Pipelines +
+- RHACS security
+
+|Manage 10+ separate products
+|Single platform, single support
+|===
+
+=== 2. CLI-Heavy vs. Web Console
+
+**Kubernetes:** Almost entirely CLI-based management
+
+**OpenShift:** Full-featured Administrator Console
+
+Let's explore the console now.
+
+== Hands-On: Exploring the OpenShift Console
+
+=== Step 1: Access the Administrator Console
+
+The OpenShift Web Console provides a unified view of your entire cluster.
+
+Navigate to the Console URL (provided by your instructor):
+
+[subs="attributes"]
+----
+{master_url}
+----
+
+Login with your credentials:
+
+* Username: `admin` (or as provided)
+* Password: `{kubeadmin_password}`
+
+=== Step 2: Switch to Administrator Perspective
+
+In the top-left corner of the console, you'll see a perspective switcher dropdown that may show **Fleet Management**.
+
+Click the dropdown and select **Administrator**:
+- Administrator
+- Fleet Management
+
+Make sure **Administrator** is selected.
+
+=== Step 3: Dashboard Overview
+
+Once in the Administrator perspective, you'll see the **Overview** dashboard under **Home → Overview**.
+
+**Key sections to notice:**
+
+1. **Cluster Status** - Overall health at a glance
+2. **Cluster Utilization** - CPU, Memory, Storage metrics
+3. **Cluster Inventory** - Node count, Pod count, etc.
+4. **Activity** - Recent events and alerts
+
+This single dashboard shows you information that in vanilla Kubernetes would require:
+- Multiple `kubectl` commands
+- Third-party monitoring tools
+- Custom scripts
+
+== Built-in Monitoring
+
+In vanilla Kubernetes, you must:
+1. Install Prometheus manually
+2. Configure scraping
+3. Install Grafana
+4. Build custom dashboards
+
+**In OpenShift: It's already running.**
+
+=== Explore Prometheus (CLI)
+
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-monitoring | grep prometheus
+----
+
+You'll see Prometheus pods already running (output truncated):
+
+----
+prometheus-k8s-0                                        6/6     Running   0          55m
+prometheus-k8s-1                                        6/6     Running   0          55m
+prometheus-operator-admission-webhook-c9f987dd7-bld9f   1/1     Running   0          71m
+prometheus-operator-admission-webhook-c9f987dd7-h4jtc   1/1     Running   0          71m
+prometheus-operator-bb6c949f9-6rpnl                     2/2     Running   0          66m
+----
+
+=== Access Metrics (Console)
+
+1. In the Console, navigate to **Observe → Dashboards**
+2. Click the dropdown labeled **Dashboard** (it may show "API Performance" by default)
+3. Select **Kubernetes / Compute Resources / Cluster** from the dropdown
+4. You'll see real-time metrics:
+   - CPU Usage
+   - Memory Usage
+   - Network I/O
+   - Filesystem usage
+
+image::observe-cluster-metrics-dashboard.png[Kubernetes Cluster Metrics Dashboard]
+
+**No configuration required.** This is built-in.
+
+=== Query Prometheus (Advanced)
+
+1. Navigate to **Observe → Metrics**
+2. Try this PromQL query:
+
+[source,role="copypaste"]
+----
+sum(rate(container_cpu_usage_seconds_total[5m])) by (namespace)
+----
+
+3. Click **Run Queries**
+
+You'll see CPU usage by namespace in real-time.
+
+image::prometheus-cpu-by-namespace-query.png[Prometheus Query Results - CPU by Namespace]
+
+== Integrated Container Registry
+
+Check if a container registry is running:
+
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-image-registry
+----
+
+Output (truncated):
+
+----
+NAME                                               READY   STATUS    RESTARTS      AGE
+cluster-image-registry-operator-86c45576b9-v8j48   1/1     Running   1 (73m ago)   89m
+image-registry-5cd768f9b5-nnrx5                    1/1     Running   0             72m
+image-registry-5cd768f9b5-pcnqk                    1/1     Running   0             72m
+node-ca-2487m                                      1/1     Running   0             72m
+node-ca-5lh4f                                      1/1     Running   0             72m
+...
+----
+
+**OpenShift includes** an enterprise container registry. In vanilla Kubernetes, you'd need to:
+- Install Harbor, Quay, or use external registry
+- Configure authentication
+- Set up storage backend
+- Configure image security scanning
+
+=== View Image Streams
+
+[source,bash,role="execute"]
+----
+oc get imagestreams -n openshift
+----
+
+You'll see pre-loaded builder images (output truncated):
+
+----
+NAME                   IMAGE REPOSITORY                                                     TAGS
+cli                    image-registry.openshift-image-registry.svc:5000/openshift/cli      latest
+dotnet                 image-registry.openshift-image-registry.svc:5000/openshift/dotnet   6.0,8.0,9.0,6.0-ubi8,8.0-ubi8,9.0-ubi8...
+nodejs                 image-registry.openshift-image-registry.svc:5000/openshift/nodejs   20-minimal-ubi8,20-minimal-ubi9,20-ubi8...
+python                 image-registry.openshift-image-registry.svc:5000/openshift/python   3.11-ubi8,3.11-ubi9,3.12-minimal-ubi10...
+----
+
+These are **ready to use** - no Docker Hub rate limits, no external dependencies.
+
+== Enterprise Routing
+
+Check the ingress configuration:
+
+[source,bash,role="execute"]
+----
+oc get routes -A | head -10
+----
+
+You'll see Routes (OpenShift's ingress abstraction - output truncated):
+
+----
+NAMESPACE                  NAME                  HOST/PORT
+open-cluster-management    acm-cli-downloads     acm-cli-downloads.apps.cluster...
+openshift-authentication   oauth-openshift       oauth-openshift.apps.cluster...
+openshift-console          console               console-openshift-console.apps.cluster...
+openshift-console          downloads             downloads-openshift-console.apps.cluster...
+----
+
+**Routes vs. Ingress:**
+
+* Kubernetes `Ingress` requires installing an ingress controller (NGINX, Traefik)
+* OpenShift `Route` is built-in with HAProxy-based routing
+* Automatic TLS certificate management
+* Path-based and hostname-based routing
+
+=== Exposing Applications (Concept)
+
+In OpenShift, exposing a service to external traffic is simple:
+
+[source,bash,role="copypaste"]
+----
+# In OpenShift (example - don't run yet)
+oc expose service/my-app
+----
+
+That's it. The service becomes publicly accessible with automatic DNS.
+
+In vanilla Kubernetes:
+```bash
+# Must create Ingress resource manually
+kubectl create ingress my-app --rule="my-app.example.com/*=my-app:8080"
+# Then configure DNS
+# Then configure TLS cert
+```
+
+NOTE: You'll deploy and expose an actual application in the Application Management module later in this workshop.
+
+== Unified Node Management
+
+View your cluster nodes:
+
+[source,bash,role="execute"]
+----
+oc get nodes
+----
+
+Output shows:
+
+----
+NAME                                        STATUS   ROLES                  AGE   VERSION
+ip-10-0-13-65.us-east-2.compute.internal    Ready    worker                 84m   v1.33.5
+ip-10-0-18-255.us-east-2.compute.internal   Ready    control-plane,master   91m   v1.33.5
+ip-10-0-59-108.us-east-2.compute.internal   Ready    worker                 83m   v1.33.5
+ip-10-0-63-96.us-east-2.compute.internal    Ready    control-plane,master   91m   v1.33.5
+ip-10-0-90-20.us-east-2.compute.internal    Ready    control-plane,master   89m   v1.33.5
+----
+
+=== Check Node Details (Console)
+
+1. Navigate to **Compute → Nodes**
+2. Click on any worker node
+3. You'll see:
+   - Real-time utilization graphs
+   - Running pods
+   - Node conditions
+   - System information
+   - Logs
+
+**In Kubernetes:** You'd need to SSH to nodes or use `kubectl describe`
+
+**In OpenShift:** Full node visibility in the console
+
+image::nodes-console-view.png[Nodes Console View]
+
+=== Infrastructure Management
+
+==== MachineSets - Automated Infrastructure Scaling
+
+OpenShift on cloud platforms (AWS, Azure, GCP) uses **MachineSets** to automate infrastructure:
+
+NOTE: When ACM is installed, `machinesets` exists in two API groups (Cluster API and OpenShift Machine API). We use the full resource name `machinesets.machine.openshift.io` to target OpenShift's Machine API.
+
+[source,bash,role="execute"]
+----
+oc get machinesets.machine.openshift.io -n openshift-machine-api
+----
+
+You'll see:
+
+----
+NAME                                    DESIRED   CURRENT   READY   AVAILABLE   AGE
+cluster-wdmpc-zx5kn-worker-us-east-2a   1         1         1       1           104m
+cluster-wdmpc-zx5kn-worker-us-east-2b   1         1         1       1           104m
+cluster-wdmpc-zx5kn-worker-us-east-2c   0         0                             104m
+----
+
+This shows:
+- **3 MachineSets** (one per AWS availability zone)
+- **2 active workers** (1 in each of zones a and b)
+- **1 scaled to 0** (zone c is available but not in use)
+
+You can also view the actual cloud resources:
+
+[source,bash,role="execute"]
+----
+oc get machines.machine.openshift.io -n openshift-machine-api
+----
+
+This shows the underlying EC2 instances (3 masters running m5a.2xlarge, 2 workers running m6a.4xlarge) that OpenShift is managing for you.
+
+==== Scaling Workers
+
+To add another worker node, simply scale the MachineSet:
+
+[source,bash,role="copypaste"]
+----
+# Example - scales zone C from 0 to 1 worker
+oc scale machineset.machine.openshift.io cluster-wdmpc-zx5kn-worker-us-east-2c --replicas=1 -n openshift-machine-api
+----
+
+**What happens:** OpenShift automatically provisions an EC2 instance, configures it, and joins it to the cluster.
+
+**Kubernetes equivalent:** Manually provision VM, install OS, configure networking, install kubelet, generate certificates, join to cluster
+
+**OpenShift:** One command, fully automated
+
+== Over-the-Air Upgrades
+
+Check the cluster version:
+
+[source,bash,role="execute"]
+----
+oc get clusterversion
+----
+
+Output:
+
+----
+NAME      VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
+version   4.20.1    True        False         32m     Cluster version is 4.20.1
+----
+
+=== View Available Upgrades (Console)
+
+1. Navigate to **Administration → Cluster Settings**
+
+image::cluster-settings-details.png[Cluster Settings Details Tab]
+
+2. Click **Select a version** button (if available)
+3. See available upgrade paths
+
+image::cluster-upgrade-versions.png[Available Upgrade Versions,width=600]
+
+**This is completely automated:**
+- Rolling upgrades of control plane
+- Automated worker node updates
+- Rollback capability
+- Zero-downtime upgrades
+
+**In vanilla Kubernetes:** Manual process involving:
+- Upgrade control plane components one-by-one
+- Drain nodes
+- Upgrade kubelet on each node
+- Uncordon nodes
+- High risk of downtime
+
+== Operator Ecosystem
+
+OpenShift includes a **Software Catalog** - a marketplace of pre-certified operators.
+
+[source,bash,role="execute"]
+----
+oc get packagemanifests -n openshift-marketplace | wc -l
+----
+
+You'll see **700+ operators** available out of the box.
+
+=== Explore Software Catalog (Console)
+
+1. Navigate to **Ecosystem → Software Catalog**
+2. Select a project from the list (e.g., click **default**)
+3. You'll see the unified software catalog with categories on the left:
+   - **AI/Machine Learning** - Red Hat OpenShift AI, Open Data Hub
+   - **CI/CD** - Red Hat OpenShift GitOps, Red Hat OpenShift Pipelines
+   - **Database** - Red Hat AMQ Streams (Kafka)
+   - **Security** - Red Hat Advanced Cluster Security
+   - **Storage** - Red Hat OpenShift Data Foundation
+   - **Integration & Delivery** - Red Hat Integration, Red Hat Service Mesh, Red Hat Serverless
+   - And many more...
+4. Filter by **Type** and select **Operators** to see only operators (701 available)
+5. Click any operator tile to view details and install
+
+Install enterprise-grade software with **one click**.
+
+**In Kubernetes:** Each requires manual Helm charts, custom manifests, and configuration.
+
+== Summary: Why OpenShift for Operations
+
+[cols="1,1"]
+|===
+|Challenge |OpenShift Solution
+
+|"How do I monitor the cluster?"
+|Built-in Prometheus & dashboards
+
+|"How do I store container images?"
+|Integrated registry
+
+|"How do I route traffic to apps?"
+|Built-in Routes with HAProxy
+
+|"How do I upgrade Kubernetes?"
+|Over-the-air upgrades, zero-downtime
+
+|"How do I scale infrastructure?"
+|MachineSets API
+
+|"How do I add capabilities?"
+|Software Catalog with 700+ operators
+
+|"Who supports this stack?"
+|Single Red Hat support contract
+|===
+
+== Key Takeaways
+
+✅ **Integrated Platform** - No need to install/configure 10+ separate tools +
+✅ **Web Console + CLI** - Choose your workflow, same capabilities +
+✅ **Built-in Operations** - Monitoring, logging, registry, upgrades included +
+✅ **Automated Infrastructure** - MachineSets handle scaling, MachineConfigs handle OS +
+✅ **Single Support Contract** - One vendor for the entire stack
+
+== Next Steps
+
+In the following modules, you'll dive deeper into:
+
+* **Installation** - How clusters are provisioned
+* **Identity Management** - Integrating with LDAP/Active Directory
+* **Security** - Advanced Cluster Security (ACS) scanning
+* **Multi-Cluster** - Managing fleets with ACM
+
+---
+
+**Questions?** Ask your instructor before moving to the next module.

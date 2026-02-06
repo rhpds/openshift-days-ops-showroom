@@ -1,0 +1,266 @@
+= Performance Tuning
+
+== Module Overview
+
+**Duration:** 25-30 minutes +
+**Audience:** Platform Engineers, SRE, Operations Teams
+
+**The Challenge:** Your applications are experiencing performance issues - pods crashing from resource exhaustion, slow response times under load, and unclear capacity planning.
+
+**In this module:** You'll diagnose and fix real performance problems using OpenShift's autoscaling and monitoring tools.
+
+== Learning Objectives
+
+* Diagnose and fix resource-related pod failures
+* Use VPA to right-size application resources
+* Configure HPA to handle variable load
+* Monitor performance with built-in tools
+
+== Part 1: The Over-Provisioned Application
+
+A developer deployed an application requesting 2Gi of memory "just to be safe." But is that actually needed?
+
+=== Deploy the App
+
+[source,bash,role="execute"]
+----
+oc new-project performance-demo
+----
+
+[source,bash,role="execute"]
+----
+oc apply -f https://raw.githubusercontent.com/jnewsome97/openshift-ops-workshops-showroom/main/support/memory-hog.yaml
+----
+
+Wait for it to run:
+
+[source,bash,role="execute"]
+----
+oc get pods -w
+----
+
+Press `Ctrl+C` when the pod shows `Running`.
+
+=== Check What Resources Were Requested
+
+[source,bash,role="execute"]
+----
+oc get deployment memory-hog -o jsonpath='{.spec.template.spec.containers[0].resources}' | jq .
+----
+
+The app requested **2Gi memory** and **500m CPU**. That's a lot of cluster capacity reserved for one pod.
+
+=== Check What It Actually Uses
+
+Wait for metrics to become available (~60 seconds after pod starts):
+
+[source,bash,role="execute"]
+----
+sleep 60
+----
+
+[source,bash,role="execute"]
+----
+oc adm top pod -l app=memory-hog
+----
+
+The app is only using **~150Mi** of the 2Gi it reserved. That's **1.85Gi of wasted capacity** that other pods can't use!
+
+== Part 2: Right-Size with VPA
+
+The Vertical Pod Autoscaler analyzes actual usage and recommends correct resource values.
+
+=== Install VPA (if needed)
+
+Check if VPA is installed:
+
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-vertical-pod-autoscaler
+----
+
+If not installed:
+
+[source,bash,role="execute"]
+----
+oc apply -f https://raw.githubusercontent.com/jnewsome97/openshift-ops-workshops-showroom/main/support/vpa-operator.yaml
+----
+
+Wait for the operator (~1 minute):
+
+[source,bash,role="execute"]
+----
+oc get csv -n openshift-vertical-pod-autoscaler -w
+----
+
+Press `Ctrl+C` when you see `Succeeded`.
+
+=== Get VPA Recommendations
+
+[source,bash,role="execute"]
+----
+oc apply -f https://raw.githubusercontent.com/jnewsome97/openshift-ops-workshops-showroom/main/support/vpa-memory-hog.yaml
+----
+
+Wait for VPA to analyze the pod:
+
+[source,bash,role="execute"]
+----
+sleep 30 && oc get vpa memory-hog-vpa
+----
+
+View the detailed recommendation:
+
+[source,bash,role="execute"]
+----
+oc get vpa memory-hog-vpa -o jsonpath='{.status.recommendation.containerRecommendations[0]}' | jq .
+----
+
+VPA recommends **~256Mi memory** instead of the 2Gi requested.
+
+=== Apply the Right-Sized Resources
+
+[source,bash,role="execute"]
+----
+oc patch deployment memory-hog --type=json -p='[
+  {"op": "replace", "path": "/spec/template/spec/containers/0/resources/requests/memory", "value": "256Mi"},
+  {"op": "replace", "path": "/spec/template/spec/containers/0/resources/limits/memory", "value": "512Mi"},
+  {"op": "replace", "path": "/spec/template/spec/containers/0/resources/requests/cpu", "value": "50m"},
+  {"op": "replace", "path": "/spec/template/spec/containers/0/resources/limits/cpu", "value": "200m"}
+]'
+----
+
+=== Verify the Savings
+
+[source,bash,role="execute"]
+----
+oc get deployment memory-hog -o jsonpath='{.spec.template.spec.containers[0].resources}' | jq .
+----
+
+**Result:** You just freed up **1.75Gi of memory** and **450m of CPU** that other workloads can now use. Multiply this across hundreds of pods and you've potentially saved significant cluster costs.
+
+== Part 3: Handle Variable Load with HPA
+
+Now let's deploy an application that needs to scale horizontally based on traffic.
+
+=== Deploy a Scalable Application
+
+[source,bash,role="execute"]
+----
+oc apply -f https://raw.githubusercontent.com/jnewsome97/openshift-ops-workshops-showroom/main/support/demo-app.yaml
+----
+
+Wait for it to be ready:
+
+[source,bash,role="execute"]
+----
+oc rollout status deployment/demo-app
+----
+
+=== Create an HPA
+
+Configure automatic scaling when CPU exceeds 50%:
+
+[source,bash,role="execute"]
+----
+oc autoscale deployment demo-app --min=1 --max=5 --cpu-percent=50
+----
+
+Check the HPA:
+
+[source,bash,role="execute"]
+----
+oc get hpa demo-app
+----
+
+=== Generate Load
+
+Open a second terminal or run this in the background:
+
+[source,bash,role="execute"]
+----
+oc run load-generator --image=busybox --restart=Never -- /bin/sh -c "while true; do wget -q -O- http://demo-app:8080 > /dev/null; done"
+----
+
+=== Watch the Autoscaling
+
+[source,bash,role="execute"]
+----
+oc get hpa demo-app -w
+----
+
+Watch the `REPLICAS` column - it will increase as CPU usage rises above 50%. This takes 1-2 minutes.
+
+Press `Ctrl+C` when you see replicas increase (typically to 2-4 pods).
+
+Verify pods scaled:
+
+[source,bash,role="execute"]
+----
+oc get pods -l app=demo-app
+----
+
+=== Stop the Load
+
+[source,bash,role="execute"]
+----
+oc delete pod load-generator
+----
+
+The HPA will scale back down after ~5 minutes of reduced load.
+
+== Part 4: Monitor Performance
+
+=== View Resource Usage
+
+Check node-level resources:
+
+[source,bash,role="execute"]
+----
+oc adm top nodes
+----
+
+Check pod-level resources in your namespace:
+
+[source,bash,role="execute"]
+----
+oc adm top pods
+----
+
+=== View in the Console
+
+Navigate to **Observe → Dashboards → Kubernetes / Compute Resources / Namespace (Pods)** and select `performance-demo` to see:
+
+* CPU usage over time
+* Memory consumption
+* Network I/O
+
+This helps you understand if your resources are sized correctly.
+
+== Clean Up
+
+[source,bash,role="execute"]
+----
+oc delete project performance-demo
+----
+
+== Key Takeaways
+
+[cols="1,2"]
+|===
+|Tool |When to Use
+
+|**VPA**
+|Right-size resources based on actual usage (use `Off` mode first for recommendations)
+
+|**HPA**
+|Scale pods horizontally for variable load (set 50-70% CPU target)
+
+|**oc adm top**
+|Quick check of current resource consumption
+
+|**Observe → Dashboards**
+|Historical trends and capacity planning
+|===
+
+**The pattern:** Don't guess resources → Use VPA to measure → Apply recommendations → Use HPA for load variation

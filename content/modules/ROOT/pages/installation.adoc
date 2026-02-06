@@ -1,0 +1,495 @@
+= Installation & Verification
+
+== Module Overview
+
+**Duration:** 15 minutes +
+**Format:** Hands-on verification +
+**Audience:** Platform Engineers, Operations Teams, Cluster Administrators
+
+**Narrative Context:**
+
+You've learned about OpenShift's architecture and value. Now let's verify a cluster is **healthy and ready for workloads**.
+
+As an operations team, you'll perform these checks:
+- After initial installation
+- After upgrades
+- During troubleshooting
+- As part of regular health monitoring
+
+== Learning Objectives
+
+By the end of this module, you will be able to:
+
+* Understand OpenShift installation methods (IPI, UPI, Agent-based, Assisted)
+* Verify cluster health using ClusterOperators
+* Check control plane and worker node status
+* Validate storage and networking functionality
+* Access the monitoring stack
+* Understand upgrade channels and available updates
+* Use the web console for health monitoring
+
+== Understanding OpenShift Architecture
+
+Before verifying health, understand the key components:
+
+**Control Plane** (3 nodes in traditional clusters):
+
+* **API Server** - All cluster interactions go through the API
+* **etcd** - Distributed key-value store for cluster state
+* **Scheduler** - Decides which nodes run which pods
+* **Controller Managers** - Ensure desired state matches actual state
+
+**Worker Nodes:**
+
+* Run application workloads
+* Execute kubelet (node agent)
+* Run container runtime
+
+**Operators:**
+
+* Manage cluster components as software
+* Self-healing and automated updates
+* Each operator reports its own health
+
+**Key Concept:** In OpenShift 4+, the cluster manages itself using **Operators**. Verifying cluster health = verifying operator health.
+
+For detailed architecture information, see link:https://docs.openshift.com/container-platform/4.20/architecture/control-plane.html[Control Plane Architecture].
+
+== OpenShift Installation Methods
+
+Red Hat OpenShift provides multiple installation methods to meet different infrastructure and operational requirements.
+
+=== Installation Approaches
+
+Red Hat categorizes installations into two main approaches:
+
+**Full stack automation** - Installer provisions and configures infrastructure
+
+* **Installer-provisioned infrastructure (IPI)**: Cloud platforms (AWS, Azure, GCP, IBM Cloud) and select on-premise platforms (vSphere, bare metal with specific hardware)
+* **Agent-based Installer**: Bare metal and on-premise using bootable ISO with discovery
+* **Assisted Installer**: Web-based GUI at console.redhat.com for bare metal and on-premise
+
+**Pre-existing infrastructure** - You provision infrastructure, installer deploys OpenShift
+
+* **User-provisioned infrastructure (UPI)**: Any supported platform where you control infrastructure (on-premise, restricted networks, custom requirements)
+
+=== Supported Platforms
+
+OpenShift can be installed on:
+
+* **Public cloud**: AWS, Azure, GCP, IBM Cloud, Alibaba Cloud
+* **Private cloud**: VMware vSphere, Red Hat Virtualization, Red Hat OpenStack
+* **Bare metal**: Physical servers (via Assisted Installer or Agent-based Installer)
+* **Specialized platforms**: IBM Z, IBM LinuxONE, IBM Power
+
+**Managed OpenShift offerings** (ROSA, ARO, RHOIC, OpenShift Dedicated) provide fully-managed clusters where Red Hat and cloud providers handle installation and operations.
+
+=== This Workshop: IPI on AWS
+
+**This workshop cluster was installed using installer-provisioned infrastructure (IPI) on AWS**:
+
+* Installation method: `openshift-install create cluster`
+* Infrastructure: Installer created VPC, subnets, load balancers, EC2 instances
+* Installation time: ~40 minutes
+* Result: Production-ready cluster with 3 control plane + 2 worker nodes
+
+=== Installation Configuration (install-config.yaml)
+
+All installations start with an `install-config.yaml` defining the cluster. Example for AWS:
+
+[source,yaml]
+----
+apiVersion: v1
+baseDomain: example.com
+metadata:
+  name: production-cluster
+platform:
+  aws:
+    region: us-east-1
+controlPlane:
+  replicas: 3
+  platform:
+    aws:
+      type: m5.2xlarge
+compute:
+- replicas: 3
+  platform:
+    aws:
+      type: m5.4xlarge
+networking:
+  clusterNetwork:
+  - cidr: 10.128.0.0/14
+  serviceNetwork:
+  - 172.30.0.0/16
+pullSecret: '<pull-secret-from-console.redhat.com>'
+sshKey: 'ssh-rsa AAAA...'
+----
+
+**Key parameters operations teams care about:**
+
+* **controlPlane.replicas** - Always 3 for HA
+* **compute.replicas** - Initial worker count (scale later with MachineSets)
+* **platform.aws.type** - Instance sizes affect cost and performance
+* **networking.clusterNetwork** - Pod IP range (can't change post-install)
+* **networking.serviceNetwork** - Service IP range (can't change post-install)
+
+=== Installation Workflow
+
+The `openshift-install` command automates the entire installation:
+
+**Phase 1: Bootstrap** (0-10 min) - Temporary VM brings up initial control plane
+
+**Phase 2: Control Plane** (10-20 min) - 3 nodes boot, etcd cluster forms, API available
+
+**Phase 3: Workers & Operators** (20-45 min) - Workers join, all ~34 ClusterOperators deploy
+
+**IPI on AWS provisions**: VPC, subnets, load balancers (API + ingress), EC2 instances, EBS storage, Route 53 DNS (api.*, *.apps)
+
+**Prerequisites**: Cloud quota, service account permissions, DNS zone, OpenShift pull secret from console.redhat.com
+
+=== This Workshop Cluster
+
+This cluster was installed using **IPI on AWS**:
+
+* Command: `openshift-install create cluster --dir=./install-dir`
+* Installation time: 42 minutes
+* Result: 3 control plane + 2 worker nodes, all operators Available=True
+
+**Now let's verify this installation succeeded.**
+
+**More details:** See link:https://docs.openshift.com/container-platform/4.20/installing/index.html[OpenShift Installation Documentation].
+
+== Accessing the Cluster
+
+This workshop provides a pre-installed OpenShift cluster. The terminal runs as a service account with **cluster-admin** privileges.
+
+Verify you can access the cluster:
+
+[source,bash,role="execute"]
+----
+oc whoami
+----
+
+Expected output:
+
+[subs="attributes"]
+----
+system:serviceaccount:showroom-{guid}:showroom
+----
+
+NOTE: You're logged in as a service account, not `kubeadmin`. The service account has full cluster-admin permissions.
+
+Check your permissions:
+
+[source,bash,role="execute"]
+----
+oc auth can-i '*' '*'
+----
+
+Expected output:
+----
+yes
+----
+
+You have cluster-admin privileges, allowing full cluster management.
+
+== Step 1: Verify Cluster Operators (Primary Health Check)
+
+**ClusterOperators** are the single source of truth for cluster health. Each operator manages a specific cluster component and reports its status.
+
+View all cluster operators:
+
+[source,bash,role="execute"]
+----
+oc get clusteroperators
+----
+
+You'll see ~34 operators. Example output:
+
+----
+NAME                         VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE
+authentication               4.20.1    True        False         False      3h
+cloud-credential             4.20.1    True        False         False      4h
+console                      4.20.1    True        False         False      3h
+dns                          4.20.1    True        False         False      4h
+etcd                         4.20.1    True        False         False      4h
+ingress                      4.20.1    True        False         False      3h
+kube-apiserver               4.20.1    True        False         False      4h
+kube-controller-manager      4.20.1    True        False         False      4h
+kube-scheduler               4.20.1    True        False         False      4h
+machine-api                  4.20.1    True        False         False      4h
+machine-config               4.20.1    True        False         False      4h
+monitoring                   4.20.1    True        False         False      3h
+network                      4.20.1    True        False         False      4h
+openshift-apiserver          4.20.1    True        False         False      3h
+storage                      4.20.1    True        False         False      4h
+----
+
+**What to check:**
+
+* **AVAILABLE = True** - Component is functional
+* **PROGRESSING = False** - No upgrade/rollout in progress
+* **DEGRADED = False** - Component is healthy
+
+**Healthy cluster:** All operators show `True False False`
+
+**If an operator is degraded**, investigate further:
+
+[source,bash,role="copypaste"]
+----
+oc describe clusteroperator <operator-name>
+----
+
+Check the `Conditions` section for details about why it's degraded.
+
+**Common issues:**
+
+* `machine-config` progressing - Nodes are being updated (normal during updates)
+* `monitoring` degraded - Storage or resource issues
+* `authentication` degraded - OAuth or LDAP configuration issues
+
+**Console view:** You can also view ClusterOperators in the web console at **Administration → Cluster Settings → ClusterOperators**:
+
+image::installation-images/clusteroperators-console.png[ClusterOperators in web console]
+
+== Step 2: Check Cluster Version and Update Status
+
+View the current cluster version:
+
+[source,bash,role="execute"]
+----
+oc get clusterversion
+----
+
+Output:
+----
+NAME      VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
+version   4.20.1    True        False         3h      Cluster version is 4.20.1
+----
+
+Check which update channel you're subscribed to:
+
+[source,bash,role="execute"]
+----
+oc get clusterversion version -o jsonpath='{.spec.channel}'
+----
+
+Common channels:
+* **stable-4.20** - Production-ready releases (recommended)
+* **fast-4.20** - Early access to stable releases
+* **eus-4.20** - Extended Update Support (14-month lifecycle)
+* **candidate-4.20** - Pre-release testing
+
+View available updates:
+
+[source,bash,role="execute"]
+----
+oc adm upgrade
+----
+
+Example output:
+----
+Cluster version is 4.20.1
+
+Channel: stable-4.20
+
+Recommended updates:
+
+  VERSION     IMAGE
+  4.20.8      quay.io/openshift-release-dev/ocp-release@sha256:91606a5...
+  4.20.3      quay.io/openshift-release-dev/ocp-release@sha256:24da92...
+----
+
+**Key takeaway:** Operators manage cluster updates. You can upgrade with a single command: `oc adm upgrade --to=4.20.8`
+
+== Step 3: Verify Node Health and Resources
+
+List all nodes in the cluster:
+
+[source,bash,role="execute"]
+----
+oc get nodes
+----
+
+Output shows:
+----
+NAME                                        STATUS   ROLES                  AGE     VERSION
+ip-10-0-17-107.us-east-2.compute.internal   Ready    control-plane,master   4h      v1.33.5
+ip-10-0-54-39.us-east-2.compute.internal    Ready    worker                 4h      v1.33.5
+ip-10-0-63-246.us-east-2.compute.internal   Ready    control-plane,master   4h      v1.33.5
+ip-10-0-66-152.us-east-2.compute.internal   Ready    control-plane,master   4h      v1.33.5
+ip-10-0-84-65.us-east-2.compute.internal    Ready    worker                 4h      v1.33.5
+----
+
+**What you see:**
+
+* **3 control-plane nodes** - Run API server, etcd, scheduler, controllers
+* **2 worker nodes** - Run application workloads
+* **STATUS = Ready** - Node is healthy and can schedule pods
+
+Check actual resource usage on nodes:
+
+[source,bash,role="execute"]
+----
+oc adm top nodes
+----
+
+Output:
+----
+NAME                                        CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)
+ip-10-0-17-107.us-east-2.compute.internal   1666m        22%      7935Mi          26%
+ip-10-0-54-39.us-east-2.compute.internal    1941m        12%      16838Mi         27%
+ip-10-0-63-246.us-east-2.compute.internal   1837m        24%      9913Mi          32%
+ip-10-0-66-152.us-east-2.compute.internal   1192m        15%      8226Mi          27%
+ip-10-0-84-65.us-east-2.compute.internal    1381m        8%       12931Mi         20%
+----
+
+**What to monitor:**
+
+* CPU% under 80% - Healthy headroom
+* Memory% under 80% - No memory pressure
+* High usage - Consider scaling or adding nodes
+
+**Check node configuration status:**
+
+[source,bash,role="execute"]
+----
+oc get machineconfigpool
+----
+
+Output:
+----
+NAME     CONFIG                                             UPDATED   UPDATING   DEGRADED   MACHINECOUNT   READYMACHINECOUNT
+master   rendered-master-48ba1948abe0e71d6f961d60b60a7b09   True      False      False      3              3
+worker   rendered-worker-bd1b92e5c23309874c8d04cde3e7709f   True      False      False      2              2
+----
+
+**What this shows:**
+
+* **UPDATED = True** - All nodes have latest configuration
+* **UPDATING = True** - Nodes are being rolled out with new config (normal during changes)
+* **DEGRADED = True** - Configuration failed on some nodes (investigate)
+
+MachineConfigPools manage node-level configuration (kernel arguments, systemd units, etc.) and coordinate rolling updates.
+
+== Step 4: Test Networking (Hands-on)
+
+Verify networking works by creating a test application and route:
+
+[source,bash,role="execute"]
+----
+oc run test-app --image=nginxinc/nginx-unprivileged:latest
+oc expose pod test-app --port=8080
+oc create route edge --service=test-app
+----
+
+Get the route URL:
+
+[source,bash,role="execute"]
+----
+oc get route test-app -o jsonpath='{.spec.host}'
+----
+
+**What this proves:** DNS works, router is functional, TLS certificates auto-generated.
+
+Clean up:
+
+[source,bash,role="execute"]
+----
+oc delete route test-app && oc delete svc test-app && oc delete pod test-app
+----
+
+== Step 5: Test Storage Provisioning
+
+Verify dynamic storage works by creating a test PVC:
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: test-pvc
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+EOF
+----
+
+Watch it provision:
+
+[source,bash,role="execute"]
+----
+oc get pvc test-pvc
+----
+
+TIP: Cloud storage provisioning is fast - the PVC may already show `Bound` by the time you check. That's a good sign - it means dynamic provisioning is working correctly.
+
+Clean up:
+
+[source,bash,role="execute"]
+----
+oc delete pvc test-pvc
+----
+
+== Step 6: Verify Monitoring Stack
+
+Check monitoring is operational:
+
+[source,bash,role="execute"]
+----
+oc get clusteroperator monitoring
+----
+
+Verify Prometheus pods are running:
+
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-monitoring | grep prometheus
+----
+
+You should see `prometheus-k8s-0` and `prometheus-k8s-1` pods in Running state.
+
+**Accessing Prometheus:** In OpenShift, Prometheus is accessed through the web console at **Observe → Metrics**, not via direct URL. The prometheus-k8s route only exposes the `/api` endpoint for programmatic access, not the web UI.
+
+**Note:** In production, you'd set up alerts, custom dashboards, and integrate with external monitoring systems
+
+== Step 7: Access the Web Console
+
+The OpenShift web console provides a graphical interface for cluster management.
+
+Get the console URL:
+
+[source,bash,role="execute"]
+----
+oc whoami --show-console
+----
+
+Open the URL and explore:
+
+* **Home → Overview** - Cluster health summary with all operators
+* **Compute → Nodes** - Visual node status and resource usage
+* **Administration → Cluster Settings** - Current version and available updates
+
+image::installation-images/overview-dashboard.png[OpenShift web console Overview page showing cluster health]
+
+The console is the fastest way to get a visual health overview of your cluster.
+
+**Note:** You'll configure LDAP authentication in the next module to replace the default `kubeadmin` account with enterprise user identities.
+
+== Summary
+
+**Installation:** You learned how OpenShift can be installed using full stack automation (IPI, Agent-based, Assisted Installer) or pre-existing infrastructure (UPI) across public cloud, private cloud, bare metal, and specialized platforms.
+
+**Verification:** You verified this cluster is production-ready by checking ClusterOperators (all Available), cluster version and update channel, node health and resources, and core subsystems (network, ingress, storage, monitoring).
+
+**Key takeaway:** `oc get clusteroperators` is your primary health check. All operators showing `True False False` means a healthy cluster ready for workloads.
+
+== Additional Resources
+
+* **Installing OpenShift:** link:https://docs.openshift.com/container-platform/4.20/installing/index.html[Installation Documentation]
+* **Verifying Cluster Status:** link:https://docs.openshift.com/container-platform/4.20/support/troubleshooting/verifying-cluster-status.html[Troubleshooting Guide]
+* **ClusterOperators Reference:** link:https://docs.openshift.com/container-platform/4.20/operators/operator-reference.html[Operator Reference]

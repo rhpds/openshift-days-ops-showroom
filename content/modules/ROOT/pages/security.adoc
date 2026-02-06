@@ -1,0 +1,12 @@
+= Security - Secrets, Certificates & ACS
+
+== Module Overview
+
+**Status:** TBA
+
+**Topics to cover:**
+
+* Secrets management
+* Certificate management
+* ACS (Advanced Cluster Security)
+* TSSC (Trusted Software Supply Chain)

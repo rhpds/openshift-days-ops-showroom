@@ -1,0 +1,519 @@
+= Network Security
+
+== Module Overview
+
+**Duration:** 25 minutes +
+**Format:** Hands-on network security configuration +
+**Audience:** Platform Engineers, Network Administrators, Security Teams
+
+**Narrative Context:**
+
+Your applications are receiving traffic through the Ingress Controller. Now you need to secure the network layer:
+
+- Control pod-to-pod communication
+- Restrict outbound traffic to external systems
+- Configure predictable source IPs for external firewalls
+- Understand OpenShift's software-defined networking
+
+== Learning Objectives
+
+By the end of this module, you will be able to:
+
+* Understand OpenShift's OVN-Kubernetes software-defined network
+* Implement NetworkPolicy for pod-to-pod security
+* Configure EgressFirewall to control outbound traffic
+* Use EgressIP for predictable source IPs
+* Troubleshoot network connectivity issues
+
+== OpenShift Networking Architecture
+
+OpenShift 4.x uses **OVN-Kubernetes** as the default Container Network Interface (CNI) plugin. OVN-Kubernetes replaced the legacy OpenShift SDN in OpenShift 4.12.
+
+**What OVN-Kubernetes provides:**
+
+* Pod-to-pod networking across nodes
+* Network isolation with NetworkPolicy
+* Egress traffic control (EgressFirewall, EgressIP)
+* IPsec encryption (optional)
+* Hardware offloading support
+* Integration with cloud provider load balancers
+
+=== View Cluster Network Configuration
+
+[source,bash,role="execute"]
+----
+oc get network.config cluster -o yaml
+----
+
+Key fields:
+
+* `networkType: OVNKubernetes` - Confirms OVN-Kubernetes is active
+* `clusterNetwork` - IP range for pod networking (typically 10.128.0.0/14)
+* `serviceNetwork` - IP range for Services (typically 172.30.0.0/16)
+
+=== Verify Network Operator Health
+
+[source,bash,role="execute"]
+----
+oc get clusteroperator network
+----
+
+The network operator should show `AVAILABLE: True` and `DEGRADED: False`.
+
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-ovn-kubernetes
+----
+
+You'll see OVN pods running on every node: `ovnkube-node`, `ovnkube-controller`, and `ovs-daemon`.
+
+== NetworkPolicy: Pod-to-Pod Security
+
+By default, all pods can communicate with all other pods. **NetworkPolicy** restricts this.
+
+=== Create Test Projects
+
+[source,bash,role="execute"]
+----
+# Create two projects for testing network isolation
+oc new-project netpol-frontend
+oc new-project netpol-backend
+
+# Deploy apps in each
+oc new-app --name=frontend --image=quay.io/openshifttest/hello-openshift:1.2.0 -n netpol-frontend
+oc new-app --name=backend --image=quay.io/openshifttest/hello-openshift:1.2.0 -n netpol-backend
+----
+
+Wait for pods in both namespaces:
+
+[source,bash,role="execute"]
+----
+oc get pods -n netpol-frontend
+----
+
+[source,bash,role="execute"]
+----
+oc get pods -n netpol-backend
+----
+
+Both pods should show `Running` before continuing.
+
+=== Test Default Connectivity (Should Work)
+
+Test connectivity from frontend to backend:
+
+[source,bash,role="execute"]
+----
+BACKEND_IP=$(oc get pod -n netpol-backend -l deployment=backend -o jsonpath='{.items[0].status.podIP}')
+oc exec -n netpol-frontend deployment/frontend -- curl -s --connect-timeout 5 http://${BACKEND_IP}:8080
+----
+
+Expected: HTML output from the app - connectivity works by default.
+
+=== Apply Deny-All NetworkPolicy
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -n netpol-backend -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress: []
+EOF
+----
+
+This blocks all incoming traffic to pods in `netpol-backend`.
+
+=== Test Connectivity Again (Should Fail)
+
+[source,bash,role="execute"]
+----
+BACKEND_IP=$(oc get pod -n netpol-backend -l deployment=backend -o jsonpath='{.items[0].status.podIP}')
+oc exec -n netpol-frontend deployment/frontend -- curl -s --connect-timeout 5 http://${BACKEND_IP}:8080
+----
+
+Expected: Connection times out (no output after 5 seconds). The NetworkPolicy blocked it.
+
+=== Allow Traffic from Specific Namespace
+
+[source,bash,role="execute"]
+----
+# First, label the frontend namespace
+oc label namespace netpol-frontend app-tier=frontend
+
+# Create NetworkPolicy allowing traffic from frontend namespace
+cat <<EOF | oc apply -n netpol-backend -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-frontend
+spec:
+  podSelector:
+    matchLabels:
+      deployment: backend
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          app-tier: frontend
+    ports:
+    - protocol: TCP
+      port: 8080
+EOF
+----
+
+=== Test Connectivity (Should Work Again)
+
+[source,bash,role="execute"]
+----
+BACKEND_IP=$(oc get pod -n netpol-backend -l deployment=backend -o jsonpath='{.items[0].status.podIP}')
+oc exec -n netpol-frontend deployment/frontend -- curl -s --connect-timeout 5 http://${BACKEND_IP}:8080
+----
+
+Expected: HTML output from the app - the allow policy takes effect.
+
+=== View NetworkPolicies
+
+[source,bash,role="execute"]
+----
+oc get networkpolicy -n netpol-backend
+----
+
+You should see both `deny-all` and `allow-from-frontend` policies.
+
+=== NetworkPolicy Best Practices
+
+[cols="1,2"]
+|===
+|Practice |Description
+
+|**Default deny**
+|Start with a deny-all policy, then explicitly allow required traffic
+
+|**Namespace labels**
+|Use namespace labels for cross-namespace policies
+
+|**Least privilege**
+|Only allow the specific ports and protocols needed
+
+|**Document policies**
+|Use annotations to document policy purpose
+|===
+
+== EgressFirewall: Controlling Outbound Traffic
+
+**EgressFirewall** controls which external IPs/domains pods can reach. This is an OVN-Kubernetes feature.
+
+=== Understanding EgressFirewall
+
+EgressFirewall applies per-namespace and evaluates rules in order. Traffic not matching any rule is **allowed** by default.
+
+View the API:
+
+[source,bash,role="execute"]
+----
+oc explain egressfirewall.spec
+----
+
+=== Create an EgressFirewall
+
+Block traffic to a specific CIDR (example: block 1.1.1.0/24):
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -n netpol-frontend -f -
+apiVersion: k8s.ovn.org/v1
+kind: EgressFirewall
+metadata:
+  name: default
+spec:
+  egress:
+  - type: Deny
+    to:
+      cidrSelector: 1.1.1.0/24
+  - type: Allow
+    to:
+      cidrSelector: 0.0.0.0/0
+EOF
+----
+
+This blocks egress to 1.1.1.0/24 but allows all other traffic.
+
+=== Test EgressFirewall
+
+[source,bash,role="execute"]
+----
+# This should fail (blocked)
+oc exec -n netpol-frontend deployment/frontend -- curl -s --connect-timeout 3 http://1.1.1.1 || echo "Blocked!"
+
+# This should work (allowed)
+oc exec -n netpol-frontend deployment/frontend -- curl -s --connect-timeout 3 -I http://google.com | head -1
+----
+
+=== View EgressFirewall
+
+[source,bash,role="execute"]
+----
+oc get egressfirewall -n netpol-frontend -o yaml
+----
+
+=== DNS-Based EgressFirewall
+
+You can also use DNS names (OVN resolves them):
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -n netpol-backend -f -
+apiVersion: k8s.ovn.org/v1
+kind: EgressFirewall
+metadata:
+  name: default
+spec:
+  egress:
+  - type: Allow
+    to:
+      dnsName: "*.redhat.com"
+  - type: Allow
+    to:
+      dnsName: "quay.io"
+  - type: Deny
+    to:
+      cidrSelector: 0.0.0.0/0
+EOF
+----
+
+This allows only Red Hat and Quay traffic, blocking everything else.
+
+=== EgressFirewall Use Cases
+
+[cols="1,2"]
+|===
+|Use Case |Configuration
+
+|**Block known bad IPs**
+|Deny specific CIDRs, allow all else
+
+|**Allowlist mode**
+|Allow specific destinations, deny 0.0.0.0/0
+
+|**Compliance**
+|Restrict egress to approved external services
+
+|**Data exfiltration prevention**
+|Block unknown external endpoints
+|===
+
+== EgressIP: Predictable Source IPs
+
+**EgressIP** assigns a fixed source IP for egress traffic from specific pods. Useful when external firewalls need to allowlist your cluster.
+
+=== Understanding EgressIP
+
+[source,bash,role="execute"]
+----
+oc explain egressip
+----
+
+EgressIP requires:
+
+1. Nodes labeled for hosting egress IPs
+2. Available IPs on the node's network
+3. EgressIP CR referencing namespace/pod selectors
+
+=== View EgressIP Capability
+
+[source,bash,role="execute"]
+----
+oc get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.annotations.k8s\.ovn\.org/node-egress-label}{"\n"}{end}'
+----
+
+Nodes need the annotation `k8s.ovn.org/node-egress-label` or the label `k8s.ovn.org/egress-assignable` to host EgressIPs.
+
+=== EgressIP Configuration Example
+
+[source,yaml]
+----
+apiVersion: k8s.ovn.org/v1
+kind: EgressIP
+metadata:
+  name: production-egress
+spec:
+  egressIPs:
+  - 192.168.1.100
+  - 192.168.1.101
+  namespaceSelector:
+    matchLabels:
+      environment: production
+  podSelector:
+    matchLabels:
+      egress-required: "true"
+----
+
+**Note:** EgressIP configuration requires network planning and is typically done during cluster setup. The IPs must be routable on the node network.
+
+=== When to Use EgressIP
+
+[cols="1,2"]
+|===
+|Scenario |Benefit
+
+|**External firewall allowlisting**
+|Predictable source IP for cluster egress
+
+|**Audit compliance**
+|Track traffic from specific workloads
+
+|**Multi-tenant isolation**
+|Different egress IPs per tenant
+
+|**Legacy integration**
+|Connect to systems requiring IP-based authentication
+|===
+
+== DNS and Service Discovery
+
+OpenShift provides automatic DNS for services.
+
+=== DNS Format
+
+Services are accessible at:
+
+----
+<service-name>.<namespace>.svc.cluster.local
+----
+
+=== Test DNS Resolution
+
+Test DNS resolution from any pod:
+
+[source,bash,role="execute"]
+----
+oc exec -n netpol-frontend deployment/frontend -- nslookup backend.netpol-backend.svc.cluster.local
+----
+
+=== View Cluster DNS Configuration
+
+[source,bash,role="execute"]
+----
+oc get dns cluster -o yaml
+----
+
+Shows:
+
+* `baseDomain` - Cluster's base DNS domain
+* `publicZone` - External DNS zone
+* `privateZone` - Internal DNS zone
+
+=== View CoreDNS Pods
+
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-dns
+----
+
+CoreDNS provides DNS resolution for all pods in the cluster.
+
+'''
+
+.Network Troubleshooting (click to expand)
+[%collapsible]
+====
+**Check Pod Connectivity:**
+
+[source,bash,role="execute"]
+----
+# Get pod IPs
+oc get pods -A -o wide | grep Running | head -5
+----
+
+**Check Network Operator Logs:**
+
+[source,bash,role="copypaste"]
+----
+oc logs -n openshift-network-operator deployment/network-operator --tail=50
+----
+
+**Check OVN Controller Logs:**
+
+[source,bash,role="copypaste"]
+----
+oc logs -n openshift-ovn-kubernetes ds/ovnkube-node -c ovnkube-controller --tail=30
+----
+
+**Verify NetworkPolicy is Applied:**
+
+[source,bash,role="copypaste"]
+----
+oc describe networkpolicy <policy-name> -n <namespace>
+----
+
+**Test connectivity between pods:**
+
+[source,bash,role="copypaste"]
+----
+# From source pod, curl target pod IP
+oc exec -n <source-ns> <source-pod> -- curl -s --connect-timeout 3 http://<target-pod-ip>:8080
+----
+
+**Check EgressFirewall status:**
+
+[source,bash,role="copypaste"]
+----
+oc get egressfirewall -A
+oc describe egressfirewall default -n <namespace>
+----
+====
+
+== Cleanup
+
+[source,bash,role="execute"]
+----
+# Delete network policy test namespaces
+oc delete namespace netpol-frontend netpol-backend --ignore-not-found
+
+echo "Cleanup complete"
+----
+
+== Summary
+
+**What you learned:**
+
+* OpenShift uses OVN-Kubernetes as the default SDN
+* NetworkPolicy controls pod-to-pod communication (default allow, explicit deny)
+* EgressFirewall controls outbound traffic to external destinations
+* EgressIP provides predictable source IPs for egress
+* DNS provides automatic service discovery via `<service>.<namespace>.svc.cluster.local`
+
+**Key operational commands:**
+
+[source,bash]
+----
+# View network configuration
+oc get network.config cluster -o yaml
+
+# View network policies
+oc get networkpolicy -A
+
+# View egress firewalls
+oc get egressfirewall -A
+
+# View egress IPs
+oc get egressip -A
+
+# Check DNS configuration
+oc get dns cluster -o yaml
+----
+
+== Additional Resources
+
+* **OVN-Kubernetes:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/ovn-kubernetes_network_plugin/index[OVN-Kubernetes network plugin]
+* **NetworkPolicy:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/networking/network-policy[About network policy]
+* **EgressFirewall:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/networking/configuring-egress-firewall-ovn[Configuring an egress firewall for a project]
+* **EgressIP:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/networking/configuring-egress-ips-ovn[Configuring an egress IP address]

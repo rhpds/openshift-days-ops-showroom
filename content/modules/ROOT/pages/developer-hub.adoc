@@ -1,0 +1,498 @@
+= Platform Engineering - Red Hat Developer Hub
+
+== Module Overview
+
+**Duration:** 15-20 minutes +
+**Format:** Dashboard exploration + Demo +
+**Audience:** IT Operations, Platform Engineers, Infrastructure Architects
+
+**Workshop Narrative Context:**
+
+We've learned how to:
+- Secure workloads with RHACS
+- Enforce governance policies
+- Monitor compliance
+
+**Now:** How do we **enable developer self-service** while maintaining operational control? How do we reduce repetitive requests and tickets?
+
+== Learning Objectives
+
+By the end of this module, you will be able to:
+
+* Understand what Red Hat Developer Hub (RHDH) is and how it fits into platform operations
+* Verify RHDH deployment health and status
+* Navigate RHDH resources in OpenShift console and CLI
+* Troubleshoot common RHDH issues
+* Understand how software templates reduce operational toil
+
+== What is Red Hat Developer Hub?
+
+**Red Hat Developer Hub (RHDH)** is an **enterprise-grade Internal Developer Platform** based on Backstage.
+
+Think of it as: **Your organization's developer self-service portal**
+
+=== The Operations Problem It Solves
+
+**Before RHDH:**
+
+* Developers submit tickets: "Create me a new app with CI/CD"
+* Ops manually provisions: namespace, RBAC, quotas, pipeline, git repo
+* Process takes days or weeks
+* Inconsistent configurations
+* Documentation scattered everywhere
+
+**With RHDH:**
+
+* Developer clicks "Create New App" in portal
+* Template automatically provisions: namespace, RBAC, quotas, pipeline, git repo
+* Process takes minutes
+* **Ops-defined golden paths** ensure consistency
+* Self-service with governance built-in
+
+=== Key Capabilities
+
+* **Software Catalog** - Unified view of all services, APIs, libraries
+* **Software Templates** - Self-service app creation with Ops-approved patterns
+* **TechDocs** - Documentation integrated with code
+* **Plugins** - Integrate with tools (ArgoCD, Tekton, Jira, etc.)
+* **RBAC** - Fine-grained access control
+* **API Integration** - Connect to existing systems
+
+== RHDH Architecture (Quick Overview)
+
+RHDH on OpenShift consists of:
+
+* **Backstage Frontend** - Web portal UI
+* **Backstage Backend** - API and orchestration layer
+* **PostgreSQL Database** - Stores catalog and configuration
+* **Plugins** - Extend functionality (Kubernetes, Tekton, ArgoCD, etc.)
+
+All of this was deployed via the **Red Hat Developer Hub Operator** from OperatorHub.
+
+== Hands-On: Verify RHDH Deployment
+
+=== Step 1: Check RHDH Pods
+
+Verify the RHDH pods are running:
+
+[source,bash,role="execute"]
+----
+oc get pods -n backstage
+----
+
+You should see:
+
+----
+NAME                                       READY   STATUS
+backstage-developer-hub-xxxxx              1/1     Running
+backstage-psql-developer-hub-0             1/1     Running
+----
+
+Check the deployment details:
+
+[source,bash,role="execute"]
+----
+oc get deployment -n backstage
+----
+
+View the Backstage container resources:
+
+[source,bash,role="execute"]
+----
+oc get deployment backstage-developer-hub -n backstage -o jsonpath='{.spec.template.spec.containers[0].resources}' | python3 -m json.tool
+----
+
+=== Step 2: Get the Developer Hub URL
+
+Get the Developer Hub portal URL:
+
+[source,bash,role="execute"]
+----
+oc get route backstage-developer-hub -n backstage -o jsonpath='https://{.spec.host}'
+----
+
+Output:
+
+----
+https://backstage-developer-hub-backstage.apps.cluster-GUID.example.com
+----
+
+View all routes in the backstage namespace:
+
+[source,bash,role="execute"]
+----
+oc get routes -n backstage
+----
+
+=== Step 3: Access the Portal
+
+1. **Open the Developer Hub URL** in a new browser tab
+2. You'll see the **Red Hat Developer Hub** login page
+3. Select **Guest** to enter without authentication
+
+image::rhdh-login-page.png[Developer Hub login page]
+
+Click **Enter** under Guest to access the portal.
+
+You're now in the **Developer Hub Portal**.
+
+image::rhdh-home-page.png[Developer Hub home page]
+
+[NOTE]
+====
+This is a basic RHDH deployment with guest authentication. In production, you would configure SSO integration, populate the software catalog, and add software templates. This module focuses on how Ops manages and monitors RHDH.
+====
+
+== Ops Admin: Managing RHDH from Console and CLI
+
+As an operations administrator, you need to understand how RHDH is deployed and how to manage it. Let's explore.
+
+=== View RHDH in the OpenShift Console
+
+1. In the OpenShift console, go to **Workloads** -> **Pods**
+2. Select the **backstage** project from the project dropdown
+3. You'll see the `backstage-developer-hub` and `backstage-psql-developer-hub` pods running
+
+image::rhdh-pods-running.png[Backstage pods running in the console]
+
+Click on a pod to see:
+
+* Pod details and status
+* Resource usage (CPU/Memory)
+* Environment variables
+* Mounted ConfigMaps and Secrets
+
+=== Explore the Operator
+
+The RHDH Operator manages the Backstage instance:
+
+1. Go to **Operators** -> **Installed Operators**
+2. Select **All Projects** or **rhdh-operator**
+3. Click on **Red Hat Developer Hub**
+4. Under **Provided APIs**, you'll see the `Backstage` custom resource
+
+image::rhdh-operator-installed.png[Red Hat Developer Hub Operator installed]
+
+Click on the **Backstage** tab to see the deployed instances:
+
+image::rhdh-backstage-cr.png[Backstage CR showing deployed status]
+
+View the Backstage CR via CLI:
+
+[source,bash,role="execute"]
+----
+oc get backstage -n backstage
+----
+
+Get detailed status:
+
+[source,bash,role="execute"]
+----
+oc describe backstage developer-hub -n backstage
+----
+
+=== View Configuration
+
+RHDH configuration is stored in ConfigMaps. List them:
+
+[source,bash,role="execute"]
+----
+oc get configmaps -n backstage
+----
+
+View the app configuration (if exists):
+
+[source,bash,role="execute"]
+----
+oc get configmap app-config-rhdh -n backstage -o yaml 2>/dev/null || echo "Using default configuration"
+----
+
+=== Check Secrets
+
+RHDH uses secrets for sensitive configuration (database credentials, OAuth, etc.):
+
+[source,bash,role="execute"]
+----
+oc get secrets -n backstage
+----
+
+View the PostgreSQL secret structure:
+
+[source,bash,role="execute"]
+----
+oc get secret backstage-psql-secret-developer-hub -n backstage -o jsonpath='{.data}' | python3 -c "import sys,json; print('\n'.join(json.load(sys.stdin).keys()))"
+----
+
+[NOTE]
+====
+Secret values are base64 encoded. Never expose database credentials in logs or output.
+====
+
+=== View Pod Logs
+
+Check the Backstage application logs:
+
+[source,bash,role="execute"]
+----
+oc logs -n backstage -l rhdh.redhat.com/app=backstage-developer-hub --tail=50
+----
+
+Check PostgreSQL database logs:
+
+[source,bash,role="execute"]
+----
+oc logs -n backstage -l rhdh.redhat.com/app=backstage-psql-developer-hub --tail=20
+----
+
+=== Check Resource Usage
+
+View current resource consumption:
+
+[source,bash,role="execute"]
+----
+oc adm top pods -n backstage
+----
+
+=== View Services and Networking
+
+Check the services exposed:
+
+[source,bash,role="execute"]
+----
+oc get svc -n backstage
+----
+
+Check the route configuration:
+
+[source,bash,role="execute"]
+----
+oc get route backstage-developer-hub -n backstage -o yaml | grep -A 10 "spec:"
+----
+
+=== Persistent Storage
+
+RHDH uses PostgreSQL for persistence. Check the PVC:
+
+[source,bash,role="execute"]
+----
+oc get pvc -n backstage
+----
+
+View storage details:
+
+[source,bash,role="execute"]
+----
+oc describe pvc -n backstage
+----
+
+== Understanding RHDH Concepts
+
+Now that you've verified the deployment, let's understand what RHDH provides.
+
+=== The Software Catalog
+
+The catalog is the heart of Developer Hub - a unified view of all software in your organization:
+
+* **Components** - Applications, microservices
+* **APIs** - REST APIs, GraphQL, gRPC
+* **Resources** - Databases, message queues, storage
+* **Systems** - Logical groupings of components
+* **Domains** - Business domains
+
+Content is added via:
+
+* **Catalog YAML files** - Stored in Git repositories
+* **Discovery** - RHDH scans repos for `catalog-info.yaml` files
+* **Registration** - Ops can manually register systems
+* **Plugins** - Auto-import from Kubernetes, ArgoCD, etc.
+
+Example `catalog-info.yaml`:
+
+[source,yaml]
+----
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: mapit
+  description: Mapping application for city data
+  annotations:
+    backstage.io/kubernetes-namespace: ops-track-demo
+spec:
+  type: service
+  lifecycle: production
+  owner: team-operations
+  system: geospatial-services
+----
+
+=== Software Templates: Golden Paths
+
+**The Ops Superpower:** Software Templates let you define **how apps should be created**.
+
+A **golden path** is a pre-approved, ops-blessed way to create applications:
+
+* Create Git repo
+* Generate app scaffold (language-specific)
+* Create OpenShift namespace with quotas
+* Apply RBAC (developer access, not cluster-admin)
+* Set up CI/CD pipeline
+* Add monitoring/alerting
+* Register in service catalog
+
+**Benefits for Ops:**
+
+[cols="1,2"]
+|===
+|Ops Challenge |How Templates Help
+
+|**Inconsistent configurations**
+|Every app follows same pattern
+
+|**Manual provisioning tickets**
+|Self-service reduces toil
+
+|**Security misconfigurations**
+|Security built into template
+
+|**Quota violations**
+|Templates enforce resource limits
+
+|**Missing monitoring**
+|Templates add Prometheus annotations
+|===
+
+=== Plugin Architecture
+
+RHDH uses plugins to integrate with your infrastructure:
+
+* **Kubernetes Plugin** - View pods, deployments, services directly in portal
+* **Tekton Plugin** - View CI/CD pipeline runs and logs
+* **ArgoCD Plugin** - View GitOps sync status
+* **RHACS Plugin** - View security scan results
+* **Topology Plugin** - Visual application topology
+
+Plugins are configured via the app-config and require appropriate RBAC permissions.
+
+'''
+
+.**Troubleshooting RHDH** (click to expand)
+[%collapsible]
+====
+Common issues and how to diagnose them:
+
+**Check Pod Status**
+
+[source,bash,role="execute"]
+----
+oc get pods -n backstage
+----
+
+If pods are not running, check events:
+
+[source,bash,role="execute"]
+----
+oc get events -n backstage --sort-by='.lastTimestamp' | tail -20
+----
+
+**Check Application Health**
+
+[source,bash,role="execute"]
+----
+curl -sk $(oc get route backstage-developer-hub -n backstage -o jsonpath='https://{.spec.host}')/.backstage/health/v1/readiness
+----
+
+You should see `{"status":"ok"}` if RHDH is healthy.
+
+**Database Connectivity**
+
+[source,bash,role="execute"]
+----
+oc exec -n backstage backstage-psql-developer-hub-0 -- psql -U postgres -c "SELECT 1"
+----
+
+**Restart the Deployment**
+
+[source,bash,role="copypaste"]
+----
+oc rollout restart deployment/backstage-developer-hub -n backstage
+----
+
+**View Operator Logs**
+
+[source,bash,role="execute"]
+----
+oc logs -n rhdh-operator -l app=rhdh-operator --tail=50
+----
+====
+
+== Summary: How RHDH Fits into Ops Workflow
+
+[cols="1,2"]
+|===
+|Ops Activity |How RHDH Helps
+
+|**Developer requests new app**
+|Self-service via templates, no manual provisioning
+
+|**Onboarding new team**
+|Portal provides discoverability, no scattered docs
+
+|**Enforcing standards**
+|Templates bake in security, quotas, monitoring
+
+|**Tracking all services**
+|Catalog provides single source of truth
+
+|**Compliance auditing**
+|See which apps follow which patterns
+
+|**Reducing toil**
+|Automation via templates and plugins
+|===
+
+**Key operational commands:**
+
+[source,bash]
+----
+# View RHDH pods
+oc get pods -n backstage
+
+# Check Backstage CR status
+oc get backstage -n backstage
+
+# View application logs
+oc logs -n backstage -l rhdh.redhat.com/app=backstage-developer-hub --tail=50
+
+# Check health endpoint
+curl -sk $(oc get route backstage-developer-hub -n backstage -o jsonpath='https://{.spec.host}')/.backstage/health/v1/readiness
+
+# View configuration
+oc get configmaps -n backstage
+
+# Restart after config changes
+oc rollout restart deployment/backstage-developer-hub -n backstage
+----
+
+== Key Takeaways
+
+* **Self-Service** - Developers provision apps without tickets
+* **Governance** - Ops defines templates with security baked in
+* **Standardization** - Golden paths ensure consistency
+* **Visibility** - Catalog shows everything in one place
+* **Reduced Toil** - Automation eliminates manual provisioning
+* **Operator-Managed** - RHDH Operator handles deployment lifecycle
+
+== Going Further: Platform Engineering
+
+This module showed you **RHDH basics from an Ops perspective**.
+
+**A full RHDH implementation includes:**
+
+- Software templates with multi-step workflows
+- Git integration (GitHub, GitLab)
+- CI/CD integration (Tekton, ArgoCD)
+- SSO authentication (OIDC, SAML)
+- Custom plugins for your organization
+- Populated software catalog
+- TechDocs for documentation
+
+**Interested in a deep-dive?** Ask your instructor about the **Platform Engineering with RHDH Workshop**.

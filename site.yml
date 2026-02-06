@@ -1,8 +1,8 @@
 ---
 site:
-  title: Showroom Template Demo
-  url: https://github.com/rhpds/showroom_template_nookbag
-  start_page: modules::index.adoc
+  title: OpenShift Days - Ops Track
+  url: https://github.com/jnewsome97/openshift-days-ops-track-showroom-v2
+  start_page: openshift-days-ops-track::index.adoc
 
 content:
   sources:

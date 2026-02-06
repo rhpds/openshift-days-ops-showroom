@@ -1,0 +1,56 @@
+= Backup & Restore with OADP
+
+== Module Overview
+
+**Duration:** 30 minutes +
+**Format:** Hands-on backup and restore operations +
+**Audience:** Platform Engineers, Operations Teams, Disaster Recovery Specialists
+
+**Narrative Context:**
+
+Data protection is critical for production OpenShift clusters. In this module, you'll use the **OpenShift API for Data Protection (OADP)** to backup and restore applications.
+
+OADP is based on Velero and provides:
+
+* Application-consistent backups
+* Scheduled backup policies
+* Cross-cluster restore capabilities
+* Integration with S3-compatible storage
+
+== Learning Objectives
+
+By the end of this module, you will be able to:
+
+* Understand OADP architecture and components
+* Configure backup storage locations
+* Create application backups
+* Restore applications from backups
+* Implement backup schedules
+
+== Prerequisites
+
+The OADP Operator has been pre-installed in your cluster.
+
+Verify the installation:
+
+[source,bash,role="execute"]
+----
+oc get csv -n openshift-adp | grep oadp
+----
+
+You should see the OADP operator with `Succeeded` status.
+
+== Content Coming Soon
+
+This module is under development. Check back for full hands-on content covering:
+
+* Configuring DataProtectionApplication CR
+* Setting up backup storage with ODF S3
+* Creating and managing backups
+* Performing application restores
+* Backup scheduling and retention policies
+
+== Additional Resources
+
+* **OADP Documentation:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/backup_and_restore/oadp-application-backup-and-restore[OADP Application Backup and Restore]
+* **Velero Documentation:** link:https://velero.io/docs/[Velero Docs]

@@ -1,0 +1,304 @@
+= Ingress & Load Balancing
+
+== Module Overview
+
+**Duration:** 25 minutes +
+**Format:** Hands-on ingress configuration +
+**Audience:** Platform Engineers, Network Administrators, Operations Teams
+
+**Narrative Context:**
+
+Your cluster is running applications. Now you need to understand how external traffic reaches your applications and how to configure load balancing, TLS termination, and advanced protection features.
+
+== Learning Objectives
+
+By the end of this module, you will be able to:
+
+* Configure and troubleshoot the Ingress Controller
+* Create Routes with different TLS termination strategies
+* Configure rate limiting and IP-based access control
+* Understand load balancing options (Services, Ingress)
+* Integrate AWS WAF for advanced threat protection
+
+== Ingress Controller & Load Balancing
+
+The **Ingress Controller** (based on HAProxy) handles external traffic entering the cluster. It's how users reach your applications.
+
+=== View Ingress Controller Configuration
+
+[source,bash,role="execute"]
+----
+oc get ingresscontroller default -n openshift-ingress-operator -o yaml | head -60
+----
+
+Key configuration options:
+
+* `replicas` - Number of router pods (default: 2 for HA)
+* `routeAdmission.wildcardPolicy` - Whether wildcard routes are allowed
+* `defaultCertificate` - TLS certificate for *.apps domain
+
+=== View Router Pods
+
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-ingress -o wide
+----
+
+Router pods run on worker nodes and handle incoming HTTP/HTTPS traffic.
+
+=== View Ingress Service
+
+[source,bash,role="execute"]
+----
+oc get svc -n openshift-ingress
+----
+
+The `router-default` service exposes the ingress controller:
+
+* On cloud platforms: `LoadBalancer` type with external IP
+* On bare metal: Typically `NodePort` or MetalLB `LoadBalancer`
+
+== Routes: OpenShift's Ingress Resource
+
+OpenShift **Routes** expose services externally. They're more feature-rich than Kubernetes Ingress.
+
+=== Use the Application from App Management
+
+In the previous module, you deployed the `weathernow` application. Let's examine its networking.
+
+[source,bash,role="execute"]
+----
+oc project app-management
+----
+
+[NOTE]
+====
+**Skipped the App Management module?**
+
+Check if the weathernow app exists:
+
+[source,bash,role="execute"]
+----
+oc get pods -n app-management -l deployment=weathernow
+----
+
+If no pods are found, deploy the app now:
+
+[source,bash,role="execute"]
+----
+oc new-project app-management 2>/dev/null || oc project app-management
+oc new-app --name=weathernow --image=quay.io/openshifttest/hello-openshift:1.2.0
+----
+
+Wait for the pod to be ready before continuing.
+
+**Create an Edge Route with TLS:**
+
+[source,bash,role="execute"]
+----
+oc create route edge weathernow --service=weathernow 2>/dev/null || echo "Route already exists"
+----
+====
+
+=== View the Route Configuration
+
+[source,bash,role="execute"]
+----
+oc get route weathernow -o yaml
+----
+
+Key route fields:
+
+* `spec.host` - The external hostname
+* `spec.to.name` - The backend Service
+* `spec.tls.termination` - TLS termination type (edge in this case)
+
+=== Test the Route
+
+Test with HTTPS (edge TLS):
+
+[source,bash,role="execute"]
+----
+curl -sk https://$(oc get route weathernow -o jsonpath='{.spec.host}') | head -5
+----
+
+This request flows: **Client -> Load Balancer -> Ingress Controller -> Service -> Pod**
+
+You should see the WeatherNow HTML page returned.
+
+== TLS Termination Strategies
+
+OpenShift Routes support three TLS termination types:
+
+[cols="1,2,2"]
+|===
+|Type |Description |Use Case
+
+|**edge**
+|TLS terminates at the router, traffic to pod is HTTP
+|Most common. Router handles certificates.
+
+|**passthrough**
+|TLS passes through to the pod unchanged
+|Application manages its own certificates
+
+|**reencrypt**
+|TLS terminates at router, new TLS to pod
+|End-to-end encryption with router certificate validation
+|===
+
+=== Examine TLS Configuration
+
+View the TLS settings on the edge route:
+
+[source,bash,role="execute"]
+----
+oc get route weathernow -o jsonpath='{.spec.tls}' | python3 -m json.tool
+----
+
+Edge termination means:
+
+* TLS terminates at the Ingress Controller (HAProxy)
+* Traffic from router to pod is unencrypted HTTP
+* The router uses the cluster's wildcard certificate
+
+== Route Annotations for Advanced Features
+
+Routes support annotations for rate limiting, timeouts, and more:
+
+Common annotations:
+
+* `haproxy.router.openshift.io/timeout` - Backend timeout
+* `haproxy.router.openshift.io/rate-limit-connections` - Connection rate limiting
+* `haproxy.router.openshift.io/ip-whitelist` - IP-based access control
+
+=== Apply Rate Limiting
+
+[source,bash,role="execute"]
+----
+oc annotate route weathernow -n app-management \
+  haproxy.router.openshift.io/rate-limit-connections=true \
+  haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp=50 \
+  haproxy.router.openshift.io/rate-limit-connections.rate-http=100 \
+  --overwrite
+----
+
+Verify the annotations were applied:
+
+[source,bash,role="execute"]
+----
+oc get route weathernow -n app-management -o jsonpath='{.metadata.annotations}' | python3 -m json.tool | grep rate
+----
+
+=== View Existing Routes Across Cluster
+
+[source,bash,role="execute"]
+----
+oc get routes -A | head -20
+----
+
+Notice different termination types: `edge`, `passthrough`, `reencrypt`.
+
+== Services: Internal Load Balancing
+
+OpenShift Services provide internal load balancing and service discovery.
+
+=== Service Types
+
+[cols="1,2,2"]
+|===
+|Type |Description |Access
+
+|**ClusterIP**
+|Internal IP only
+|Inside cluster only
+
+|**NodePort**
+|Port on every node
+|External via node IP:port
+
+|**LoadBalancer**
+|Cloud/MetalLB external IP
+|External via dedicated IP
+|===
+
+=== View the Ingress LoadBalancer Service
+
+The ingress controller itself uses a LoadBalancer service:
+
+[source,bash,role="execute"]
+----
+oc get svc router-default -n openshift-ingress -o wide
+----
+
+On AWS, this is typically a Network Load Balancer (NLB). On bare metal, MetalLB can provide LoadBalancer functionality.
+
+== Ingress Controller Scaling
+
+=== Scale Ingress Controller
+
+[source,bash,role="execute"]
+----
+oc patch ingresscontroller default -n openshift-ingress-operator --type=merge -p '{"spec":{"replicas":3}}'
+----
+
+Watch the new router pod come up:
+
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-ingress -w
+----
+
+Press Ctrl+C when you see 3 pods running.
+
+=== View Ingress Controller Status
+
+[source,bash,role="execute"]
+----
+oc get ingresscontroller default -n openshift-ingress-operator -o jsonpath='{.status.conditions}' | python3 -m json.tool
+----
+
+== Cleanup
+
+[source,bash,role="execute"]
+----
+# Remove rate limiting annotations
+oc annotate route weathernow -n app-management \
+  haproxy.router.openshift.io/rate-limit-connections- \
+  haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp- \
+  haproxy.router.openshift.io/rate-limit-connections.rate-http-
+
+# Scale ingress controller back to 2
+oc patch ingresscontroller default -n openshift-ingress-operator --type=merge -p '{"spec":{"replicas":2}}'
+
+echo "Cleanup complete"
+----
+
+== Summary
+
+**What you learned:**
+
+* The Ingress Controller (HAProxy) handles external traffic
+* Routes expose services with TLS termination options (edge, passthrough, reencrypt)
+* Route annotations provide rate limiting and IP-based access control
+* Services provide internal load balancing
+* Ingress controller scaling for high availability
+
+**Key operational commands:**
+
+[source,bash]
+----
+# Check ingress controller
+oc get ingresscontroller -n openshift-ingress-operator
+
+# View routes
+oc get routes -A
+
+# View ingress service
+oc get svc -n openshift-ingress
+----
+
+== Additional Resources
+
+* **Ingress Controller:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/networking/configuring-ingress-cluster-traffic[Configuring ingress cluster traffic]
+* **Route Annotations:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/networking/configuring-ingress-cluster-traffic#nw-route-specific-annotations_route-configuration[Route-specific annotations]

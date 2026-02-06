@@ -1,7 +1,70 @@
-* xref:module-01.adoc[1. RPM Native Container]
-** xref:module-01.adoc#repositories[Repositories]
-** xref:module-01.adoc#software[Software]
+// OpenShift Days - Ops Track (101)
+// Streamlined workshop matching requirements
+// Module-based navigation using ifdef conditionals
+//
+// Modules with workloads (operator deployed):
+//   module_virt, module_oadp, module_acm, module_devhub, module_ols, module_security, module_waf
+//
+// Modules without workloads (content only):
+//   module_ldap, module_oidc, module_observability, module_performance, module_cloud_infra
 
-* xref:module-02.adoc[2. GitHub Sourced Container]
-** xref:module-02.adoc#prerequisites[Install Prerequisites]
-** xref:module-02.adoc#container[Enable Container]
+* xref:index.adoc[Environment Setup]
+
+.Phase 1: Platform Foundation
+* xref:ocp-concepts.adoc[OpenShift Platform Overview]
+* xref:installation.adoc[Installation & Verification]
+ifdef::module_oidc[]
+* xref:oidc-authentication.adoc[Identity & Users - OIDC]
+endif::[]
+ifdef::module_ldap[]
+* xref:ldap-groupsync.adoc[Identity & Users - LDAP]
+endif::[]
+* xref:app-mgmt-basics.adoc[Application Management Basics]
+
+.Phase 2: Networking
+* xref:ingress-loadbalancing.adoc[Ingress & Load Balancing]
+* xref:network-security.adoc[Network Security]
+ifdef::module_waf[]
+* xref:aws-waf.adoc[AWS WAF Integration]
+endif::[]
+
+.Phase 3: Day 2 Operations
+ifdef::module_observability[]
+* xref:observability.adoc[Observability]
+endif::[]
+* xref:debugging-troubleshooting.adoc[Debugging & Troubleshooting]
+ifdef::module_performance[]
+* xref:performance-tuning.adoc[Performance Tuning]
+endif::[]
+ifdef::module_oadp[]
+* xref:backup-restore.adoc[Backup & Restore - OADP]
+endif::[]
+ifdef::module_ols[]
+* xref:openshift-lightspeed.adoc[OpenShift Lightspeed]
+endif::[]
+
+ifdef::module_virt,module_acm[]
+.Phase 4: Workloads & Architecture
+endif::[]
+ifdef::module_virt[]
+* xref:virtualization.adoc[Virtualization]
+endif::[]
+ifdef::module_acm[]
+* xref:acm-multicluster.adoc[ACM - Multi-Cluster Management]
+* xref:hosted-control-planes.adoc[Advanced Architecture - HCP]
+endif::[]
+
+ifdef::module_security[]
+.Phase 5: Security
+* xref:security.adoc[Security - Secrets, Certs & ACS]
+endif::[]
+
+ifdef::module_cloud_infra,module_devhub[]
+.Phase 6: Platform Engineering
+endif::[]
+ifdef::module_cloud_infra[]
+* xref:cloud-infrastructure.adoc[Cloud Integration & Infrastructure]
+endif::[]
+ifdef::module_devhub[]
+* xref:developer-hub.adoc[Developer Hub]
+endif::[]

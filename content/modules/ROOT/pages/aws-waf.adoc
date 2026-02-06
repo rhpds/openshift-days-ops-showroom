@@ -1,0 +1,379 @@
+= AWS WAF Integration
+
+== Module Overview
+
+**Duration:** 20 minutes +
+**Format:** Hands-on AWS WAF deployment +
+**Audience:** Platform Engineers, Security Teams, Network Administrators
+
+**Narrative Context:**
+
+Your applications are exposed via the OpenShift Ingress Controller. Now you need advanced threat protection against OWASP Top 10 vulnerabilities including SQL injection, cross-site scripting (XSS), and other common web attacks. AWS WAF provides this layer of defense.
+
+== Learning Objectives
+
+By the end of this module, you will be able to:
+
+* Understand AWS WAF architecture with OpenShift
+* Deploy the AWS Load Balancer Operator
+* Create an Application Load Balancer (ALB) for your workloads
+* Configure WAF rules to block common attacks
+* Test WAF protection against SQL injection and XSS
+
+== AWS WAF Architecture
+
+OpenShift on AWS can integrate with **AWS WAF** (Web Application Firewall) for advanced threat protection. AWS WAF attaches to an Application Load Balancer (ALB), which sits in front of your OpenShift workloads:
+
+----
+Client -> AWS ALB + WAF -> OpenShift Service -> Pods
+----
+
+=== When to Use What
+
+[cols="1,2,2"]
+|===
+|Scenario |Solution |Notes
+
+|Basic rate limiting
+|Route annotations
+|Built-in, no extra cost
+
+|IP-based blocking
+|Route annotations or NetworkPolicy
+|Built-in
+
+|OWASP protection (SQLi, XSS)
+|AWS WAF + ALB
+|Requires ALB, extra cost
+
+|DDoS protection
+|AWS Shield + CloudFront
+|Enterprise feature
+
+|API security
+|3scale API Management
+|Full API gateway
+|===
+
+== Prerequisites
+
+This module requires:
+
+* AWS CLI configured with appropriate permissions
+* An application deployed in OpenShift (we'll use the weathernow app from the App Management module)
+
+=== Verify AWS CLI Configuration
+
+[source,bash,role="execute"]
+----
+aws sts get-caller-identity
+----
+
+You should see your AWS account information.
+
+=== Verify Application Exists
+
+[source,bash,role="execute"]
+----
+oc get pods -n app-management -l deployment=weathernow
+----
+
+[NOTE]
+====
+**No weathernow pods?** Deploy the application first:
+
+[source,bash,role="execute"]
+----
+oc new-project app-management 2>/dev/null || oc project app-management
+oc new-app --name=weathernow --image=quay.io/openshifttest/hello-openshift:1.2.0
+----
+
+Wait for the pod to be ready before continuing.
+====
+
+== Step 1: Install AWS Load Balancer Operator
+
+The AWS Load Balancer Operator manages AWS ALBs and NLBs for OpenShift workloads.
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: aws-load-balancer-operator
+  namespace: openshift-operators
+spec:
+  channel: stable-v1
+  installPlanApproval: Automatic
+  name: aws-load-balancer-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+----
+
+Wait for the operator to install:
+
+[source,bash,role="execute"]
+----
+oc get csv -n openshift-operators -w | grep aws-load-balancer
+----
+
+Press Ctrl+C when you see `Succeeded`.
+
+== Step 2: Create AWS Load Balancer Controller
+
+The controller manages the lifecycle of AWS load balancers:
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: networking.olm.openshift.io/v1
+kind: AWSLoadBalancerController
+metadata:
+  name: cluster
+spec:
+  subnetTagging: Auto
+  additionalResourceTags:
+    - key: Environment
+      value: workshop
+  ingressClass: alb
+  config:
+    replicas: 1
+  enabledAddons:
+    - AWSWAFv2
+EOF
+----
+
+Wait for the controller pod:
+
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-operators -l app.kubernetes.io/name=aws-load-balancer-operator -w
+----
+
+Press Ctrl+C when you see `Running`.
+
+== Step 3: Create ALB-backed Ingress
+
+First, ensure the weathernow service is NodePort (required for ALB instance target type):
+
+[source,bash,role="execute"]
+----
+oc patch svc weathernow -n app-management -p '{"spec":{"type":"NodePort"}}'
+----
+
+Create the Ingress resource that provisions an ALB:
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: weathernow-alb
+  namespace: app-management
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: instance
+spec:
+  ingressClassName: alb
+  rules:
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: weathernow
+            port:
+              number: 8080
+EOF
+----
+
+Wait for the ALB to provision (2-3 minutes):
+
+[source,bash,role="execute"]
+----
+oc get ingress weathernow-alb -n app-management -w
+----
+
+Press Ctrl+C when you see an ADDRESS in the output.
+
+== Step 4: Create WAF WebACL
+
+Create a WAF Web ACL with AWS managed rules for common threats and SQL injection:
+
+[source,bash,role="execute"]
+----
+aws wafv2 create-web-acl \
+  --name openshift-waf \
+  --scope REGIONAL \
+  --region us-east-2 \
+  --default-action Allow={} \
+  --visibility-config SampledRequestsEnabled=true,CloudWatchMetricsEnabled=true,MetricName=openshift-waf-metrics \
+  --rules '[
+    {
+      "Name": "AWS-AWSManagedRulesCommonRuleSet",
+      "Priority": 1,
+      "Statement": {
+        "ManagedRuleGroupStatement": {
+          "VendorName": "AWS",
+          "Name": "AWSManagedRulesCommonRuleSet"
+        }
+      },
+      "OverrideAction": {"None": {}},
+      "VisibilityConfig": {
+        "SampledRequestsEnabled": true,
+        "CloudWatchMetricsEnabled": true,
+        "MetricName": "CommonRuleSet"
+      }
+    },
+    {
+      "Name": "AWS-AWSManagedRulesSQLiRuleSet",
+      "Priority": 2,
+      "Statement": {
+        "ManagedRuleGroupStatement": {
+          "VendorName": "AWS",
+          "Name": "AWSManagedRulesSQLiRuleSet"
+        }
+      },
+      "OverrideAction": {"None": {}},
+      "VisibilityConfig": {
+        "SampledRequestsEnabled": true,
+        "CloudWatchMetricsEnabled": true,
+        "MetricName": "SQLiRuleSet"
+      }
+    }
+  ]'
+----
+
+This creates a WAF with:
+
+* **AWSManagedRulesCommonRuleSet** - Blocks common web exploits (XSS, path traversal, etc.)
+* **AWSManagedRulesSQLiRuleSet** - Blocks SQL injection attacks
+
+== Step 5: Associate WAF with ALB
+
+Get the WAF ARN and associate it with the ALB via the Ingress annotation:
+
+[source,bash,role="execute"]
+----
+WAF_ARN=$(aws wafv2 list-web-acls --scope REGIONAL --region us-east-2 --query "WebACLs[?Name=='openshift-waf'].ARN" --output text)
+echo "WAF ARN: $WAF_ARN"
+oc annotate ingress weathernow-alb -n app-management alb.ingress.kubernetes.io/wafv2-acl-arn="$WAF_ARN" --overwrite
+----
+
+The ALB controller will automatically associate the WAF with the load balancer.
+
+== Step 6: Test WAF Protection
+
+Get the ALB DNS name:
+
+[source,bash,role="execute"]
+----
+ALB_DNS=$(oc get ingress weathernow-alb -n app-management -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+echo "ALB URL: http://$ALB_DNS"
+----
+
+=== Test Normal Request (Should Succeed)
+
+[source,bash,role="execute"]
+----
+curl -s http://$ALB_DNS | head -5
+----
+
+You should see the application HTML response.
+
+=== Test SQL Injection Attack (Should Be Blocked)
+
+[source,bash,role="execute"]
+----
+curl -s "http://$ALB_DNS/?id=1%20OR%201=1"
+----
+
+Expected: `403 Forbidden` - The WAF detected and blocked the SQL injection attempt.
+
+=== Test XSS Attack (Should Be Blocked)
+
+[source,bash,role="execute"]
+----
+curl -s "http://$ALB_DNS/?search=<script>alert(1)</script>"
+----
+
+Expected: `403 Forbidden` - The WAF detected and blocked the XSS attempt.
+
+== View WAF Metrics
+
+You can view WAF metrics in AWS CloudWatch:
+
+[source,bash,role="execute"]
+----
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/WAFV2 \
+  --metric-name BlockedRequests \
+  --dimensions Name=WebACL,Value=openshift-waf Name=Region,Value=us-east-2 Name=Rule,Value=ALL \
+  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 \
+  --statistics Sum \
+  --region us-east-2
+----
+
+== Cleanup
+
+[source,bash,role="execute"]
+----
+# Delete ALB ingress
+oc delete ingress weathernow-alb -n app-management --ignore-not-found
+
+# Delete WAF WebACL
+WAF_ID=$(aws wafv2 list-web-acls --scope REGIONAL --region us-east-2 --query "WebACLs[?Name=='openshift-waf'].Id" --output text 2>/dev/null)
+if [ -n "$WAF_ID" ]; then
+  LOCK_TOKEN=$(aws wafv2 get-web-acl --name openshift-waf --scope REGIONAL --id $WAF_ID --region us-east-2 --query "LockToken" --output text)
+  aws wafv2 delete-web-acl --name openshift-waf --scope REGIONAL --id $WAF_ID --lock-token $LOCK_TOKEN --region us-east-2
+  echo "WAF WebACL deleted"
+fi
+
+# Restore service type
+oc patch svc weathernow -n app-management -p '{"spec":{"type":"ClusterIP"}}' 2>/dev/null || true
+
+echo "Cleanup complete"
+----
+
+== Summary
+
+**What you learned:**
+
+* AWS WAF provides OWASP protection (SQL injection, XSS, etc.) for OpenShift workloads
+* The AWS Load Balancer Operator manages ALBs that integrate with WAF
+* WAF rules are evaluated before traffic reaches your pods
+* CloudWatch provides visibility into blocked attacks
+
+**Key components:**
+
+[cols="1,2"]
+|===
+|Component |Purpose
+
+|AWS Load Balancer Operator
+|Manages ALB lifecycle from OpenShift
+
+|AWSLoadBalancerController
+|Configures the operator behavior
+
+|Ingress (ingressClassName: alb)
+|Provisions an ALB for the workload
+
+|WAF WebACL
+|Defines protection rules
+
+|Ingress annotation (wafv2-acl-arn)
+|Associates WAF with the ALB
+|===
+
+== Additional Resources
+
+* **AWS Load Balancer Operator:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/networking/aws-load-balancer-operator[AWS Load Balancer Operator]
+* **AWS WAF Developer Guide:** link:https://docs.aws.amazon.com/waf/latest/developerguide/[AWS WAF Documentation]
+* **AWS Managed Rules:** link:https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-list.html[AWS Managed Rule Groups]

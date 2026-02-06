@@ -1,0 +1,388 @@
+= OpenShift Virtualization
+
+== Module Overview
+
+**Duration:** 20-25 minutes +
+**Audience:** Infrastructure Architects, IT Operations
+
+**The Scenario:** Your organization has legacy applications running on VMs that can't be containerized yet. You need to run VMs and containers on the same platform.
+
+**In this module:** You'll create a VM, access it, and perform common ops tasks - all using the same tools you use for containers.
+
+== Learning Objectives
+
+* Create and start a virtual machine
+* Access VMs via console and SSH
+* Monitor VM resource usage
+* Take snapshots for backup/rollback
+* Understand how VMs integrate with OpenShift
+
+== Prerequisites Check
+
+OpenShift Virtualization should already be installed. Verify:
+
+[source,bash,role="execute"]
+----
+oc get csv -n openshift-cnv | grep kubevirt
+----
+
+Expected output shows `Succeeded`:
+----
+kubevirt-hyperconverged-operator.v4.20.x   OpenShift Virtualization   4.20.x   Succeeded
+----
+
+Check that virtualization pods are running:
+
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-cnv | grep -E "virt-api|virt-controller|virt-handler" | head -5
+----
+
+== Part 1: Create Your First VM
+
+=== Create a Project for VMs
+
+[source,bash,role="execute"]
+----
+oc new-project vm-demo
+----
+
+=== Deploy a RHEL 9 VM
+
+Your cluster has pre-cached RHEL images ready to use. Let's create a RHEL 9 VM:
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: rhel9-vm
+  namespace: vm-demo
+spec:
+  runStrategy: Always
+  dataVolumeTemplates:
+  - metadata:
+      name: rhel9-vm-disk
+    spec:
+      sourceRef:
+        kind: DataSource
+        name: rhel9
+        namespace: openshift-virtualization-os-images
+      storage:
+        resources:
+          requests:
+            storage: 30Gi
+  template:
+    metadata:
+      labels:
+        kubevirt.io/vm: rhel9-vm
+    spec:
+      domain:
+        cpu:
+          cores: 1
+        devices:
+          disks:
+          - name: rootdisk
+            disk:
+              bus: virtio
+          - name: cloudinitdisk
+            disk:
+              bus: virtio
+        resources:
+          requests:
+            memory: 2Gi
+      volumes:
+      - name: rootdisk
+        dataVolume:
+          name: rhel9-vm-disk
+      - name: cloudinitdisk
+        cloudInitNoCloud:
+          userData: |
+            #cloud-config
+            user: cloud-user
+            password: redhat
+            chpasswd:
+              expire: false
+EOF
+----
+
+NOTE: The VM will take 1-2 minutes to start as it clones the RHEL 9 image.
+
+=== Watch the VM Start (CLI)
+
+[source,bash,role="execute"]
+----
+oc get vms -w
+----
+
+Wait until STATUS shows `Running`, then press `Ctrl+C`.
+
+=== Watch the VM Start (Web Console)
+
+While the VM is starting, let's view it in the OpenShift console:
+
+1. In the OpenShift web console, look at the dropdown in the top-left (it may say "Administrator" or another perspective)
+2. Click the dropdown and select **Fleet Virtualization**
+
+image::virt-fleet-dropdown.png[Fleet Virtualization dropdown]
+
+3. In the left navigation, click **Fleet Virtualization**
+4. You'll see your `rhel9-vm` in the list with status **Starting**
+
+image::virt-rhel9-vm-starting.png[rhel9-vm showing in Fleet Virtualization]
+
+The summary panel shows:
+- **Virtual Machines (1)** - Your VM count
+- **Usage** - CPU, Memory, Storage metrics
+- **Status** - Error, Running, Stopped, Paused counts
+
+=== Verify the VM Instance
+
+Once the VM shows **Running**, verify via CLI:
+
+[source,bash,role="execute"]
+----
+oc get vmi
+----
+
+You'll see the running VM instance with its IP address:
+----
+NAME        AGE   PHASE     IP            NODENAME
+rhel9-vm   1m    Running   10.x.x.x      worker-1
+----
+
+== Part 2: Access the VM
+
+=== Option 1: Fleet Virtualization Console
+
+The easiest way to access your VM is through the Fleet Virtualization console:
+
+1. In **Fleet Virtualization**, click on **rhel9-vm** in the VM list
+2. You'll see the VM details page with status, resources, and actions
+
+image::virt-rhel9-vm-details.png[rhel9-vm details page]
+
+3. Click the **Open Web Console** button
+4. A new browser tab opens with the VM's graphical console
+
+image::virt-rhel9-vm-console.png[rhel9-vm web console]
+
+5. Login with: `cloud-user` / `redhat`
+
+image::virt-rhel9-vm-logged-in.png[Successfully logged into rhel9-vm]
+
+You now have a shell prompt on a full RHEL 9 VM - running on OpenShift!
+
+TIP: Click the fullscreen icon in the console toolbar for a better view.
+
+NOTE: You may see a message like "PMU virtualization is disabled" in the console output. This is normal for nested virtualization environments and doesn't affect VM functionality.
+
+=== Option 2: VNC Console Tab
+
+Alternatively, from the VM details page:
+
+1. Click the **Console** tab
+2. Select **VNC Console** from the dropdown
+3. Login with: `cloud-user` / `redhat`
+
+=== Option 3: Serial Console (CLI)
+
+[source,bash,role="execute"]
+----
+oc get vmi rhel9-vm -o jsonpath='{.status.interfaces[0].ipAddress}'
+----
+
+Use virtctl for console access:
+
+[source,bash,role="execute"]
+----
+virtctl console rhel9-vm
+----
+
+Login with `cloud-user` / `redhat`. Type `exit` or press `Ctrl+]` to disconnect.
+
+== Part 3: VM Operations
+
+=== Stop and Start
+
+[source,bash,role="execute"]
+----
+# Stop the VM
+virtctl stop rhel9-vm
+
+# Check status
+oc get vms
+----
+
+[source,bash,role="execute"]
+----
+# Start the VM
+virtctl start rhel9-vm
+
+# Watch it come back up
+oc get vmi -w
+----
+
+Press `Ctrl+C` when running.
+
+=== Restart
+
+[source,bash,role="execute"]
+----
+virtctl restart rhel9-vm
+----
+
+== Part 4: Monitor VM Resources
+
+=== Check VM Status
+
+[source,bash,role="execute"]
+----
+oc get vms rhel9-vm -o wide
+----
+
+=== View Resource Usage
+
+[source,bash,role="execute"]
+----
+oc describe vmi rhel9-vm | grep -A5 "Resources:"
+----
+
+=== Check Events
+
+[source,bash,role="execute"]
+----
+oc get events --field-selector involvedObject.name=rhel9-vm
+----
+
+=== Web Console Metrics
+
+Navigate to **Virtualization → VirtualMachines → rhel9-vm → Metrics** to see:
+- CPU usage over time
+- Memory consumption
+- Network I/O
+
+== Part 5: VM Snapshots
+
+Snapshots let you capture VM state before risky changes (patches, upgrades).
+
+=== Create a Snapshot
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: snapshot.kubevirt.io/v1beta1
+kind: VirtualMachineSnapshot
+metadata:
+  name: rhel9-vm-snap-1
+  namespace: vm-demo
+spec:
+  source:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: rhel9-vm
+EOF
+----
+
+=== Check Snapshot Status
+
+[source,bash,role="execute"]
+----
+oc get vmsnapshot
+----
+
+Wait for `readyToUse: true`:
+
+[source,bash,role="execute"]
+----
+oc get vmsnapshot rhel9-vm-snap-1 -o jsonpath='{.status.readyToUse}'
+----
+
+=== Restore from Snapshot (if needed)
+
+First stop the VM:
+
+[source,bash,role="execute"]
+----
+virtctl stop rhel9-vm
+----
+
+Then restore:
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: snapshot.kubevirt.io/v1beta1
+kind: VirtualMachineRestore
+metadata:
+  name: restore-rhel9-vm
+  namespace: vm-demo
+spec:
+  target:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: rhel9-vm
+  virtualMachineSnapshotName: rhel9-vm-snap-1
+EOF
+----
+
+Check restore status:
+
+[source,bash,role="execute"]
+----
+oc get vmrestore
+----
+
+== Part 6: VMs and Containers Together
+
+=== See Unified Resources
+
+[source,bash,role="execute"]
+----
+# VMs in your project
+oc get vms
+
+# Regular pods (you could have both)
+oc get pods
+
+# All compute resources
+oc get vms,pods
+----
+
+=== Same Storage Model
+
+VMs use the same PersistentVolumeClaims as containers:
+
+[source,bash,role="execute"]
+----
+oc get pvc
+----
+
+=== Same Networking
+
+VMs get IPs from the same pod network:
+
+[source,bash,role="execute"]
+----
+oc get vmi rhel9-vm -o jsonpath='{.status.interfaces[0].ipAddress}'
+----
+
+== Clean Up
+
+[source,bash,role="execute"]
+----
+oc delete project vm-demo
+----
+
+== Key Takeaways
+
+| Feature | Benefit |
+|---------|---------|
+| **Container Disks** | Spin up VMs in seconds from registry images |
+| **Same CLI** | Use `oc` for VMs just like pods |
+| **Snapshots** | Quick backup before changes |
+| **Unified Platform** | VMs and containers share storage, networking, monitoring |
+| **virtctl** | VM-specific operations (start, stop, console) |
+
+**The value:** Run legacy VMs and modern containers side-by-side. One platform, one set of tools, gradual migration path.

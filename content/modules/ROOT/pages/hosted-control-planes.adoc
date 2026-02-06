@@ -1,0 +1,935 @@
+= Architecture - Hosted Control Planes (HCP)
+
+== Module Overview
+
+**Duration:** 35 minutes +
+**Format:** Architecture presentation + Demo + Operations +
+**Audience:** Infrastructure Architects, IT Operations, Cloud Platform Teams
+
+**Workshop Narrative Context:**
+
+We've learned how to:
+- Deploy and manage applications on OpenShift
+- Troubleshoot operational issues
+- Enable developer self-service
+
+**Now:** Let's understand the **future architecture** of OpenShift - how Hosted Control Planes changes the game.
+
+== Learning Objectives
+
+By the end of this module, you will be able to:
+
+* Understand traditional OpenShift cluster architecture
+* Explain what Hosted Control Planes (HCP) is and how it differs
+* Identify the cost and operational benefits of HCP
+* See the impact on multi-cluster management
+* Understand the migration path to HCP
+
+== Traditional OpenShift Architecture (Quick Review)
+
+In a standard OpenShift cluster:
+
+* **3 dedicated control plane nodes** per cluster (API server, etcd, scheduler, controllers)
+* **N worker nodes** for application workloads
+* Each cluster = separate control plane infrastructure
+
+View this cluster's nodes:
+
+[source,bash,role="execute"]
+----
+oc get nodes
+----
+
+Output shows 3 control-plane/master nodes + 3 worker nodes.
+
+**The scale problem:**
+
+* 20 clusters = 60 control plane nodes (20 × 3)
+* Each control plane node = 8 vCPU, 32GB RAM (typical)
+* Cost: ~$9,036/year per cluster × 20 = **$180,720/year** just for control planes
+
+Operations challenges: 60 nodes to patch, 20 etcd databases to backup, 20 API endpoints to manage.
+
+== What is Hosted Control Planes (HCP)?
+
+HCP runs control planes as **pods** on a shared management cluster instead of dedicated nodes.
+
+**How it works:**
+
+* 1 management cluster hosts multiple control plane pods
+* Each hosted cluster = 1 set of control plane pods (API server, etcd, scheduler, controllers)
+* Hosted clusters have worker nodes only
+* Workers connect to their control plane pods via LoadBalancer
+
+**Example:** 20 clusters using just 3 control plane nodes (on the management cluster) instead of 60.
+
+[source,bash,role="copypaste"]
+----
+# On management cluster, view hosted control plane PVCs
+oc get pvc -A | grep etcd
+----
+
+Example output:
+
+----
+NAMESPACE                 NAME                   STATUS   VOLUME       CAPACITY
+clusters-prod-app         etcd-0                 Bound    pvc-xxxxx    10Gi
+clusters-dev-test         etcd-0                 Bound    pvc-yyyyy    10Gi
+clusters-staging          etcd-0                 Bound    pvc-zzzzz    10Gi
+----
+
+**Backup strategy:** Backup management cluster storage = backup all hosted etcd databases.
+
+== Why HCP Matters for Operations
+
+HCP changes three operational metrics:
+
+**1. Cost**
+
+* Traditional: 20 clusters = 60 control plane nodes = $180,720/year
+* HCP: 20 clusters = 3 control plane nodes (on management cluster) = ~$9,000/year
+* Savings scale with cluster count
+
+**2. Speed**
+
+* Traditional cluster provisioning: 45-60 minutes
+* HCP cluster provisioning: 3-5 minutes (you'll see this live)
+* Faster means more dev/test agility
+
+**3. Operations**
+
+* Traditional: Patch 60 nodes, backup 20 etcd databases, upgrade 20 clusters individually
+* HCP: Patch 3 nodes, backup 1 cluster, upgrade control planes as pods
+* Centralized management reduces operational complexity
+
+== Managing HCP at Scale
+
+**Red Hat Advanced Cluster Management (ACM)** is the primary tool for operating HCP in production.
+
+**What ACM provides:**
+
+* **Cluster lifecycle** - Create, upgrade, delete hosted clusters from one console
+* **Centralized monitoring** - View health of all hosted clusters in one dashboard
+* **Policy enforcement** - Apply security and configuration policies across all clusters
+* **GitOps integration** - Manage cluster configurations as code
+
+**Platforms supported:**
+
+* AWS, Azure (Tech Preview), bare metal/edge (Agent platform)
+* On-prem virtualization (KubeVirt)
+
+In production, you'd use ACM to manage dozens or hundreds of hosted clusters. This demo shows the underlying HCP mechanics without ACM.
+
+== When To Use HCP
+
+**Common scenario:** Platform team supporting 20 internal dev teams.
+
+**Traditional:**
+* 20 clusters = 60 control plane nodes
+* 45-60 minutes to provision each cluster
+* Patch/upgrade each cluster individually
+
+**HCP:**
+* 20 hosted clusters = 3 control plane nodes (on management cluster)
+* 3-5 minutes to provision each cluster
+* Upgrade control planes as pods, centralized backup
+
+**Other scenarios:** Edge computing (control planes centralized, workers remote), dev/test environments (fast create/destroy), multi-region deployments.
+
+== Hands-On: Creating Your First Hosted Cluster
+
+**This lab environment has all the HCP prerequisites installed.** Now YOU will create a hosted cluster and see the speed difference firsthand!
+
+=== Step 1: Verify Prerequisites
+
+First, confirm the HCP infrastructure is ready:
+
+[source,bash,role="execute"]
+----
+# Check MultiClusterEngine is available
+oc get multiclusterengine -o jsonpath='{.items[0].status.phase}'
+----
+
+Expected output: `Available`
+
+[source,bash,role="execute"]
+----
+# Check HyperShift operator is running
+oc get pods -n hypershift | grep operator
+----
+
+[source,bash,role="execute"]
+----
+# Check MetalLB IP pool (needed for LoadBalancer)
+oc get ipaddresspool -n metallb-system
+----
+
+[source,bash,role="execute"]
+----
+# Check KubeVirt credentials exist
+oc get secret kubevirt-secret -n open-cluster-management
+----
+
+All prerequisites are in place!
+
+=== Step 2: Check Current State (No Hosted Clusters Yet)
+
+[source,bash,role="execute"]
+----
+# List hosted clusters - should be empty
+oc get hostedclusters -A
+----
+
+Expected output: `No resources found`
+
+[source,bash,role="execute"]
+----
+# Check for etcd PVCs - should be empty
+oc get pvc -A | grep etcd
+----
+
+Expected output: (nothing)
+
+**This is our baseline.** We have zero hosted clusters. Now let's create one!
+
+=== Step 3: Create Your First Hosted Cluster
+
+**Start the timer!** Traditional cluster creation takes 45-60 minutes. Let's see how fast HCP is.
+
+First, create the namespace and required secrets:
+
+[source,bash,role="execute"]
+----
+# Create the clusters namespace
+oc create namespace clusters 2>/dev/null || true
+
+# Copy pull secret from openshift-config
+oc get secret pull-secret -n openshift-config -o jsonpath='{.data.\.dockerconfigjson}' | base64 -d > /tmp/pull-secret.json
+oc create secret generic pullsecret-cluster-demo-hcp -n clusters --from-file=.dockerconfigjson=/tmp/pull-secret.json --type=kubernetes.io/dockerconfigjson 2>/dev/null || true
+
+# Create SSH key secret (empty for demo)
+oc create secret generic sshkey-cluster-demo-hcp -n clusters --from-literal=id_rsa.pub="" 2>/dev/null || true
+----
+
+Now create the HostedCluster:
+
+[source,bash,role="execute"]
+----
+# Create the HostedCluster - this takes about 3-5 minutes
+oc apply -f - <<EOF
+apiVersion: hypershift.openshift.io/v1beta1
+kind: HostedCluster
+metadata:
+  name: demo-hcp
+  namespace: clusters
+spec:
+  release:
+    image: quay.io/openshift-release-dev/ocp-release:4.17.0-multi
+  pullSecret:
+    name: pullsecret-cluster-demo-hcp
+  sshKey:
+    name: sshkey-cluster-demo-hcp
+  networking:
+    clusterNetwork:
+      - cidr: 10.132.0.0/14
+    serviceNetwork:
+      - cidr: 172.31.0.0/16
+  platform:
+    type: KubeVirt
+    kubevirt:
+      baseDomainPassthrough: true
+  infraID: demo-hcp
+  dns:
+    baseDomain: demo.local
+  services:
+    - service: APIServer
+      servicePublishingStrategy:
+        type: LoadBalancer
+    - service: OAuthServer
+      servicePublishingStrategy:
+        type: Route
+    - service: Konnectivity
+      servicePublishingStrategy:
+        type: Route
+    - service: Ignition
+      servicePublishingStrategy:
+        type: Route
+  etcd:
+    managed:
+      storage:
+        persistentVolume:
+          size: 8Gi
+        type: PersistentVolume
+    managementType: Managed
+  controllerAvailabilityPolicy: SingleReplica
+  infrastructureAvailabilityPolicy: SingleReplica
+EOF
+----
+
+=== Step 4: Watch the Magic Happen
+
+[source,bash,role="execute"]
+----
+# Watch the hosted cluster status - refresh every 5 seconds
+watch -n 5 "oc get hostedcluster demo-hcp -n clusters 2>/dev/null || echo 'Waiting for cluster...'"
+----
+
+Press `Ctrl+C` when you see `AVAILABLE: True`
+
+While waiting, let's check what's being created:
+
+[source,bash,role="execute"]
+----
+# Watch pods spinning up in the hosted cluster namespace
+oc get pods -n clusters-demo-hcp -w
+----
+
+**You'll see control plane pods appearing:** kube-apiserver, etcd, kube-controller-manager, etc.
+
+=== Step 5: Verify Creation Complete
+
+[source,bash,role="execute"]
+----
+# Check hosted cluster status
+oc get hostedclusters -A
+----
+
+You should see:
+
+----
+NAMESPACE   NAME       VERSION   KUBECONFIG                  PROGRESS   AVAILABLE
+clusters    demo-hcp             demo-hcp-admin-kubeconfig   Partial    True
+----
+
+**What this shows:**
+
+* `AVAILABLE: True` - The control plane is running and ready
+* `PROGRESS: Partial` - No worker nodes yet (expected for this demo)
+* `KUBECONFIG` - Secret containing credentials to access this cluster
+
+**Check the time!** From `oc apply` to `AVAILABLE: True` should be **3-5 minutes**. Traditional cluster: 45-60 minutes!
+
+=== Step 6: Explore Control Plane Running as Pods
+
+Now let's explore what was created. View the hosted control plane pods:
+
+[source,bash,role="execute"]
+----
+oc get pods -n clusters-demo-hcp
+----
+
+You'll see **35+ pods running**, including:
+
+----
+NAME                                                  READY   STATUS
+kube-apiserver-5577c7675-6hg5d                       4/4     Running
+kube-controller-manager-77bb6f5d76-57khz             1/1     Running
+kube-scheduler-75b46d7cf4-6k5d2                      1/1     Running
+etcd-0                                               3/3     Running
+openshift-apiserver-66d95c9694-nbl9d                 3/3     Running
+openshift-controller-manager-75cb799f97-g5t4k        1/1     Running
+cluster-version-operator-57fcdd95c6-w2jwd            1/1     Running
+...
+----
+
+**Key observation:** These are the **same components** that run on dedicated control plane nodes in traditional clusters - but now they're **containerized pods**!
+
+=== Step 3: Check Where These Pods Are Running
+
+See which nodes host the control plane pods:
+
+[source,bash,role="execute"]
+----
+oc get pods -n clusters-demo-hcp -o wide | grep kube-apiserver | head -3
+----
+
+You'll see they run on **worker nodes** of the management cluster:
+
+----
+kube-apiserver-xxx   4/4   Running   0   10m   10.129.x.x   ip-10-0-54-39.us-east-2.compute.internal
+----
+
+Compare this to the management cluster's nodes:
+
+[source,bash,role="execute"]
+----
+oc get nodes
+----
+
+**Notice:** The control plane pods run on **regular worker nodes**, not dedicated masters!
+
+=== Step 4: View etcd Storage
+
+Check the persistent storage for the hosted cluster's etcd:
+
+[source,bash,role="execute"]
+----
+oc get pvc -A | grep etcd
+----
+
+Output:
+
+----
+NAMESPACE             NAME           STATUS   VOLUME       CAPACITY   STORAGE CLASS
+clusters-demo-hcp     data-etcd-0    Bound    pvc-xxxxx    8Gi        gp3-csi
+----
+
+**Key insight:** Each hosted cluster's etcd gets a PVC on the management cluster. This is how state is persisted.
+
+=== Step 5: Access the Hosted Cluster API
+
+Extract the kubeconfig for the hosted cluster:
+
+[source,bash,role="execute"]
+----
+oc get secret -n clusters demo-hcp-admin-kubeconfig -o jsonpath='{.data.kubeconfig}' | base64 -d > demo-hcp.kubeconfig
+----
+
+View the API server endpoint:
+
+[source,bash,role="execute"]
+----
+cat demo-hcp.kubeconfig | grep server:
+----
+
+You'll see a LoadBalancer URL:
+
+----
+server: https://ac1bcccf2dfcd4bb5aa0377ed2069d2f-xxx.us-east-2.elb.amazonaws.com:6443
+----
+
+**This is the hosted cluster's API server**, accessible via LoadBalancer!
+
+=== Step 6: Connect to the Hosted Cluster
+
+Switch context to the hosted cluster:
+
+[source,bash,role="execute"]
+----
+export KUBECONFIG=demo-hcp.kubeconfig
+oc cluster-info
+----
+
+Output:
+
+----
+Kubernetes control plane is running at https://ac1bcccf...elb.amazonaws.com:6443
+----
+
+Now check for nodes:
+
+[source,bash,role="execute"]
+----
+oc get nodes
+----
+
+Result:
+
+----
+No resources found
+----
+
+**Why no nodes?** This hosted cluster has **no worker nodes yet**. The control plane is running (on the management cluster as pods), but we haven't added workers.
+
+Switch back to the management cluster:
+
+[source,bash,role="execute"]
+----
+unset KUBECONFIG
+oc get nodes
+----
+
+Now you see the management cluster nodes again!
+
+=== Step 7: Compare Architecture
+
+**Traditional Cluster:**
+
+[source,bash,role="execute"]
+----
+oc get nodes --show-labels | grep "node-role.kubernetes.io/master"
+----
+
+You'll see 3 dedicated control plane nodes:
+
+----
+ip-10-0-17-107...   Ready   control-plane,master   2h   v1.33.5
+ip-10-0-63-246...   Ready   control-plane,master   2h   v1.33.5
+ip-10-0-66-152...   Ready   control-plane,master   2h   v1.33.5
+----
+
+**Hosted Cluster:**
+
+[source,bash,role="execute"]
+----
+oc get pods -n clusters-demo-hcp -l app=etcd
+----
+
+Just pods:
+
+----
+NAME     READY   STATUS    RESTARTS   AGE
+etcd-0   3/3     Running   0          15m
+----
+
+**The difference:**
+
+* Traditional: 3 dedicated nodes (expensive)
+* HCP: 1 StatefulSet pod (cost-effective)
+
+=== Step 8: Resource Consumption
+
+Check how much the hosted control plane is using:
+
+[source,bash,role="execute"]
+----
+oc adm top pods -n clusters-demo-hcp
+----
+
+You'll see resource usage for each pod:
+
+----
+NAME                                    CPU   MEMORY
+kube-apiserver-xxx                      50m   500Mi
+etcd-0                                  30m   300Mi
+openshift-apiserver-xxx                 25m   250Mi
+...
+----
+
+**Visual estimate:** Add up the CPU column (in millicores) and Memory column. You'll see:
+
+* **Total CPU:** ~300-400m (0.3-0.4 CPU cores)
+* **Total Memory:** ~7-8GB
+
+**That's the entire control plane!**
+
+Compare to traditional:
+
+* 3 nodes × 8 vCPU = 24 vCPUs reserved
+* 3 nodes × 32GB RAM = 96GB reserved
+
+**HCP is ~50x more efficient!**
+
+=== Step 9: THE BIG DEMO - Multi-Tenancy in Real-Time
+
+Now let's prove HCP's real value. We'll create a **SECOND** hosted cluster while you watch.
+
+**What this proves:**
+- Speed: How fast can you provision?
+- Cost: Does adding clusters cost more infrastructure?
+- Multi-tenancy: Can teams get isolated clusters?
+
+First, check current state:
+
+[source,bash,role="execute"]
+----
+# How many hosted clusters now?
+oc get hostedclusters -A
+
+# Current node resource usage
+oc adm top nodes
+----
+
+Now create a second cluster (same approach as the first):
+
+[source,bash,role="execute"]
+----
+# Create secrets for second cluster
+oc create secret generic pullsecret-cluster-prod-frontend -n clusters --from-file=.dockerconfigjson=/tmp/pull-secret.json --type=kubernetes.io/dockerconfigjson 2>/dev/null || true
+oc create secret generic sshkey-cluster-prod-frontend -n clusters --from-literal=id_rsa.pub="" 2>/dev/null || true
+
+# Create the second HostedCluster - start your timer!
+time oc apply -f - <<EOF
+apiVersion: hypershift.openshift.io/v1beta1
+kind: HostedCluster
+metadata:
+  name: prod-frontend
+  namespace: clusters
+spec:
+  release:
+    image: quay.io/openshift-release-dev/ocp-release:4.17.0-multi
+  pullSecret:
+    name: pullsecret-cluster-prod-frontend
+  sshKey:
+    name: sshkey-cluster-prod-frontend
+  networking:
+    clusterNetwork:
+      - cidr: 10.136.0.0/14
+    serviceNetwork:
+      - cidr: 172.32.0.0/16
+  platform:
+    type: KubeVirt
+    kubevirt:
+      baseDomainPassthrough: true
+  infraID: prod-frontend
+  dns:
+    baseDomain: demo.local
+  services:
+    - service: APIServer
+      servicePublishingStrategy:
+        type: LoadBalancer
+    - service: OAuthServer
+      servicePublishingStrategy:
+        type: Route
+    - service: Konnectivity
+      servicePublishingStrategy:
+        type: Route
+    - service: Ignition
+      servicePublishingStrategy:
+        type: Route
+  etcd:
+    managed:
+      storage:
+        persistentVolume:
+          size: 8Gi
+        type: PersistentVolume
+    managementType: Managed
+  controllerAvailabilityPolicy: SingleReplica
+  infrastructureAvailabilityPolicy: SingleReplica
+EOF
+----
+
+**While it provisions, let's discuss:**
+
+Traditional approach to create "prod-frontend" cluster:
+1. Provision 3 new control plane nodes (VMs)
+2. Provision N worker nodes
+3. Bootstrap etcd cluster
+4. Install OpenShift
+5. **Total time: 45-60 minutes**
+6. **Cost: 3 × m5a.2xlarge = $276/month**
+
+HCP approach:
+1. Create HostedCluster resource
+2. Pods deploy on existing infrastructure
+3. **Total time: 3-5 minutes** ← Watch the timer!
+4. **Cost: Minimal (just pods)**
+
+**After 3 minutes:**
+
+[source,bash,role="execute"]
+----
+# Check - now we have TWO hosted clusters!
+oc get hostedclusters -A
+----
+
+You should see:
+----
+NAMESPACE   NAME            AVAILABLE
+clusters    demo-hcp        True
+clusters    prod-frontend   True      ← NEW!
+----
+
+**Check pods for the new cluster:**
+
+[source,bash,role="execute"]
+----
+oc get pods -n clusters-prod-frontend | grep Running | wc -l
+----
+
+Result: ~35 pods running (full control plane!)
+
+=== Step 10: Resource Overhead - Before vs After
+
+Check if adding a cluster increased node resource usage:
+
+[source,bash,role="execute"]
+----
+oc adm top nodes
+----
+
+**What you'll see:**
+
+Before 2nd cluster:
+----
+NAME                      CPU    MEMORY
+worker-1                  15%    40%
+worker-2                  12%    35%
+----
+
+After 2nd cluster:
+----
+NAME                      CPU    MEMORY
+worker-1                  18%    45%    ← Minimal increase!
+worker-2                  15%    40%
+----
+
+**The impact:**
+- Added entire control plane (36 pods)
+- CPU increased: ~3% per node
+- Memory increased: ~5% per node
+
+**Compare to traditional:**
+- Would need 3 NEW nodes (m5a.2xlarge each)
+- 100% CPU/memory on those nodes reserved
+
+=== Step 11: Real Cost Calculation
+
+Let's calculate actual cost using the metrics we just saw.
+
+**Traditional Architecture (2 clusters):**
+----
+Cluster 1: 3 control plane nodes
+Cluster 2: 3 control plane nodes
+Total: 6 × m5a.2xlarge instances
+
+AWS Pricing:
+- m5a.2xlarge: $0.344/hour
+- 6 nodes × $0.344 = $2.064/hour
+- Monthly: $2.064 × 730 hours = $1,507/month
+- Annual: $18,084/year
+----
+
+**HCP Architecture (2 clusters):**
+----
+Management cluster: 3 control plane + 2 workers (already exists)
+Hosted cluster 1 (demo-hcp): Just pods
+Hosted cluster 2 (prod-frontend): Just pods
+
+Additional cost for hosted clusters: $0
+(Runs on existing worker nodes)
+
+Monthly: $0 additional
+Annual: $0 additional
+----
+
+**Savings: $18,084/year for just 2 clusters!**
+
+**Extrapolate to 50 clusters:**
+- Traditional: 150 control plane nodes = $75,420/year
+- HCP: Same management cluster = $0 additional
+- **Savings: $75,420/year**
+
+=== Step 12: Speed Comparison - The Numbers
+
+**What we just witnessed:**
+
+Traditional cluster creation:
+1. Infrastructure provisioning: 15-20 min
+2. Bootstrap: 10-15 min
+3. Install OpenShift: 15-20 min
+4. Operators become ready: 5-10 min
+5. **Total: 45-60 minutes**
+
+HCP cluster creation (prod-frontend):
+1. Create HostedCluster CR: 5 seconds
+2. Control plane pods deploy: 2-3 minutes
+3. API server ready: 3-4 minutes
+4. **Total: 3-5 minutes** ✅
+
+**Speed improvement: 10-15x faster!**
+
+**Business Impact:**
+- Dev team needs test cluster → Wait 3 min vs 60 min
+- Can create/destroy clusters rapidly
+- Test environment per PR? Easy!
+- Ephemeral clusters for demos? No problem!
+
+=== Step 13: Access Both Clusters
+
+Show complete isolation between clusters:
+
+[source,bash,role="execute"]
+----
+# Access first cluster
+oc get secret demo-hcp-admin-kubeconfig -n clusters \
+  -o jsonpath='{.data.kubeconfig}' | base64 -d > /tmp/demo-hcp.kubeconfig
+
+# Access second cluster
+oc get secret prod-frontend-admin-kubeconfig -n clusters \
+  -o jsonpath='{.data.kubeconfig}' | base64 -d > /tmp/prod-frontend.kubeconfig
+----
+
+Test isolation:
+
+[source,bash,role="execute"]
+----
+# Cluster 1
+export KUBECONFIG=/tmp/demo-hcp.kubeconfig
+oc whoami --show-server
+
+# Cluster 2
+export KUBECONFIG=/tmp/prod-frontend.kubeconfig
+oc whoami --show-server
+
+# Back to management cluster
+unset KUBECONFIG
+----
+
+Each cluster has:
+- ✅ Separate API endpoint (LoadBalancer)
+- ✅ Separate authentication
+- ✅ Complete isolation
+- ✅ Different namespaces on management cluster
+
+**This is true multi-tenancy!**
+
+=== Demo Summary: What Did We Just Prove?
+
+Let's recap what the hands-on demo **actually proved**:
+
+✅ **SPEED: 10-15x faster provisioning**
+- Traditional: 45-60 minutes
+- HCP: 3-5 minutes (you watched it happen!)
+- Created prod-frontend cluster while discussing architecture
+
+✅ **COST: $75,000+/year savings at scale**
+- 2 clusters: $18,084/year saved
+- 50 clusters: $75,420/year saved
+- No additional infrastructure needed
+
+✅ **EFFICIENCY: Minimal resource overhead**
+- Added full control plane (36 pods)
+- Node CPU increased: ~3%
+- Node memory increased: ~5%
+- Traditional would need 3 new nodes (100% dedicated)
+
+✅ **MULTI-TENANCY: True isolation**
+- 2 separate clusters on same infrastructure
+- Each has own API endpoint
+- Complete namespace isolation
+- Different teams, different versions possible
+
+✅ **SCALABILITY: Proven path to 100+ clusters**
+- If 2 clusters = minimal overhead
+- Could run 50, 100, 200 clusters
+- Same management cluster infrastructure
+
+**Key Takeaway:** HCP isn't just a different architecture - it's a **cost and speed multiplier** for multi-cluster scenarios. You just watched us save $18,084/year in 3 minutes!
+
+== Operations 101: Day 2 Tasks
+
+Now that you've seen HCP in action, here are common operational tasks.
+
+=== Backup and Restore
+
+**Backup strategy:**
+
+Each hosted cluster's etcd is stored as a PVC on the management cluster:
+
+[source,bash,role="copypaste"]
+----
+# View all hosted cluster etcd storage
+oc get pvc -A | grep etcd
+----
+
+To backup hosted clusters: Backup the management cluster's storage (snapshots, Velero, etc.). This backs up all hosted control planes.
+
+**Recovery:** Restore management cluster storage. Hosted clusters' control planes recover automatically when their etcd PVCs are restored.
+
+=== Upgrading Hosted Clusters
+
+**Upgrade a hosted cluster's OpenShift version:**
+
+[source,bash,role="copypaste"]
+----
+# Check current version
+oc get hostedcluster demo-hcp -n clusters -o jsonpath='{.spec.release.image}'
+
+# Upgrade to new version
+oc patch hostedcluster demo-hcp -n clusters --type=merge \
+  -p '{"spec":{"release":{"image":"quay.io/openshift-release-dev/ocp-release:4.20.0-multi"}}}'
+
+# Monitor upgrade progress
+oc get hostedcluster demo-hcp -n clusters -w
+----
+
+Control plane pods roll out the new version. No infrastructure changes needed.
+
+=== Monitoring and Troubleshooting
+
+**View all hosted clusters status:**
+
+[source,bash,role="copypaste"]
+----
+# List all hosted clusters
+oc get hostedclusters -A
+
+# Watch for status changes
+oc get hostedclusters -A -w
+----
+
+**Troubleshoot a degraded hosted cluster:**
+
+[source,bash,role="copypaste"]
+----
+# Check conditions
+oc describe hostedcluster demo-hcp -n clusters
+
+# View control plane pods
+oc get pods -n clusters-demo-hcp
+
+# Check operator logs
+oc logs -n hypershift deployment/operator --tail=50
+----
+
+**Common issues:**
+
+* **etcd pod Pending** - Check PVC status, storage class availability
+* **API server CrashLoopBackOff** - Check for resource limits, certificate issues
+* **Cluster shows Degraded** - Review conditions in `oc describe hostedcluster`
+
+=== Access Control
+
+**Grant team access to their hosted cluster only:**
+
+[source,bash,role="copypaste"]
+----
+# Extract kubeconfig for specific team
+oc get secret prod-frontend-admin-kubeconfig -n clusters \
+  -o jsonpath='{.data.kubeconfig}' | base64 -d > team-a.kubeconfig
+
+# Provide to Team A - they can only access their cluster
+----
+
+Teams can't access the management cluster or other hosted clusters. Complete isolation.
+
+=== Deleting Hosted Clusters
+
+Deletion takes 2-4 minutes as it cleans up all resources. You can run in background:
+
+[source,bash,role="copypaste"]
+----
+# Delete hosted cluster (runs in background)
+oc delete hostedcluster demo-hcp -n clusters &
+
+# Watch cleanup progress
+watch -n 5 "oc get hostedcluster -A; echo '---'; oc get pods -n clusters-demo-hcp 2>/dev/null | wc -l"
+----
+
+**What happens during deletion:**
+
+* Control plane pods terminated (30-60 seconds)
+* etcd PVC deleted (30-60 seconds)
+* LoadBalancer cleaned up (60-90 seconds)
+* Namespace removed (30 seconds)
+
+The `&` runs deletion in background so you can continue working.
+
+== Migration Considerations
+
+**For existing OpenShift deployments:**
+
+1. **Start with dev/test clusters** - Lower risk, faster ROI
+2. **Deploy management cluster** - Standard OpenShift + ACM + HyperShift operator
+3. **Migrate applications** - Create hosted cluster, move workloads with Migration Toolkit
+4. **Decommission traditional clusters** - After validation
+
+**Not all clusters need to migrate.** Production clusters with dedicated control plane requirements can remain traditional. HCP delivers value when you have multiple clusters (10+).
+
+== Additional Resources
+
+* **HCP Documentation:** https://docs.openshift.com/container-platform/4.20/hosted_control_planes/index.html
+* **HyperShift Project:** https://hypershift-docs.netlify.app/
+* **ACM Documentation:** https://access.redhat.com/documentation/en-us/red_hat_advanced_cluster_management_for_kubernetes/
+
+== Summary
+
+You've seen HCP in action:
+
+* Control planes as pods on shared infrastructure
+* 3-5 minute cluster provisioning (vs 45-60 minutes traditional)
+* Cost savings scale with cluster count ($9,036/year per additional cluster)
+* Operational simplicity (centralized backup, upgrade, monitoring)
+
+HCP makes sense when you're managing 10+ clusters. Single clusters or small-scale deployments may not justify the management cluster overhead.
