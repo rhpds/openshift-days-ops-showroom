@@ -31,22 +31,16 @@ antora:
 output:
   dir: ./www
 
-# Module attributes for ifdef conditionals in nav.adoc
-# In production, these are injected by the showroom workload
-# For local preview, enable all modules
+# Module attributes for ifeval conditionals in nav.adoc
+# In production, these are injected by the showroom workload via user_data
+# For local preview, enable all modules by setting to "true"
 asciidoc:
   attributes:
     toclevels: 2
-    # Module flags - set to '' to enable, comment out to disable
-    module_virt: ''
-    module_acm: ''
-    module_oadp: ''
-    module_devhub: ''
-    module_ols: ''
-    module_security: ''
-    module_waf: ''
-    module_oidc: ''
-    module_ldap: ''
-    module_observability: ''
-    module_performance: ''
-    module_cloud_infra: ''
+    # Module flags - matches catalog parameter names (module_enable_*)
+    module_enable_virt: 'true'
+    module_enable_acm: 'true'
+    module_enable_backup: 'true'
+    module_enable_devhub: 'true'
+    module_enable_ols: 'true'
+    module_enable_security: 'true'

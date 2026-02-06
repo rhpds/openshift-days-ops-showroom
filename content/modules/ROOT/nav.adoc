@@ -1,70 +1,49 @@
 // OpenShift Days - Ops Track (101)
 // Streamlined workshop matching requirements
-// Module-based navigation using ifdef conditionals
+// Module-based navigation using ifeval conditionals
 //
-// Modules with workloads (operator deployed):
-//   module_virt, module_oadp, module_acm, module_devhub, module_ols, module_security, module_waf
+// Catalog parameters (passed via user_data):
+//   module_enable_virt, module_enable_backup, module_enable_acm,
+//   module_enable_devhub, module_enable_ols, module_enable_security
 //
-// Modules without workloads (content only):
-//   module_ldap, module_oidc, module_observability, module_performance, module_cloud_infra
+// Note: Using ifeval instead of ifdef because catalog sends boolean values
+// and ifdef only checks existence, not value
 
 * xref:index.adoc[Environment Setup]
 
 .Phase 1: Platform Foundation
 * xref:ocp-concepts.adoc[OpenShift Platform Overview]
 * xref:installation.adoc[Installation & Verification]
-ifdef::module_oidc[]
-* xref:oidc-authentication.adoc[Identity & Users - OIDC]
-endif::[]
-ifdef::module_ldap[]
-* xref:ldap-groupsync.adoc[Identity & Users - LDAP]
-endif::[]
 * xref:app-mgmt-basics.adoc[Application Management Basics]
 
 .Phase 2: Networking
 * xref:ingress-loadbalancing.adoc[Ingress & Load Balancing]
 * xref:network-security.adoc[Network Security]
-ifdef::module_waf[]
-* xref:aws-waf.adoc[AWS WAF Integration]
-endif::[]
 
 .Phase 3: Day 2 Operations
-ifdef::module_observability[]
-* xref:observability.adoc[Observability]
-endif::[]
 * xref:debugging-troubleshooting.adoc[Debugging & Troubleshooting]
-ifdef::module_performance[]
-* xref:performance-tuning.adoc[Performance Tuning]
-endif::[]
-ifdef::module_oadp[]
+ifeval::["{module_enable_backup}" == "true"]
 * xref:backup-restore.adoc[Backup & Restore - OADP]
 endif::[]
-ifdef::module_ols[]
+ifeval::["{module_enable_ols}" == "true"]
 * xref:openshift-lightspeed.adoc[OpenShift Lightspeed]
 endif::[]
 
-ifdef::module_virt,module_acm[]
 .Phase 4: Workloads & Architecture
-endif::[]
-ifdef::module_virt[]
+ifeval::["{module_enable_virt}" == "true"]
 * xref:virtualization.adoc[Virtualization]
 endif::[]
-ifdef::module_acm[]
+ifeval::["{module_enable_acm}" == "true"]
 * xref:acm-multicluster.adoc[ACM - Multi-Cluster Management]
 * xref:hosted-control-planes.adoc[Advanced Architecture - HCP]
 endif::[]
 
-ifdef::module_security[]
+ifeval::["{module_enable_security}" == "true"]
 .Phase 5: Security
 * xref:security.adoc[Security - Secrets, Certs & ACS]
 endif::[]
 
-ifdef::module_cloud_infra,module_devhub[]
+ifeval::["{module_enable_devhub}" == "true"]
 .Phase 6: Platform Engineering
-endif::[]
-ifdef::module_cloud_infra[]
-* xref:cloud-infrastructure.adoc[Cloud Integration & Infrastructure]
-endif::[]
-ifdef::module_devhub[]
 * xref:developer-hub.adoc[Developer Hub]
 endif::[]
