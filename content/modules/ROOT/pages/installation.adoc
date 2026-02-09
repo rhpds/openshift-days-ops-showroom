@@ -469,7 +469,7 @@ image::installation-images/overview-dashboard.png[OpenShift web console Overview
 
 The console is the fastest way to get a visual health overview of your cluster.
 
-**Note:** You'll configure LDAP authentication in the next module to replace the default `kubeadmin` account with enterprise user identities.
+**Note:** In production environments, you would configure enterprise authentication (LDAP, OIDC, or SAML) to replace the default `kubeadmin` account.
 
 == Summary
 

@@ -510,10 +510,10 @@ Install enterprise-grade software with **one click**.
 
 In the following modules, you'll dive deeper into:
 
-* **Installation** - How clusters are provisioned
-* **Identity Management** - Integrating with LDAP/Active Directory
-* **Security** - Advanced Cluster Security (ACS) scanning
-* **Multi-Cluster** - Managing fleets with ACM
+* **Installation & Verification** - Checking cluster health
+* **Application Management** - Deploying and scaling applications
+* **Networking** - Ingress, load balancing, and network security
+* **Day 2 Operations** - Debugging, observability, and backup/restore
 
 ---
 
