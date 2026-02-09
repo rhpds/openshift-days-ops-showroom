@@ -1,143 +1,62 @@
-=== Getting Started
+= OpenShift Days - Ops Track Workshop
 
-This template is designed to be used as a base for your showroom lab guides.
+Showroom content for the OpenShift Days Ops Track workshop, covering Day 2 operations for OpenShift administrators.
 
-The content is built using Antora, a static site generator for creating documentation sites from AsciiDoc documents.
+== Workshop Overview
 
-This git repo template was created to make it easy for you to start developing your lab instructions.
+A comprehensive modular workshop for OpenShift administrators using CNV-based infrastructure with Hosted Control Planes for multi-cluster scenarios.
 
-Features:
+=== Available Modules
 
-. 0% cruft
-. Red Hat Demo Platform UI Bundle default
-. Dev Mode extension that displays the asciidoc attributes you have to work with
-. Content is generated using Antora, a static site generator for creating documentation sites from AsciiDoc documents.
+* *Platform Foundation* - OpenShift concepts, installation verification, application management
+* *Networking* - Ingress, load balancing, network security
+* *Day 2 Operations* - Debugging, troubleshooting, backup/restore (OADP), OpenShift Lightspeed
+* *Workloads & Architecture* - Virtualization, ACM multi-cluster management, Hosted Control Planes
+* *Security* - Secrets, certificates, Advanced Cluster Security (RHACS)
+* *Platform Engineering* - Red Hat Developer Hub
 
-== Getting Started
+== Module Selection
+
+Modules are selectable at catalog order time. The navigation dynamically shows/hides content based on which modules are enabled.
+
+Catalog parameters (`module_enable_*`) control both:
+
+* Which operators/workloads get deployed
+* Which content appears in the workshop navigation
+
+See link:content/modules/ROOT/nav.adoc[nav.adoc] for the conditional navigation logic using `ifeval`.
+
+== Local Development
 
 === Using Containers (Recommended)
 
-In order to test and develop on your local machine, you can use a specially built container with Podman or Docker as follows.
-
-. Create a git repo from this template
-.. Suggested naming: `showroom_<lab-name>`
-. Clone your new repo and `cd` into it
-. When you make changes to the content, all you need is to kill the container and run it again.
-+
 [source,sh]
-----
-podman run --rm --name antora -v $PWD:/antora -p 8080:8080 -i -t ghcr.io/juliaaano/antora-viewer
-----
-
-For SELinux environments, `:z` may need to be appended to the volume mount:
-
 ----
 podman run --rm --name antora -v $PWD:/antora:z -p 8080:8080 -i -t ghcr.io/juliaaano/antora-viewer
 ----
 
-Live-reload is not supported.
+Open http://localhost:8080 in your browser.
 
-=== Using Local Files (Less Recommended)
-
-. Create a git repo from this template
-. Clone the repo and `cd` into it
-. Run ./utilities/lab-serve
-. Open http://localhost:8080 in your browser
-. Run ./utilities/lab-build to build your html
-
-To rebuild your html, run `./utilites/build`.
-
-== Using Podman Compose (live reload supported)
-
-. Run `podman-compose up --build` to start the container
-. Open http://localhost:8080 in your browser
-. Live reload is supported, edit the content and refresh the page to see the changes
-
-== Editing Files
-
-Now you are ready to go!
-You can start editing the files in the `content/modules/ROOT/pages/` directory.
-
-Many modern editors such as Visual Studio Code offer live Asciidoc Preview extensions.
-
-=== Understanding the Basic Template Directory Structure
+=== Using Antora CLI
 
 [source,sh]
 ----
-./content/modules/ROOT/
-├── assets
-│   └── images                       # Images used in your content
-│       └── example-image.png
-├── examples                         # You can add downloadable assets here
-│   └── example-bash-script.sh       # e.g. an example bash script
-├── nav.adoc                         # Navigation for your lab
-├── pages                            # Your content goes here
-│   ├── index.adoc                   # First page of your lab, e.g. overview etc
-│   ├── module-01.adoc
-│   └── module-02.adoc               # Sample lab has 2 modules including index.adoc
-└── partials                         # You can add partials here, reusable content inserted inline into your modules
-    └── example_partial.adoc
+npm i -g @antora/cli @antora/site-generator
+antora site.yml
 ----
 
-== Adding Additional Links
+Output is generated in `./www/`.
 
-You can add links to external content in the convenient "Links" drop-down on the upper-right of the Showroom Summit 2024 UI.
+== Theme
 
-../content/antora.yml
-[source,yaml]
-----
-asciidoc:
-  attributes:
-    page-links:
-    - url: https://redhat.com
-      text: Red Hat
-----
+This workshop uses a custom theme with click-to-execute functionality:
 
-image::ui-links.png[]
+* Theme repo: https://github.com/jnewsome97/rhdp_showroom_theme_execute
+* Release: `rh-one-2025-execute`
 
-== Dev Mode
+The execute button allows code blocks with `role="execute"` to send commands directly to the terminal.
 
-As a convenience to developers, the Dev Mode Extention (disabled by default) displays the asciidoc attributes you have to work with while writing your lab instructions.
+== Related Resources
 
-. Disable/Enable Dev Mode by changing `enabled: true` or `enabled: false`
-+
-.default-site.yml
-[source,yaml]
-----
-extensions:
-  - id: dev-mode
-    require: ./content/lib/dev-mode.js
-    enabled: false
-----
-
-. Produces
-+
-image::dev-mode.png[]
-
-== Using Claude Skills for Content Generation
-
-This repository includes Claude skills to help you create professional Red Hat workshop and demo content.
-
-=== Option 1: Using Cursor IDE (Recommended for Teams)
-
-If you have Cursor with Claude access:
-
-. Clone this repository and open in Cursor
-. Open Cursor chat (Cmd+L or Ctrl+L)
-. Say simple commands:
-.. `create lab` - Create workshop modules
-.. `create demo` - Create demo content
-.. `verify content` - Verify content quality
-.. `generate agv description` - Generate AgnosticV catalog descriptions
-
-For detailed Cursor setup, see `CURSOR-SKILLS-README.adoc`.
-
-=== Option 2: Using Claude Code CLI
-
-If you have Claude Code CLI installed:
-
-. Clone this repository and start a Claude Code session within the directory
-. Run `/skills` to list available skills
-. Run a skill by name: `/create-lab`, `/create-demo`, `/verify-content`, or `/generate-agv-description`
-
-For detailed documentation on using Claude skills, see `CLAUDE-SKILLS-GUIDE.adoc`.
+* AgnosticV config: https://github.com/rhpds/agnosticv/tree/main/agd_v2/openshift-days-ops-track-cnv
+* Theme source: https://github.com/jnewsome97/rhdp_showroom_theme_execute
