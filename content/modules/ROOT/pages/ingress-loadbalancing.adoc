@@ -87,7 +87,7 @@ If no pods are found, deploy the app now:
 [source,bash,role="execute"]
 ----
 oc new-project app-management 2>/dev/null || oc project app-management
-oc new-app --name=weathernow --image=quay.io/openshifttest/hello-openshift:1.2.0
+oc new-app --name=weathernow --image=registry.access.redhat.com/ubi9/httpd-24
 ----
 
 Wait for the pod to be ready before continuing.

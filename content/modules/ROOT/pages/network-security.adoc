@@ -80,8 +80,8 @@ oc new-project netpol-frontend
 oc new-project netpol-backend
 
 # Deploy apps in each
-oc new-app --name=frontend --image=quay.io/openshifttest/hello-openshift:1.2.0 -n netpol-frontend
-oc new-app --name=backend --image=quay.io/openshifttest/hello-openshift:1.2.0 -n netpol-backend
+oc new-app --name=frontend --image=registry.access.redhat.com/ubi9/httpd-24 -n netpol-frontend
+oc new-app --name=backend --image=registry.access.redhat.com/ubi9/httpd-24 -n netpol-backend
 ----
 
 Wait for pods in both namespaces:

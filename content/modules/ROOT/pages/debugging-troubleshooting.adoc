@@ -234,7 +234,7 @@ Events:
   Type     Reason     Message
   ----     ------     -------
   Normal   Scheduled  Successfully assigned ops-track-demo/weather-frontend-xxxxx to worker-1
-  Normal   Pulling    Pulling image "quay.io/openshifttest/hello-openshift:1.2.1"
+  Normal   Pulling    Pulling image "registry.access.redhat.com/ubi9/httpd-24:9.4-broken"
   Warning  Failed     Failed to pull image: manifest unknown
   Warning  Failed     Error: ImagePullBackOff
 ----
@@ -251,10 +251,10 @@ oc get deployment weather-frontend -n ops-track-demo -o jsonpath='{.spec.templat
 Output:
 
 ----
-quay.io/openshifttest/hello-openshift:1.2.1
+registry.access.redhat.com/ubi9/httpd-24:9.4-broken
 ----
 
-**Problem identified:** Wrong image tag - should be `1.2.0` not `1.2.1`.
+**Problem identified:** Wrong image tag - `9.4-broken` doesn't exist.
 
 === Step 3: Fix the Image Tag
 
@@ -262,7 +262,7 @@ Let's update to the correct tag:
 
 [source,bash,role="execute"]
 ----
-oc set image deployment/weather-frontend weather-frontend=quay.io/openshifttest/hello-openshift:1.2.0 -n ops-track-demo
+oc set image deployment/weather-frontend weather-frontend=registry.access.redhat.com/ubi9/httpd-24 -n ops-track-demo
 ----
 
 Output:
@@ -582,7 +582,7 @@ Events:
   Type     Reason     Message
   ----     ------     -------
   Normal   Scheduled  Successfully assigned ops-track-demo/weather-backend-xxxxx to worker-1
-  Normal   Pulling    Pulling image "quay.io/openshifttest/hello-openshift:1.2.0"
+  Normal   Pulling    Pulling image "registry.access.redhat.com/ubi9/httpd-24"
   Normal   Pulled     Successfully pulled image
   Warning  Failed     Error: configmap "weather-config" not found
 ----
