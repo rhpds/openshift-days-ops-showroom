@@ -84,18 +84,19 @@ OpenShift can be installed on:
 
 **Managed OpenShift offerings** (ROSA, ARO, RHOIC, OpenShift Dedicated) provide fully-managed clusters where Red Hat and cloud providers handle installation and operations.
 
-=== This Workshop: IPI on AWS
+=== This Workshop Cluster
 
-**This workshop cluster was installed using installer-provisioned infrastructure (IPI) on AWS**:
+**This workshop cluster is pre-provisioned and ready for use**:
 
-* Installation method: `openshift-install create cluster`
-* Infrastructure: Installer created VPC, subnets, load balancers, EC2 instances
-* Installation time: ~40 minutes
-* Result: Production-ready cluster with 3 control plane + 2 worker nodes
+* Installation method: Installer-provisioned infrastructure (IPI)
+* Infrastructure: Fully automated provisioning of compute, network, and storage
+* Result: Production-ready cluster with 3 control plane + 3 worker nodes
+
+NOTE: The installation details are provided for educational purposes. Your focus in this workshop is on **Day 2 operations** - managing a running cluster.
 
 === Installation Configuration (install-config.yaml)
 
-All installations start with an `install-config.yaml` defining the cluster. Example for AWS:
+All installations start with an `install-config.yaml` defining the cluster:
 
 [source,yaml]
 ----
@@ -104,18 +105,12 @@ baseDomain: example.com
 metadata:
   name: production-cluster
 platform:
-  aws:
-    region: us-east-1
+  # Platform-specific configuration (aws, azure, vsphere, baremetal, etc.)
+  ...
 controlPlane:
   replicas: 3
-  platform:
-    aws:
-      type: m5.2xlarge
 compute:
 - replicas: 3
-  platform:
-    aws:
-      type: m5.4xlarge
 networking:
   clusterNetwork:
   - cidr: 10.128.0.0/14
@@ -129,7 +124,7 @@ sshKey: 'ssh-rsa AAAA...'
 
 * **controlPlane.replicas** - Always 3 for HA
 * **compute.replicas** - Initial worker count (scale later with MachineSets)
-* **platform.aws.type** - Instance sizes affect cost and performance
+* **platform** - Platform-specific settings (instance types, regions, etc.)
 * **networking.clusterNetwork** - Pod IP range (can't change post-install)
 * **networking.serviceNetwork** - Service IP range (can't change post-install)
 
@@ -143,19 +138,11 @@ The `openshift-install` command automates the entire installation:
 
 **Phase 3: Workers & Operators** (20-45 min) - Workers join, all ~34 ClusterOperators deploy
 
-**IPI on AWS provisions**: VPC, subnets, load balancers (API + ingress), EC2 instances, EBS storage, Route 53 DNS (api.*, *.apps)
+**IPI provisions**: Network infrastructure, load balancers (API + ingress), compute instances, storage, DNS (api.*, *.apps)
 
-**Prerequisites**: Cloud quota, service account permissions, DNS zone, OpenShift pull secret from console.redhat.com
+**Prerequisites**: Infrastructure quota, service account permissions, DNS zone, OpenShift pull secret from console.redhat.com
 
-=== This Workshop Cluster
-
-This cluster was installed using **IPI on AWS**:
-
-* Command: `openshift-install create cluster --dir=./install-dir`
-* Installation time: 42 minutes
-* Result: 3 control plane + 2 worker nodes, all operators Available=True
-
-**Now let's verify this installation succeeded.**
+**Now let's verify this cluster is healthy and ready for workloads.**
 
 **More details:** See link:https://docs.openshift.com/container-platform/4.20/installing/index.html[OpenShift Installation Documentation].
 
@@ -313,13 +300,16 @@ oc get nodes
 
 Output shows:
 ----
-NAME                                        STATUS   ROLES                  AGE     VERSION
-ip-10-0-17-107.us-east-2.compute.internal   Ready    control-plane,master   4h      v1.33.5
-ip-10-0-54-39.us-east-2.compute.internal    Ready    worker                 4h      v1.33.5
-ip-10-0-63-246.us-east-2.compute.internal   Ready    control-plane,master   4h      v1.33.5
-ip-10-0-66-152.us-east-2.compute.internal   Ready    control-plane,master   4h      v1.33.5
-ip-10-0-84-65.us-east-2.compute.internal    Ready    worker                 4h      v1.33.5
+NAME            STATUS   ROLES                  AGE     VERSION
+master-0        Ready    control-plane,master   4h      v1.33.5
+master-1        Ready    control-plane,master   4h      v1.33.5
+master-2        Ready    control-plane,master   4h      v1.33.5
+worker-0        Ready    worker                 4h      v1.33.5
+worker-1        Ready    worker                 4h      v1.33.5
+worker-2        Ready    worker                 4h      v1.33.5
 ----
+
+NOTE: Node names vary by platform. Cloud platforms use internal DNS names, bare metal uses hostnames you define.
 
 **What you see:**
 
@@ -336,12 +326,13 @@ oc adm top nodes
 
 Output:
 ----
-NAME                                        CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)
-ip-10-0-17-107.us-east-2.compute.internal   1666m        22%      7935Mi          26%
-ip-10-0-54-39.us-east-2.compute.internal    1941m        12%      16838Mi         27%
-ip-10-0-63-246.us-east-2.compute.internal   1837m        24%      9913Mi          32%
-ip-10-0-66-152.us-east-2.compute.internal   1192m        15%      8226Mi          27%
-ip-10-0-84-65.us-east-2.compute.internal    1381m        8%       12931Mi         20%
+NAME            CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)
+master-0        1666m        22%      7935Mi          26%
+master-1        1837m        24%      9913Mi          32%
+master-2        1192m        15%      8226Mi          27%
+worker-0        1941m        12%      16838Mi         27%
+worker-1        1381m        8%       12931Mi         20%
+worker-2        1024m        6%       10240Mi         16%
 ----
 
 **What to monitor:**
