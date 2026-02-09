@@ -639,7 +639,7 @@ router for you! The router lives in the `openshift-ingress`
 oc describe deployment router-default -n openshift-ingress
 ----
 
-You will explore the Operator for the router more in a subsequent exercise.
+The Ingress Operator manages the router deployment automatically.
 
 === Creating a Route
 Creating a *Route* is a pretty straight-forward process. We will create a
@@ -679,8 +679,7 @@ hostname:
 
 `{SERVICENAME}-{PROJECTNAME}.{ROUTINGSUBDOMAIN}`
 
-In the subsequent router Operator labs we'll explore this and other
-configuration options.
+The Ingress Operator handles these configuration options automatically.
 
 While the router configuration specifies the domain(s) that the router should
 listen for, something still needs to get requests for those domains to the
