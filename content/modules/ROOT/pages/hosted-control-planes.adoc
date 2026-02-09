@@ -346,7 +346,7 @@ oc get pods -n clusters-demo-hcp -o wide | grep kube-apiserver | head -3
 You'll see they run on **worker nodes** of the management cluster:
 
 ----
-kube-apiserver-xxx   4/4   Running   0   3m   10.131.0.211   ip-10-0-26-88.us-east-2.compute.internal
+kube-apiserver-xxx   4/4   Running   0   3m   10.131.0.211   worker-0
 ----
 
 Compare this to the management cluster's nodes:

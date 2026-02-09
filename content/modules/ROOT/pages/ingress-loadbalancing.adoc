@@ -18,7 +18,7 @@ By the end of this module, you will be able to:
 * Create Routes with different TLS termination strategies
 * Configure rate limiting and IP-based access control
 * Understand load balancing options (Services, Ingress)
-* Integrate AWS WAF for advanced threat protection
+* Implement network security policies for traffic control
 
 == Ingress Controller & Load Balancing
 
@@ -231,7 +231,7 @@ The ingress controller itself uses a LoadBalancer service:
 oc get svc router-default -n openshift-ingress -o wide
 ----
 
-On AWS, this is typically a Network Load Balancer (NLB). On bare metal, MetalLB can provide LoadBalancer functionality.
+On cloud platforms, this creates a cloud load balancer (NLB on AWS, Azure LB, etc.). On bare metal or virtualized environments, MetalLB provides LoadBalancer functionality.
 
 == Ingress Controller Scaling
 

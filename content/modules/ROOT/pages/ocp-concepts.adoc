@@ -38,11 +38,11 @@ Then enter the password:
 {ssh_password}
 ----
 
-Then become the `ec2-user`:
+Then become the cluster admin user:
 
-[source,bash,role="execute"]
+[source,bash,role="execute",subs="attributes"]
 ----
-sudo su - ec2-user
+sudo su - {bastion_ssh_user}
 ----
 
 Set your GUID environment variable:
@@ -321,13 +321,15 @@ oc get nodes
 Output shows:
 
 ----
-NAME                                        STATUS   ROLES                  AGE   VERSION
-ip-10-0-13-65.us-east-2.compute.internal    Ready    worker                 84m   v1.33.5
-ip-10-0-18-255.us-east-2.compute.internal   Ready    control-plane,master   91m   v1.33.5
-ip-10-0-59-108.us-east-2.compute.internal   Ready    worker                 83m   v1.33.5
-ip-10-0-63-96.us-east-2.compute.internal    Ready    control-plane,master   91m   v1.33.5
-ip-10-0-90-20.us-east-2.compute.internal    Ready    control-plane,master   89m   v1.33.5
+NAME       STATUS   ROLES                  AGE   VERSION
+master-0   Ready    control-plane,master   91m   v1.33.5
+master-1   Ready    control-plane,master   91m   v1.33.5
+master-2   Ready    control-plane,master   89m   v1.33.5
+worker-0   Ready    worker                 84m   v1.33.5
+worker-1   Ready    worker                 83m   v1.33.5
 ----
+
+NOTE: Node names vary by platform. Cloud platforms use internal DNS names, bare metal uses hostnames you define.
 
 === Check Node Details (Console)
 
@@ -362,25 +364,25 @@ oc get machinesets.machine.openshift.io -n openshift-machine-api
 You'll see:
 
 ----
-NAME                                    DESIRED   CURRENT   READY   AVAILABLE   AGE
-cluster-wdmpc-zx5kn-worker-us-east-2a   1         1         1       1           104m
-cluster-wdmpc-zx5kn-worker-us-east-2b   1         1         1       1           104m
-cluster-wdmpc-zx5kn-worker-us-east-2c   0         0                             104m
+NAME                             DESIRED   CURRENT   READY   AVAILABLE   AGE
+cluster-xxxxx-worker-zone-a      1         1         1       1           104m
+cluster-xxxxx-worker-zone-b      1         1         1       1           104m
+cluster-xxxxx-worker-zone-c      0         0                             104m
 ----
 
 This shows:
-- **3 MachineSets** (one per AWS availability zone)
-- **2 active workers** (1 in each of zones a and b)
-- **1 scaled to 0** (zone c is available but not in use)
+- **Multiple MachineSets** (typically one per availability zone or failure domain)
+- **Active workers** distributed across zones
+- **Scaled to 0** - zone is available but not in use
 
-You can also view the actual cloud resources:
+You can also view the actual machine resources:
 
 [source,bash,role="execute"]
 ----
 oc get machines.machine.openshift.io -n openshift-machine-api
 ----
 
-This shows the underlying EC2 instances (3 masters running m5a.2xlarge, 2 workers running m6a.4xlarge) that OpenShift is managing for you.
+This shows the underlying compute instances that OpenShift is managing for you.
 
 ==== Scaling Workers
 
@@ -388,11 +390,11 @@ To add another worker node, simply scale the MachineSet:
 
 [source,bash,role="copypaste"]
 ----
-# Example - scales zone C from 0 to 1 worker
-oc scale machineset.machine.openshift.io cluster-wdmpc-zx5kn-worker-us-east-2c --replicas=1 -n openshift-machine-api
+# Example - scales a zone from 0 to 1 worker
+oc scale machineset.machine.openshift.io <machineset-name> --replicas=1 -n openshift-machine-api
 ----
 
-**What happens:** OpenShift automatically provisions an EC2 instance, configures it, and joins it to the cluster.
+**What happens:** OpenShift automatically provisions a compute instance, configures it, and joins it to the cluster.
 
 **Kubernetes equivalent:** Manually provision VM, install OS, configure networking, install kubelet, generate certificates, join to cluster
 

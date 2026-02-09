@@ -116,7 +116,7 @@ Name:             weathernow-85ddc7b8f-6kf4b
 Namespace:        app-management
 Priority:         0
 Service Account:  default
-Node:             ip-10-0-20-193.us-east-2.compute.internal/10.0.20.193
+Node:             worker-0/10.0.20.193
 Start Time:       Fri, 05 Jul 2024 13:36:23 +0000
 Labels:           deployment=weathernow
                   pod-template-hash=85ddc7b8f
@@ -182,8 +182,7 @@ Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists fo
 Events:
   Type    Reason          Age   From               Message
   ----    ------          ----  ----               -------
-  Normal  Scheduled       38s   default-scheduler  Successfully assigned app-management/weathernow-85ddc7b8f-6kf4b to i
-p-10-0-20-193.us-east-2.compute.internal
+  Normal  Scheduled       38s   default-scheduler  Successfully assigned app-management/weathernow-85ddc7b8f-6kf4b to worker-0
   Normal  AddedInterface  38s   multus             Add eth0 [10.128.2.75/23] from ovn-kubernetes
   Normal  Pulling         38s   kubelet            Pulling image "quay.io/openshiftroadshow/weathernow@sha256:1366b430c
 7d4bddf35c7b2d067bc24e8d67ba297dbaacd10e0d80939efd1de9d"
