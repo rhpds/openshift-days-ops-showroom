@@ -2,31 +2,42 @@
 
 == Module Overview
 
-**Duration:** 20 minutes +
-**Format:** Hands-on AWS WAF deployment +
+**Duration:** 15 minutes +
+**Format:** Educational overview (no hands-on) +
 **Audience:** Platform Engineers, Security Teams, Network Administrators
+
+[IMPORTANT]
+====
+**This module is informational only.**
+
+Since this workshop environment is not running on AWS, you will not be executing the commands in this module. Instead, we'll explain how AWS WAF integrates with OpenShift so you understand the architecture and benefits for when you deploy on AWS infrastructure.
+
+The code examples shown are for **reference only** - do not run them in this environment.
+====
 
 **Narrative Context:**
 
-Your applications are exposed via the OpenShift Ingress Controller. Now you need advanced threat protection against OWASP Top 10 vulnerabilities including SQL injection, cross-site scripting (XSS), and other common web attacks. AWS WAF provides this layer of defense.
+When running OpenShift on AWS, you can leverage **AWS WAF** (Web Application Firewall) for advanced threat protection against OWASP Top 10 vulnerabilities including SQL injection, cross-site scripting (XSS), and other common web attacks.
 
 == Learning Objectives
 
-By the end of this module, you will be able to:
+By the end of this module, you will understand:
 
-* Understand AWS WAF architecture with OpenShift
-* Deploy the AWS Load Balancer Operator
-* Create an Application Load Balancer (ALB) for your workloads
-* Configure WAF rules to block common attacks
-* Test WAF protection against SQL injection and XSS
+* How AWS WAF integrates with OpenShift architecture
+* The role of the AWS Load Balancer Operator
+* How Application Load Balancers (ALBs) work with WAF
+* Available WAF rule sets for common attack protection
+* When to use AWS WAF vs built-in OpenShift security features
 
 == AWS WAF Architecture
 
-OpenShift on AWS can integrate with **AWS WAF** (Web Application Firewall) for advanced threat protection. AWS WAF attaches to an Application Load Balancer (ALB), which sits in front of your OpenShift workloads:
+When OpenShift runs on AWS, you can integrate with **AWS WAF** for advanced threat protection. AWS WAF attaches to an Application Load Balancer (ALB), which sits in front of your OpenShift workloads:
 
 ----
-Client -> AWS ALB + WAF -> OpenShift Service -> Pods
+Internet → AWS ALB + WAF → OpenShift Ingress → Service → Pods
 ----
+
+**Key insight:** WAF inspection happens at the AWS edge, before traffic even reaches your OpenShift cluster. This provides defense-in-depth and offloads security processing from your cluster.
 
 === When to Use What
 
@@ -36,68 +47,43 @@ Client -> AWS ALB + WAF -> OpenShift Service -> Pods
 
 |Basic rate limiting
 |Route annotations
-|Built-in, no extra cost
+|Built-in to OpenShift, no extra cost
 
 |IP-based blocking
 |Route annotations or NetworkPolicy
-|Built-in
+|Built-in to OpenShift
 
 |OWASP protection (SQLi, XSS)
 |AWS WAF + ALB
-|Requires ALB, extra cost
+|Requires ALB, additional AWS cost
 
 |DDoS protection
 |AWS Shield + CloudFront
-|Enterprise feature
+|Enterprise AWS feature
 
 |API security
 |3scale API Management
-|Full API gateway
+|Full API gateway with policies
 |===
 
-== Prerequisites
+== Component Overview
 
-This module requires:
+=== AWS Load Balancer Operator
 
-* AWS CLI configured with appropriate permissions
-* An application deployed in OpenShift (we'll use the weathernow app from the App Management module)
+The **AWS Load Balancer Operator** is a Red Hat-supported operator that manages AWS Application Load Balancers (ALBs) and Network Load Balancers (NLBs) for OpenShift workloads.
 
-=== Verify AWS CLI Configuration
+**What it does:**
 
-[source,bash,role="execute"]
+* Watches for Ingress resources with `ingressClassName: alb`
+* Automatically provisions AWS ALBs
+* Configures target groups pointing to your services
+* Manages ALB lifecycle (create, update, delete)
+* Integrates with AWS WAF via annotations
+
+**Installation (reference):**
+
+[source,yaml]
 ----
-aws sts get-caller-identity
-----
-
-You should see your AWS account information.
-
-=== Verify Application Exists
-
-[source,bash,role="execute"]
-----
-oc get pods -n app-management -l deployment=weathernow
-----
-
-[NOTE]
-====
-**No weathernow pods?** Deploy the application first:
-
-[source,bash,role="execute"]
-----
-oc new-project app-management 2>/dev/null || oc project app-management
-oc new-app --name=weathernow --image=registry.access.redhat.com/ubi9/httpd-24
-----
-
-Wait for the pod to be ready before continuing.
-====
-
-== Step 1: Install AWS Load Balancer Operator
-
-The AWS Load Balancer Operator manages AWS ALBs and NLBs for OpenShift workloads.
-
-[source,bash,role="execute"]
-----
-cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -105,74 +91,45 @@ metadata:
   namespace: openshift-operators
 spec:
   channel: stable-v1
-  installPlanApproval: Automatic
   name: aws-load-balancer-operator
   source: redhat-operators
   sourceNamespace: openshift-marketplace
-EOF
 ----
 
-Wait for the operator to install:
+=== AWSLoadBalancerController
 
-[source,bash,role="execute"]
+After the operator is installed, you create an `AWSLoadBalancerController` resource to configure its behavior:
+
+[source,yaml]
 ----
-oc get csv -n openshift-operators -w | grep aws-load-balancer
-----
-
-Press Ctrl+C when you see `Succeeded`.
-
-== Step 2: Create AWS Load Balancer Controller
-
-The controller manages the lifecycle of AWS load balancers:
-
-[source,bash,role="execute"]
-----
-cat <<EOF | oc apply -f -
 apiVersion: networking.olm.openshift.io/v1
 kind: AWSLoadBalancerController
 metadata:
   name: cluster
 spec:
   subnetTagging: Auto
-  additionalResourceTags:
-    - key: Environment
-      value: workshop
   ingressClass: alb
-  config:
-    replicas: 1
   enabledAddons:
-    - AWSWAFv2
-EOF
+    - AWSWAFv2  # Enables WAF integration
 ----
 
-Wait for the controller pod:
+**Key configuration:**
 
-[source,bash,role="execute"]
+* `subnetTagging: Auto` - Automatically discovers and tags subnets
+* `ingressClass: alb` - Defines the ingress class name
+* `enabledAddons: [AWSWAFv2]` - Enables WAF integration capability
+
+=== ALB-backed Ingress
+
+To provision an ALB for your application, create an Ingress with the `alb` ingress class:
+
+[source,yaml]
 ----
-oc get pods -n openshift-operators -l app.kubernetes.io/name=aws-load-balancer-operator -w
-----
-
-Press Ctrl+C when you see `Running`.
-
-== Step 3: Create ALB-backed Ingress
-
-First, ensure the weathernow service is NodePort (required for ALB instance target type):
-
-[source,bash,role="execute"]
-----
-oc patch svc weathernow -n app-management -p '{"spec":{"type":"NodePort"}}'
-----
-
-Create the Ingress resource that provisions an ALB:
-
-[source,bash,role="execute"]
-----
-cat <<EOF | oc apply -f -
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: weathernow-alb
-  namespace: app-management
+  name: myapp-alb
+  namespace: myapp
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: instance
@@ -185,36 +142,58 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: weathernow
+            name: myapp
             port:
               number: 8080
-EOF
 ----
 
-Wait for the ALB to provision (2-3 minutes):
+**What happens:**
 
-[source,bash,role="execute"]
-----
-oc get ingress weathernow-alb -n app-management -w
-----
+1. AWS Load Balancer Operator detects the Ingress
+2. Creates an ALB in your AWS account
+3. Configures listeners and target groups
+4. Routes traffic to your OpenShift service
 
-Press Ctrl+C when you see an ADDRESS in the output.
+== AWS WAF Configuration
 
-== Step 4: Create WAF WebACL
+=== WAF WebACL
 
-Create a WAF Web ACL with AWS managed rules for common threats and SQL injection:
+A **Web Access Control List (WebACL)** defines the rules that inspect and filter web requests. AWS provides managed rule sets for common threats:
 
-[source,bash,role="execute"]
+**AWS Managed Rule Sets:**
+
+[cols="1,3"]
+|===
+|Rule Set |Protection
+
+|**AWSManagedRulesCommonRuleSet**
+|Cross-site scripting (XSS), path traversal, local file inclusion, PHP/Java exploits
+
+|**AWSManagedRulesSQLiRuleSet**
+|SQL injection attacks
+
+|**AWSManagedRulesKnownBadInputsRuleSet**
+|Known malicious inputs (Log4j, etc.)
+
+|**AWSManagedRulesLinuxRuleSet**
+|Linux-specific exploits
+
+|**AWSManagedRulesUnixRuleSet**
+|POSIX/Unix exploits
+|===
+
+**Example WebACL creation (AWS CLI reference):**
+
+[source,bash]
 ----
 aws wafv2 create-web-acl \
   --name openshift-waf \
   --scope REGIONAL \
-  --region us-east-2 \
   --default-action Allow={} \
-  --visibility-config SampledRequestsEnabled=true,CloudWatchMetricsEnabled=true,MetricName=openshift-waf-metrics \
+  --visibility-config SampledRequestsEnabled=true,CloudWatchMetricsEnabled=true,MetricName=openshift-waf \
   --rules '[
     {
-      "Name": "AWS-AWSManagedRulesCommonRuleSet",
+      "Name": "CommonRuleSet",
       "Priority": 1,
       "Statement": {
         "ManagedRuleGroupStatement": {
@@ -223,157 +202,109 @@ aws wafv2 create-web-acl \
         }
       },
       "OverrideAction": {"None": {}},
-      "VisibilityConfig": {
-        "SampledRequestsEnabled": true,
-        "CloudWatchMetricsEnabled": true,
-        "MetricName": "CommonRuleSet"
-      }
-    },
-    {
-      "Name": "AWS-AWSManagedRulesSQLiRuleSet",
-      "Priority": 2,
-      "Statement": {
-        "ManagedRuleGroupStatement": {
-          "VendorName": "AWS",
-          "Name": "AWSManagedRulesSQLiRuleSet"
-        }
-      },
-      "OverrideAction": {"None": {}},
-      "VisibilityConfig": {
-        "SampledRequestsEnabled": true,
-        "CloudWatchMetricsEnabled": true,
-        "MetricName": "SQLiRuleSet"
-      }
+      "VisibilityConfig": {...}
     }
   ]'
 ----
 
-This creates a WAF with:
+=== Associating WAF with ALB
 
-* **AWSManagedRulesCommonRuleSet** - Blocks common web exploits (XSS, path traversal, etc.)
-* **AWSManagedRulesSQLiRuleSet** - Blocks SQL injection attacks
+Once the WebACL exists, associate it with your ALB using an Ingress annotation:
 
-== Step 5: Associate WAF with ALB
-
-Get the WAF ARN and associate it with the ALB via the Ingress annotation:
-
-[source,bash,role="execute"]
+[source,yaml]
 ----
-WAF_ARN=$(aws wafv2 list-web-acls --scope REGIONAL --region us-east-2 --query "WebACLs[?Name=='openshift-waf'].ARN" --output text)
-echo "WAF ARN: $WAF_ARN"
-oc annotate ingress weathernow-alb -n app-management alb.ingress.kubernetes.io/wafv2-acl-arn="$WAF_ARN" --overwrite
-----
-
-The ALB controller will automatically associate the WAF with the load balancer.
-
-== Step 6: Test WAF Protection
-
-Get the ALB DNS name:
-
-[source,bash,role="execute"]
-----
-ALB_DNS=$(oc get ingress weathernow-alb -n app-management -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-echo "ALB URL: http://$ALB_DNS"
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: myapp-alb
+  annotations:
+    alb.ingress.kubernetes.io/wafv2-acl-arn: "arn:aws:wafv2:us-east-2:123456789:regional/webacl/openshift-waf/abc123"
+spec:
+  ingressClassName: alb
+  # ... rest of ingress spec
 ----
 
-=== Test Normal Request (Should Succeed)
+The AWS Load Balancer Operator automatically associates the WAF with the ALB.
 
-[source,bash,role="execute"]
+== How WAF Protection Works
+
+When a request arrives at your ALB with WAF enabled:
+
+1. **Request received** - Client sends HTTP request to ALB
+2. **WAF inspection** - AWS WAF evaluates request against all rules
+3. **Rule matching** - Each rule checks for specific attack patterns
+4. **Action taken** - Block (403), Allow, or Count (log only)
+5. **Forwarding** - If allowed, request proceeds to OpenShift
+
+**Example attack flow:**
+
 ----
-curl -s http://$ALB_DNS | head -5
-----
+Attacker: GET /app?id=1' OR '1'='1
 
-You should see the application HTML response.
-
-=== Test SQL Injection Attack (Should Be Blocked)
-
-[source,bash,role="execute"]
-----
-curl -s "http://$ALB_DNS/?id=1%20OR%201=1"
-----
-
-Expected: `403 Forbidden` - The WAF detected and blocked the SQL injection attempt.
-
-=== Test XSS Attack (Should Be Blocked)
-
-[source,bash,role="execute"]
-----
-curl -s "http://$ALB_DNS/?search=<script>alert(1)</script>"
+1. Request hits ALB
+2. WAF SQLi rule detects pattern
+3. Request blocked with 403 Forbidden
+4. Attack never reaches OpenShift pods
 ----
 
-Expected: `403 Forbidden` - The WAF detected and blocked the XSS attempt.
+== Monitoring and Visibility
 
-== View WAF Metrics
+AWS WAF provides visibility through:
 
-You can view WAF metrics in AWS CloudWatch:
+* **CloudWatch Metrics** - BlockedRequests, AllowedRequests, CountedRequests
+* **WAF Logs** - Full request details for blocked/sampled requests (to S3, CloudWatch, or Kinesis)
+* **AWS Console** - Real-time dashboard of WAF activity
 
-[source,bash,role="execute"]
-----
-aws cloudwatch get-metric-statistics \
-  --namespace AWS/WAFV2 \
-  --metric-name BlockedRequests \
-  --dimensions Name=WebACL,Value=openshift-waf Name=Region,Value=us-east-2 Name=Rule,Value=ALL \
-  --start-time $(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ) \
-  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
-  --period 300 \
-  --statistics Sum \
-  --region us-east-2
-----
+**Benefits for operations:**
 
-== Cleanup
+* See attack patterns and sources
+* Tune rules based on false positives
+* Demonstrate compliance (audit logs)
+* Alert on unusual activity
 
-[source,bash,role="execute"]
-----
-# Delete ALB ingress
-oc delete ingress weathernow-alb -n app-management --ignore-not-found
+== Cost Considerations
 
-# Delete WAF WebACL
-WAF_ID=$(aws wafv2 list-web-acls --scope REGIONAL --region us-east-2 --query "WebACLs[?Name=='openshift-waf'].Id" --output text 2>/dev/null)
-if [ -n "$WAF_ID" ]; then
-  LOCK_TOKEN=$(aws wafv2 get-web-acl --name openshift-waf --scope REGIONAL --id $WAF_ID --region us-east-2 --query "LockToken" --output text)
-  aws wafv2 delete-web-acl --name openshift-waf --scope REGIONAL --id $WAF_ID --lock-token $LOCK_TOKEN --region us-east-2
-  echo "WAF WebACL deleted"
-fi
+AWS WAF pricing (as of 2024):
 
-# Restore service type
-oc patch svc weathernow -n app-management -p '{"spec":{"type":"ClusterIP"}}' 2>/dev/null || true
+* **WebACL:** $5/month per WebACL
+* **Rules:** $1/month per rule
+* **Requests:** $0.60 per million requests inspected
 
-echo "Cleanup complete"
-----
+**Example monthly cost for typical workload:**
+
+* 1 WebACL with 5 managed rule groups
+* 10 million requests/month
+* Cost: ~$5 + $5 + $6 = **$16/month**
+
+Compare this to the cost of a security breach - WAF is typically very cost-effective.
 
 == Summary
 
-**What you learned:**
+**Key takeaways:**
 
-* AWS WAF provides OWASP protection (SQL injection, XSS, etc.) for OpenShift workloads
+* AWS WAF provides OWASP protection (SQL injection, XSS, etc.) at the AWS edge
 * The AWS Load Balancer Operator manages ALBs that integrate with WAF
-* WAF rules are evaluated before traffic reaches your pods
+* WAF rules are evaluated before traffic reaches your OpenShift cluster
+* Managed rule sets provide protection without writing custom rules
 * CloudWatch provides visibility into blocked attacks
 
-**Key components:**
+**When to use AWS WAF:**
 
-[cols="1,2"]
-|===
-|Component |Purpose
+* Running OpenShift on AWS (ROSA, self-managed on AWS)
+* Need OWASP Top 10 protection beyond rate limiting
+* Compliance requirements for web application security
+* Want to offload security processing from the cluster
 
-|AWS Load Balancer Operator
-|Manages ALB lifecycle from OpenShift
+**Alternatives for non-AWS environments:**
 
-|AWSLoadBalancerController
-|Configures the operator behavior
-
-|Ingress (ingressClassName: alb)
-|Provisions an ALB for the workload
-
-|WAF WebACL
-|Defines protection rules
-
-|Ingress annotation (wafv2-acl-arn)
-|Associates WAF with the ALB
-|===
+* **OpenShift Service Mesh** with Envoy filters
+* **Third-party WAFs** (F5, Cloudflare, Imperva)
+* **Red Hat 3scale** for API-level protection
+* **Network policies** for basic traffic control
 
 == Additional Resources
 
-* **AWS Load Balancer Operator:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/networking/aws-load-balancer-operator[AWS Load Balancer Operator]
+* **AWS Load Balancer Operator:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/networking/aws-load-balancer-operator[AWS Load Balancer Operator Documentation]
 * **AWS WAF Developer Guide:** link:https://docs.aws.amazon.com/waf/latest/developerguide/[AWS WAF Documentation]
-* **AWS Managed Rules:** link:https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-list.html[AWS Managed Rule Groups]
+* **AWS Managed Rules:** link:https://docs.aws.amazon.com/waf/latest/developerguide/aws-managed-rule-groups-list.html[AWS Managed Rule Groups List]
+* **OWASP Top 10:** link:https://owasp.org/www-project-top-ten/[OWASP Top 10 Web Application Security Risks]
