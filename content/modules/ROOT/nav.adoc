@@ -22,6 +22,7 @@
 
 .Phase 3: Day 2 Operations
 * xref:debugging-troubleshooting.adoc[Debugging & Troubleshooting]
+* xref:observability.adoc[Observability & Logging]
 ifeval::["{module_enable_backup}" == "true"]
 * xref:backup-restore.adoc[Backup & Restore - OADP]
 endif::[]
