@@ -4,7 +4,8 @@
 //
 // Catalog parameters (passed via user_data):
 //   module_enable_virt, module_enable_backup, module_enable_acm,
-//   module_enable_devhub, module_enable_ols, module_enable_security
+//   module_enable_devhub, module_enable_ols, module_enable_security,
+//   module_enable_cloud
 //
 // Note: Using ifeval instead of ifdef because catalog sends boolean values
 // and ifdef only checks existence, not value
@@ -14,11 +15,17 @@
 .Phase 1: Platform Foundation
 * xref:ocp-concepts.adoc[OpenShift Platform Overview]
 * xref:installation.adoc[Installation & Verification]
+ifeval::["{module_enable_cloud}" == "true"]
+* xref:cloud-infrastructure.adoc[Cloud Integration & Infrastructure]
+endif::[]
 * xref:app-mgmt-basics.adoc[Application Management Basics]
 
 .Phase 2: Networking
 * xref:ingress-loadbalancing.adoc[Ingress & Load Balancing]
 * xref:network-security.adoc[Network Security]
+ifeval::["{module_enable_cloud}" == "true"]
+* xref:aws-waf.adoc[AWS WAF - Web Application Firewall]
+endif::[]
 
 .Phase 3: Day 2 Operations
 * xref:debugging-troubleshooting.adoc[Debugging & Troubleshooting]
