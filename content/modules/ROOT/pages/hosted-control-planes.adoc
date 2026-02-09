@@ -346,7 +346,7 @@ oc get pods -n clusters-demo-hcp -o wide | grep kube-apiserver | head -3
 You'll see they run on **worker nodes** of the management cluster:
 
 ----
-kube-apiserver-xxx   4/4   Running   0   10m   10.129.x.x   ip-10-0-54-39.us-east-2.compute.internal
+kube-apiserver-xxx   4/4   Running   0   3m   10.131.0.211   ip-10-0-26-88.us-east-2.compute.internal
 ----
 
 Compare this to the management cluster's nodes:
@@ -371,7 +371,7 @@ Output:
 
 ----
 NAMESPACE             NAME           STATUS   VOLUME       CAPACITY   STORAGE CLASS
-clusters-demo-hcp     data-etcd-0    Bound    pvc-xxxxx    8Gi        gp3-csi
+clusters-demo-hcp     data-etcd-0    Bound    pvc-xxxxx    8Gi        ocs-storagecluster-ceph-rbd
 ----
 
 **Key insight:** Each hosted cluster's etcd gets a PVC on the management cluster. This is how state is persisted.
@@ -392,13 +392,13 @@ View the API server endpoint:
 cat demo-hcp.kubeconfig | grep server:
 ----
 
-You'll see a LoadBalancer URL:
+You'll see a LoadBalancer IP (provided by MetalLB):
 
 ----
-server: https://ac1bcccf2dfcd4bb5aa0377ed2069d2f-xxx.us-east-2.elb.amazonaws.com:6443
+server: https://10.10.10.203:6443
 ----
 
-**This is the hosted cluster's API server**, accessible via LoadBalancer!
+**This is the hosted cluster's API server**, accessible via MetalLB LoadBalancer!
 
 === Step 6: Connect to the Hosted Cluster
 
@@ -413,7 +413,7 @@ oc cluster-info
 Output:
 
 ----
-Kubernetes control plane is running at https://ac1bcccf...elb.amazonaws.com:6443
+Kubernetes control plane is running at https://10.10.10.203:6443
 ----
 
 Now check for nodes:
