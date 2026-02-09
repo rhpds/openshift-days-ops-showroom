@@ -1,33 +1,23 @@
 // OpenShift Days - Ops Track (101)
-// Streamlined workshop matching requirements
-// Module-based navigation using ifeval conditionals
+// Three sections: Main modules, ACM, Security
 //
 // Catalog parameters (passed via user_data):
 //   module_enable_virt, module_enable_backup, module_enable_acm,
 //   module_enable_devhub, module_enable_ols, module_enable_security,
 //   module_enable_cloud
-//
-// Note: Using ifeval instead of ifdef because catalog sends boolean values
-// and ifdef only checks existence, not value
 
 * xref:index.adoc[Environment Setup]
-
-.Phase 1: Platform Foundation
 * xref:ocp-concepts.adoc[OpenShift Platform Overview]
 * xref:installation.adoc[Installation & Verification]
 ifeval::["{module_enable_cloud}" == "true"]
 * xref:cloud-infrastructure.adoc[Cloud Integration & Infrastructure]
 endif::[]
 * xref:app-mgmt-basics.adoc[Application Management Basics]
-
-.Phase 2: Networking
 * xref:ingress-loadbalancing.adoc[Ingress & Load Balancing]
 * xref:network-security.adoc[Network Security]
 ifeval::["{module_enable_cloud}" == "true"]
 * xref:aws-waf.adoc[AWS WAF - Web Application Firewall]
 endif::[]
-
-.Phase 3: Day 2 Operations
 * xref:debugging-troubleshooting.adoc[Debugging & Troubleshooting]
 * xref:observability.adoc[Observability & Logging]
 ifeval::["{module_enable_backup}" == "true"]
@@ -36,22 +26,22 @@ endif::[]
 ifeval::["{module_enable_ols}" == "true"]
 * xref:openshift-lightspeed.adoc[OpenShift Lightspeed]
 endif::[]
-
-.Phase 4: Workloads & Architecture
 ifeval::["{module_enable_virt}" == "true"]
 * xref:virtualization.adoc[Virtualization]
 endif::[]
 ifeval::["{module_enable_acm}" == "true"]
-* xref:acm-multicluster.adoc[ACM - Multi-Cluster Management]
 * xref:hosted-control-planes.adoc[Advanced Architecture - HCP]
+endif::[]
+ifeval::["{module_enable_devhub}" == "true"]
+* xref:developer-hub.adoc[Developer Hub]
+endif::[]
+
+ifeval::["{module_enable_acm}" == "true"]
+.ACM - Multi-Cluster Management
+* xref:acm-multicluster.adoc[ACM Overview & Fleet Management]
 endif::[]
 
 ifeval::["{module_enable_security}" == "true"]
-.Phase 5: Security
+.ACS - Advanced Cluster Security
 * xref:security.adoc[Security - Secrets, Certs & ACS]
-endif::[]
-
-ifeval::["{module_enable_devhub}" == "true"]
-.Phase 6: Platform Engineering
-* xref:developer-hub.adoc[Developer Hub]
 endif::[]
