@@ -2,7 +2,7 @@
 
 == Module Overview
 
-**Duration:** 15 minutes +
+**Duration:** 10 minutes +
 **Format:** Educational overview (no hands-on) +
 **Audience:** Platform Engineers, Security Teams, Network Administrators
 
