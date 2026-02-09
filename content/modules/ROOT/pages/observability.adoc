@@ -2,7 +2,7 @@
 
 == Module Overview
 
-**Duration:** 60 minutes +
+**Duration:** 45 minutes +
 **Format:** Hands-on logging configuration +
 **Audience:** Platform Engineers, Operations Teams
 
@@ -20,7 +20,7 @@ An extremely important function of OpenShift is collecting and aggregating logs 
 By the end of this module, you will be able to:
 
 * Install and configure the OpenShift Logging stack (Logging 6.2)
-* Configure AWS S3 storage for log retention
+* Configure ODF Object Bucket storage for log retention
 * Create and configure LokiStack for log storage
 * Set up log collection with ClusterLogForwarder
 * Query logs using the OpenShift console
@@ -31,7 +31,7 @@ By the end of this module, you will be able to:
 This module requires:
 
 * Cluster admin access
-* AWS credentials (provided on your workshop credentials page)
+* OpenShift Data Foundation (ODF) with NooBaa (already installed on your cluster)
 * The Loki, Cluster Logging, and Cluster Observability operators (we'll install these)
 
 == Understanding the Architecture
@@ -71,10 +71,8 @@ If you prefer CLI installation, skip to Option B below.
 
 [IMPORTANT]
 ====
-In OpenShift 4.20, the OperatorHub has moved to **Ecosystem → Software Catalog**. You must select a namespace before viewing available operators.
+In OpenShift 4.20, the OperatorHub has moved to **Ecosystem -> Software Catalog**. You must select a namespace before viewing available operators.
 ====
-
-image::software-catalog-navigation.png[Software Catalog in OpenShift 4.20]
 
 1. **Install the Loki Operator:**
 +
@@ -202,72 +200,65 @@ oc get csv -n openshift-operators | grep observability
 
 All operators should show `Succeeded` in the status.
 
-== Configure AWS S3 Storage
+== Configure ODF Object Storage
 
-LokiStack requires object storage for log data. We'll use AWS S3.
+LokiStack requires S3-compatible object storage for log data. We'll use OpenShift Data Foundation (ODF) with NooBaa to provide this.
 
-=== Verify AWS Credentials
+=== Create an Object Bucket Claim
 
-AWS credentials are automatically configured in your terminal. Verify they're working:
-
-[source,bash,role="execute"]
-----
-aws sts get-caller-identity
-----
-
-You should see your AWS account information:
-
-----
-{
-    "UserId": "AIDA...",
-    "Account": "123456789012",
-    "Arn": "arn:aws:iam::123456789012:user/student"
-}
-----
-
-=== Create the S3 Bucket
-
-We'll use your cluster GUID as the bucket name to ensure uniqueness:
+An Object Bucket Claim (OBC) dynamically provisions an S3-compatible bucket using NooBaa:
 
 [source,bash,role="execute"]
 ----
-export GUID=$(oc get dns cluster -o jsonpath='{.spec.baseDomain}' | cut -d. -f2)
-echo "Your GUID is: $GUID"
+cat <<EOF | oc apply -f -
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: loki-bucket
+  namespace: openshift-logging
+spec:
+  generateBucketName: loki-bucket
+  storageClassName: openshift-storage.noobaa.io
+EOF
 ----
 
-Create the bucket:
+Wait for the bucket to be provisioned:
 
 [source,bash,role="execute"]
 ----
-aws s3api create-bucket --bucket ${GUID}-loki --region us-east-1
+oc get obc loki-bucket -n openshift-logging
 ----
 
-[NOTE]
-====
-If you get a `BucketAlreadyExists` error, try a different bucket name like `${GUID}-logging` or add random characters.
-====
-
-You'll know it was successful when you see:
+You should see:
 
 ----
-{
-    "Location": "/zx94w-loki"
-}
+NAME          STORAGE-CLASS                 PHASE   AGE
+loki-bucket   openshift-storage.noobaa.io   Bound   10s
 ----
 
-Remember your bucket name - you'll need it in the next step.
+=== Verify the OBC Created Resources
+
+The OBC automatically creates a Secret and ConfigMap with the bucket credentials:
+
+[source,bash,role="execute"]
+----
+oc get secret loki-bucket -n openshift-logging
+oc get configmap loki-bucket -n openshift-logging
+----
 
 == Create the LokiStack Secret
 
-The LokiStack needs credentials to access the S3 bucket. Your AWS credentials are already configured in the terminal.
-
-[TIP]
-====
-You can also create this secret via the OpenShift console: **Workloads → Secrets → Create → Key/value secret**. Select namespace `openshift-logging`, name it `lokistack-dev-s3`, and add the five key/value pairs (access_key_id, access_key_secret, bucketnames, endpoint, region).
-====
+The LokiStack needs credentials in a specific format. We'll extract the OBC credentials and create the proper secret:
 
 [source,bash,role="execute"]
 ----
+# Get values from OBC
+ACCESS_KEY=$(oc get secret loki-bucket -n openshift-logging -o jsonpath='{.data.AWS_ACCESS_KEY_ID}' | base64 -d)
+SECRET_KEY=$(oc get secret loki-bucket -n openshift-logging -o jsonpath='{.data.AWS_SECRET_ACCESS_KEY}' | base64 -d)
+BUCKET_NAME=$(oc get configmap loki-bucket -n openshift-logging -o jsonpath='{.data.BUCKET_NAME}')
+BUCKET_HOST=$(oc get configmap loki-bucket -n openshift-logging -o jsonpath='{.data.BUCKET_HOST}')
+
+# Create LokiStack secret
 cat <<EOF | oc apply -f -
 apiVersion: v1
 kind: Secret
@@ -275,11 +266,11 @@ metadata:
   name: lokistack-dev-s3
   namespace: openshift-logging
 stringData:
-  access_key_id: $(aws configure get aws_access_key_id)
-  access_key_secret: $(aws configure get aws_secret_access_key)
-  bucketnames: ${GUID}-loki
-  endpoint: https://s3.us-east-1.amazonaws.com
-  region: us-east-1
+  access_key_id: ${ACCESS_KEY}
+  access_key_secret: ${SECRET_KEY}
+  bucketnames: ${BUCKET_NAME}
+  endpoint: https://${BUCKET_HOST}
+  region: ""
 EOF
 ----
 
@@ -318,7 +309,7 @@ spec:
     secret:
       name: lokistack-dev-s3
       type: s3
-  storageClassName: gp3-csi
+  storageClassName: ocs-storagecluster-ceph-rbd
   tenants:
     mode: openshift-logging
 EOF
@@ -562,6 +553,20 @@ oc get lokistack logging-loki -n openshift-logging -o jsonpath='{.status.conditi
 ----
 
 The LokiStack should show `Ready` status.
+
+**Check Object Bucket Claim**
+
+[source,bash,role="execute"]
+----
+oc get obc loki-bucket -n openshift-logging
+----
+
+The OBC should show `Bound` status. If it's stuck in `Pending`, check that ODF/NooBaa is running:
+
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-storage | grep noobaa
+----
 ====
 
 == Summary
@@ -569,7 +574,7 @@ The LokiStack should show `Ready` status.
 **What you learned:**
 
 * How to install the OpenShift Logging stack (Loki, Vector, Cluster Observability)
-* How to configure AWS S3 storage for logs
+* How to configure ODF Object Bucket storage for logs (no external cloud required)
 * How to create and configure LokiStack for log storage
 * How to set up log collection with ClusterLogForwarder
 * How to view and filter logs in the OpenShift console
@@ -589,11 +594,14 @@ oc get clusterlogforwarder -n openshift-logging
 
 # View collector logs
 oc logs -n openshift-logging -l app.kubernetes.io/component=collector --tail=20
+
+# Check Object Bucket Claim
+oc get obc -n openshift-logging
 ----
 
 == Additional Resources
 
 * **OpenShift Logging Documentation:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/logging/index[Logging]
 * **Logging 6.2 Stack:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/logging/logging-6-2[Logging 6.2]
-* **ViaQ Data Model:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/logging/logging-6-2#quick-start-viaq_logging-6x-6.2[ViaQ Quick Start]
+* **ODF Object Storage:** link:https://docs.redhat.com/en/documentation/red_hat_openshift_data_foundation/4.20/html/managing_and_allocating_storage_resources/multicloud-object-gateway_rhodf[Multicloud Object Gateway]
 * **Loki Configuration:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/logging/log-storage[Log storage]
