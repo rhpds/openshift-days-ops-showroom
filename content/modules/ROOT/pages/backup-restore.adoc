@@ -22,35 +22,542 @@ OADP is based on Velero and provides:
 By the end of this module, you will be able to:
 
 * Understand OADP architecture and components
-* Configure backup storage locations
+* Configure backup storage locations using ODF
 * Create application backups
 * Restore applications from backups
 * Implement backup schedules
 
 == Prerequisites
 
-The OADP Operator has been pre-installed in your cluster.
+This module requires:
 
-Verify the installation:
+* Cluster admin access
+* OpenShift Data Foundation (ODF) with NooBaa (already installed on your cluster)
+* OADP Operator (we'll verify installation)
+
+== Understanding OADP Architecture
+
+OADP consists of several components:
+
+[cols="1,3"]
+|===
+|Component |Purpose
+
+|**OADP Operator**
+|Manages the DataProtectionApplication and Velero deployment
+
+|**Velero**
+|Core backup/restore engine (runs as a pod)
+
+|**BackupStorageLocation**
+|Defines where backups are stored (S3-compatible)
+
+|**VolumeSnapshotLocation**
+|Defines where volume snapshots are stored
+
+|**Backup/Restore CRs**
+|Custom resources that define backup and restore jobs
+|===
+
+== Verify OADP Operator Installation
+
+The OADP Operator has been pre-installed. Verify it:
 
 [source,bash,role="execute"]
 ----
 oc get csv -n openshift-adp | grep oadp
 ----
 
-You should see the OADP operator with `Succeeded` status.
+You should see:
 
-== Content Coming Soon
+----
+oadp-operator.v1.5.3   OADP Operator   1.5.3   Succeeded
+----
 
-This module is under development. Check back for full hands-on content covering:
+Check the operator pod:
 
-* Configuring DataProtectionApplication CR
-* Setting up backup storage with ODF S3
-* Creating and managing backups
-* Performing application restores
-* Backup scheduling and retention policies
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-adp -l control-plane=controller-manager
+----
+
+== Configure ODF Object Storage
+
+OADP needs S3-compatible storage for backups. We'll use OpenShift Data Foundation (ODF) with NooBaa.
+
+=== Create an Object Bucket Claim
+
+An Object Bucket Claim (OBC) dynamically provisions an S3-compatible bucket:
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: oadp-bucket
+  namespace: openshift-adp
+spec:
+  generateBucketName: oadp-bucket
+  storageClassName: openshift-storage.noobaa.io
+EOF
+----
+
+Wait for the bucket to be provisioned:
+
+[source,bash,role="execute"]
+----
+oc get obc oadp-bucket -n openshift-adp
+----
+
+You should see:
+
+----
+NAME          STORAGE-CLASS                 PHASE   AGE
+oadp-bucket   openshift-storage.noobaa.io   Bound   10s
+----
+
+=== Create the Cloud Credentials Secret
+
+OADP needs credentials in a specific format. Extract from the OBC and create the secret:
+
+[source,bash,role="execute"]
+----
+# Get credentials from OBC
+ACCESS_KEY_ID=$(oc get secret oadp-bucket -n openshift-adp -o jsonpath='{.data.AWS_ACCESS_KEY_ID}' | base64 -d)
+SECRET_ACCESS_KEY=$(oc get secret oadp-bucket -n openshift-adp -o jsonpath='{.data.AWS_SECRET_ACCESS_KEY}' | base64 -d)
+
+# Create cloud-credentials secret
+cat <<EOF | oc apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloud-credentials
+  namespace: openshift-adp
+stringData:
+  cloud: |
+    [default]
+    aws_access_key_id=$ACCESS_KEY_ID
+    aws_secret_access_key=$SECRET_ACCESS_KEY
+EOF
+----
+
+Verify the secret was created:
+
+[source,bash,role="execute"]
+----
+oc get secret cloud-credentials -n openshift-adp
+----
+
+== Create the DataProtectionApplication
+
+The DataProtectionApplication (DPA) configures Velero and defines backup/snapshot locations:
+
+[source,bash,role="execute"]
+----
+# Get bucket details
+BUCKET_NAME=$(oc get configmap oadp-bucket -n openshift-adp -o jsonpath='{.data.BUCKET_NAME}')
+BUCKET_HOST=$(oc get configmap oadp-bucket -n openshift-adp -o jsonpath='{.data.BUCKET_HOST}')
+
+# Create DPA
+cat <<EOF | oc apply -f -
+apiVersion: oadp.openshift.io/v1alpha1
+kind: DataProtectionApplication
+metadata:
+  name: oadp-dpa
+  namespace: openshift-adp
+spec:
+  configuration:
+    velero:
+      defaultPlugins:
+        - openshift
+        - aws
+        - csi
+      defaultSnapshotMoveData: true
+      featureFlags:
+        - EnableCSI
+  backupLocations:
+    - velero:
+        provider: aws
+        default: true
+        objectStorage:
+          bucket: $BUCKET_NAME
+          prefix: velero
+        config:
+          region: noobaa
+          s3ForcePathStyle: "true"
+          s3Url: https://$BUCKET_HOST
+          insecureSkipTLSVerify: "true"
+        credential:
+          key: cloud
+          name: cloud-credentials
+  snapshotLocations:
+    - velero:
+        provider: aws
+        config:
+          region: noobaa
+EOF
+----
+
+Wait for Velero to start (about 30 seconds):
+
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-adp -l app.kubernetes.io/name=velero
+----
+
+You should see:
+
+----
+NAME                      READY   STATUS    RESTARTS   AGE
+velero-5db4d6656f-xxxxx   1/1     Running   0          30s
+----
+
+=== Verify Backup Storage Location
+
+Check the BackupStorageLocation status:
+
+[source,bash,role="execute"]
+----
+oc get backupstoragelocations -n openshift-adp
+----
+
+You should see:
+
+----
+NAME         PHASE       LAST VALIDATED   AGE   DEFAULT
+oadp-dpa-1   Available   25s              60s   true
+----
+
+The `Available` phase confirms OADP can connect to the ODF bucket.
+
+== Create a Sample Application
+
+Let's deploy a sample application to backup and restore:
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: backup-demo
+  labels:
+    app: backup-demo
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: backup-demo
+data:
+  message: "This is important configuration data that must survive disasters!"
+  version: "1.0"
+  environment: "production"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  namespace: backup-demo
+type: Opaque
+stringData:
+  database-password: "super-secret-password"
+  api-key: "abc123xyz789"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app
+  namespace: backup-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web-app
+  template:
+    metadata:
+      labels:
+        app: web-app
+    spec:
+      containers:
+      - name: httpd
+        image: registry.access.redhat.com/ubi9/httpd-24
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: app-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-app
+  namespace: backup-demo
+spec:
+  selector:
+    app: web-app
+  ports:
+  - port: 80
+    targetPort: 8080
+EOF
+----
+
+Wait for the pods to be ready:
+
+[source,bash,role="execute"]
+----
+oc get pods -n backup-demo -w
+----
+
+Press `Ctrl+C` when pods show `Running` and `1/1` ready.
+
+Verify all resources:
+
+[source,bash,role="execute"]
+----
+oc get all,configmap,secret -n backup-demo
+----
+
+== Create a Backup
+
+Now let's backup the entire `backup-demo` namespace:
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: velero.io/v1
+kind: Backup
+metadata:
+  name: backup-demo-full
+  namespace: openshift-adp
+spec:
+  includedNamespaces:
+    - backup-demo
+  storageLocation: oadp-dpa-1
+  ttl: 720h
+EOF
+----
+
+Monitor the backup progress:
+
+[source,bash,role="execute"]
+----
+oc get backup backup-demo-full -n openshift-adp -w
+----
+
+Press `Ctrl+C` when you see `Completed`:
+
+----
+NAME               STATUS      ERRORS   WARNINGS   CREATED                         EXPIRES
+backup-demo-full   Completed   0        0          2026-02-09T18:00:00Z   29d
+----
+
+=== View Backup Details
+
+Check what was backed up:
+
+[source,bash,role="execute"]
+----
+oc describe backup backup-demo-full -n openshift-adp | grep -A20 "Status:"
+----
+
+You'll see details about items backed up:
+
+----
+Status:
+  Completion Timestamp:  2026-02-09T18:00:30Z
+  Expiration:            2026-03-11T18:00:00Z
+  Format Version:        1.1.0
+  Phase:                 Completed
+  Progress:
+    Items Backed Up:  12
+    Total Items:      12
+  Start Timestamp:      2026-02-09T18:00:00Z
+----
+
+== Simulate a Disaster
+
+Now let's simulate a disaster by deleting the namespace:
+
+[source,bash,role="execute"]
+----
+oc delete namespace backup-demo
+----
+
+Wait for deletion to complete:
+
+[source,bash,role="execute"]
+----
+oc get namespace backup-demo
+----
+
+You should see:
+
+----
+Error from server (NotFound): namespaces "backup-demo" not found
+----
+
+**The application is gone!** In a real disaster, this could be accidental deletion, ransomware, or infrastructure failure.
+
+== Restore from Backup
+
+Let's restore the application from our backup:
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: velero.io/v1
+kind: Restore
+metadata:
+  name: restore-demo-full
+  namespace: openshift-adp
+spec:
+  backupName: backup-demo-full
+  includedNamespaces:
+    - backup-demo
+  restorePVs: true
+EOF
+----
+
+Monitor the restore progress:
+
+[source,bash,role="execute"]
+----
+oc get restore restore-demo-full -n openshift-adp -w
+----
+
+Press `Ctrl+C` when you see `Completed`.
+
+=== Verify the Restore
+
+Check that the namespace is back:
+
+[source,bash,role="execute"]
+----
+oc get namespace backup-demo
+----
+
+Verify all resources were restored:
+
+[source,bash,role="execute"]
+----
+oc get all,configmap,secret -n backup-demo
+----
+
+Check the ConfigMap data survived:
+
+[source,bash,role="execute"]
+----
+oc get configmap app-config -n backup-demo -o jsonpath='{.data.message}'
+----
+
+You should see:
+
+----
+This is important configuration data that must survive disasters!
+----
+
+**Success!** The application has been fully restored from backup.
+
+== Create a Backup Schedule
+
+For production environments, you should schedule regular backups:
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: daily-backup
+  namespace: openshift-adp
+spec:
+  schedule: "0 2 * * *"
+  template:
+    includedNamespaces:
+      - backup-demo
+    storageLocation: oadp-dpa-1
+    ttl: 168h
+EOF
+----
+
+This creates a daily backup at 2:00 AM with a 7-day retention (168 hours).
+
+View the schedule:
+
+[source,bash,role="execute"]
+----
+oc get schedules -n openshift-adp
+----
+
+== Summary
+
+**What you learned:**
+
+* How to configure OADP with ODF Object Storage (no external cloud required)
+* How to create backups of Kubernetes resources
+* How to restore applications from backups
+* How to set up scheduled backups
+
+**Key operational commands:**
+
+[source,bash]
+----
+# List backups
+oc get backups -n openshift-adp
+
+# List restores
+oc get restores -n openshift-adp
+
+# List schedules
+oc get schedules -n openshift-adp
+
+# Check backup storage status
+oc get backupstoragelocations -n openshift-adp
+
+# View Velero logs
+oc logs -n openshift-adp -l app.kubernetes.io/name=velero --tail=50
+----
+
+'''
+
+.**Troubleshooting** (click to expand)
+[%collapsible]
+====
+**Backup stuck in "InProgress"**
+
+Check Velero logs:
+
+[source,bash,role="execute"]
+----
+oc logs -n openshift-adp -l app.kubernetes.io/name=velero --tail=50
+----
+
+**BackupStorageLocation shows "Unavailable"**
+
+Verify OBC credentials:
+
+[source,bash,role="execute"]
+----
+oc get obc oadp-bucket -n openshift-adp
+oc get secret cloud-credentials -n openshift-adp
+----
+
+Check the bucket endpoint is accessible:
+
+[source,bash,role="execute"]
+----
+oc get configmap oadp-bucket -n openshift-adp -o yaml
+----
+
+**Restore fails with permission errors**
+
+Ensure you have cluster-admin permissions. OADP needs elevated privileges to restore resources across namespaces.
+====
 
 == Additional Resources
 
-* **OADP Documentation:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/backup_and_restore/oadp-application-backup-and-restore[OADP Application Backup and Restore]
-* **Velero Documentation:** link:https://velero.io/docs/[Velero Docs]
+* **OADP Documentation:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/backup_and_restore/oadp-application-backup-and-restore[OADP Application Backup and Restore^]
+* **Velero Documentation:** link:https://velero.io/docs/[Velero Docs^]
+* **ODF Object Storage:** link:https://docs.redhat.com/en/documentation/red_hat_openshift_data_foundation/4.20/html/managing_and_allocating_storage_resources/multicloud-object-gateway_rhodf[Multicloud Object Gateway^]
