@@ -2,7 +2,7 @@
 
 == Module Overview
 
-**Duration:** 20 minutes +
+**Duration:** 30-35 minutes +
 **Format:** Hands-on identity provider configuration +
 **Audience:** Platform Engineers, Operations Teams, Security Administrators
 

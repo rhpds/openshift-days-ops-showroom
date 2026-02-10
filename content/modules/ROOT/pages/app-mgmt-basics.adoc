@@ -2,7 +2,7 @@
 
 == Module Overview
 
-**Duration:** 30 minutes +
+**Duration:** 30-35 minutes +
 **Format:** Hands-on application deployment +
 **Audience:** Platform Engineers, Developers, Operations Teams
 

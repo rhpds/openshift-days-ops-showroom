@@ -2,7 +2,7 @@
 
 == Module Overview
 
-**Duration:** 30 minutes +
+**Duration:** 35-40 minutes +
 **Format:** Hands-on backup and restore operations +
 **Audience:** Platform Engineers, Operations Teams, Disaster Recovery Specialists
 

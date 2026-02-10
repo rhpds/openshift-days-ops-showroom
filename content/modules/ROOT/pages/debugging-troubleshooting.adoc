@@ -2,7 +2,7 @@
 
 == Module Overview
 
-**Duration:** 30-35 minutes +
+**Duration:** 45-50 minutes +
 **Format:** Hands-on Lab - Real Problem Solving +
 **Audience:** IT Operations, SRE, Platform Engineers
 

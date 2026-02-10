@@ -2,7 +2,7 @@
 
 == Module Overview
 
-**Duration:** 20-25 minutes +
+**Duration:** 30-35 minutes +
 **Audience:** Infrastructure Architects, IT Operations
 
 **The Scenario:** Your organization has legacy applications running on VMs that can't be containerized yet. You need to run VMs and containers on the same platform.

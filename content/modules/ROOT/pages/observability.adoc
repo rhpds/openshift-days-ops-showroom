@@ -2,29 +2,32 @@
 
 == Module Overview
 
-**Duration:** 45 minutes +
-**Format:** Hands-on logging configuration +
+**Duration:** 50-55 minutes +
+**Format:** Hands-on observability configuration +
 **Audience:** Platform Engineers, Operations Teams
 
 **Narrative Context:**
 
-Your cluster is running workloads and you need visibility into what's happening. In this module, you'll set up the OpenShift Logging stack to collect, store, and query logs from applications, infrastructure, and audit sources.
+Your cluster is running workloads and you need visibility into what's happening. OpenShift provides a full observability stack out of the box — metrics, alerts, and dashboards via Prometheus and Alertmanager, plus a logging pipeline you'll configure with Vector and Loki. You'll also explore OpenTelemetry for distributed tracing.
 
-An extremely important function of OpenShift is collecting and aggregating logs from the environments and the application pods it is running. The cluster logging components are based upon Vector and Loki:
+The three pillars of observability:
 
-* **Vector** - A high-performance observability data pipeline that collects and forwards logs
-* **Loki** - Log storage built around indexing metadata with labels (like Prometheus), with log data compressed and stored in object storage
+* **Metrics** - Prometheus collects and stores time-series data (built-in, no setup required)
+* **Logs** - Vector collects logs, Loki stores them with label-based indexing
+* **Traces** - OpenTelemetry provides distributed tracing for request flows across services
 
 == Learning Objectives
 
 By the end of this module, you will be able to:
 
+* Explore the built-in Prometheus metrics and dashboards
+* Configure alerting rules and understand Alertmanager
 * Install and configure the OpenShift Logging stack (Logging 6.2)
 * Configure ODF Object Bucket storage for log retention
 * Create and configure LokiStack for log storage
 * Set up log collection with ClusterLogForwarder
 * Query logs using the OpenShift console
-* Troubleshoot common logging issues
+* Understand OpenTelemetry integration for distributed tracing
 
 == Prerequisites
 
@@ -57,6 +60,138 @@ The OpenShift Logging stack consists of:
 |**LokiStack**
 |Stores logs in S3-compatible object storage with efficient indexing
 |===
+
+== Built-in Metrics with Prometheus
+
+OpenShift ships with a fully managed Prometheus stack — no installation required. It collects metrics from every component in the cluster.
+
+=== Explore Cluster Metrics
+
+View the Prometheus pods that are already running:
+
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-monitoring -l app.kubernetes.io/name=prometheus
+----
+
+Query cluster CPU usage directly from Prometheus:
+
+[source,bash,role="execute"]
+----
+oc exec -n openshift-monitoring -c prometheus prometheus-k8s-0 -- curl -s 'http://localhost:9090/api/v1/query?query=cluster:cpu_usage_cores:sum' | python3 -m json.tool | head -20
+----
+
+View node-level resource consumption:
+
+[source,bash,role="execute"]
+----
+oc adm top nodes
+----
+
+View pod resource usage across the cluster:
+
+[source,bash,role="execute"]
+----
+oc adm top pods -A --sort-by=cpu | head -15
+----
+
+=== Dashboards in the Console
+
+Navigate to **Observe -> Dashboards** in the OpenShift console. Key dashboards include:
+
+* **etcd** - Control plane database health
+* **Kubernetes / Compute Resources / Cluster** - Cluster-wide CPU and memory
+* **Kubernetes / Compute Resources / Namespace (Pods)** - Per-namespace breakdown
+* **Node Exporter / USE Method / Cluster** - Utilization, Saturation, Errors
+
+=== User Workload Monitoring
+
+OpenShift can also scrape metrics from your own applications. Verify user workload monitoring is enabled:
+
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-user-workload-monitoring
+----
+
+If pods are running, any application that exposes a `/metrics` endpoint can be scraped by creating a `ServiceMonitor` or `PodMonitor` resource.
+
+== Alerting with Alertmanager
+
+OpenShift includes Alertmanager for routing alerts to notification channels (email, Slack, PagerDuty, webhooks).
+
+=== View Current Alerts
+
+Check what alerts are currently firing:
+
+[source,bash,role="execute"]
+----
+oc get prometheusrules -A | head -15
+----
+
+View active alerts through the API:
+
+[source,bash,role="execute"]
+----
+oc exec -n openshift-monitoring -c alertmanager alertmanager-main-0 -- curl -s 'http://localhost:9093/api/v2/alerts?active=true&silenced=false' | python3 -m json.tool | head -40
+----
+
+You can also view alerts in the console under **Observe -> Alerting**.
+
+=== Alerting Rules
+
+OpenShift comes with hundreds of pre-configured alert rules. View some examples:
+
+[source,bash,role="execute"]
+----
+oc get prometheusrules -n openshift-monitoring -o custom-columns=NAME:.metadata.name | head -10
+----
+
+Examine a specific rule to see how alerts are defined:
+
+[source,bash,role="execute"]
+----
+oc get prometheusrule -n openshift-monitoring cluster-monitoring-operator-prometheus-rules -o jsonpath='{.spec.groups[0].rules[0]}' | python3 -m json.tool
+----
+
+=== Create a Custom Alert (User Workload)
+
+You can define your own alerts for application namespaces. Here's an example that fires when a pod has been restarting:
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ops-track-alerts
+  namespace: openshift-logging
+spec:
+  groups:
+  - name: ops-track
+    rules:
+    - alert: HighPodRestartRate
+      expr: increase(kube_pod_container_status_restarts_total{namespace="openshift-logging"}[15m]) > 3
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pod {{ \$labels.pod }} restarting frequently"
+        description: "Pod {{ \$labels.pod }} in {{ \$labels.namespace }} has restarted more than 3 times in 15 minutes."
+EOF
+----
+
+Verify the rule was created:
+
+[source,bash,role="execute"]
+----
+oc get prometheusrule ops-track-alerts -n openshift-logging
+----
+
+Navigate to **Observe -> Alerting -> Alerting Rules** in the console to see your custom rule alongside the built-in ones.
+
+== Logging Stack
+
+Now let's set up the logging pipeline. While metrics tell you *what* is happening, logs tell you *why*.
 
 == Install the Operators
 
@@ -569,20 +704,101 @@ oc get pods -n openshift-storage | grep noobaa
 ----
 ====
 
+== Distributed Tracing with OpenTelemetry
+
+The third pillar of observability is **tracing** — understanding how requests flow across services. OpenShift supports the **OpenTelemetry Collector** for collecting traces, metrics, and logs from instrumented applications.
+
+=== Check OpenTelemetry Operator Availability
+
+[source,bash,role="execute"]
+----
+oc get csv -A | grep opentelemetry || echo "OpenTelemetry Operator not installed"
+----
+
+If the operator is not installed, you can find it in the OperatorHub under **Red Hat build of OpenTelemetry**.
+
+=== How OpenTelemetry Fits In
+
+[cols="1,2,2"]
+|===
+|Signal |Built-in (No Setup) |OpenTelemetry Adds
+
+|**Metrics**
+|Prometheus scrapes cluster and pod metrics automatically
+|Application-level custom metrics via OTLP export
+
+|**Logs**
+|Vector + Loki (configured in this module)
+|Correlated logs with trace IDs for request tracking
+
+|**Traces**
+|Not available without instrumentation
+|End-to-end request tracing across microservices
+|===
+
+=== OpenTelemetry Collector Architecture
+
+When the operator is installed, you deploy an `OpenTelemetryCollector` CR that acts as a pipeline:
+
+[source,yaml]
+----
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel
+  namespace: observability
+spec:
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+    exporters:
+      otlp/tempo:
+        endpoint: tempo-distributor.observability:4317
+        tls:
+          insecure: true
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          exporters: [otlp/tempo]
+----
+
+Applications send traces to the collector using the OTLP protocol. The collector forwards them to a backend like Tempo for storage and querying.
+
+[NOTE]
+====
+OpenTelemetry instrumentation requires application-side changes — adding the OTel SDK to your code or using auto-instrumentation for Java, Python, Node.js, and .NET. The collector itself is infrastructure you manage as an ops team.
+====
+
 == Summary
 
 **What you learned:**
 
+* How OpenShift's built-in Prometheus stack provides metrics and dashboards with no setup
+* How to view alerts, create custom alerting rules, and understand Alertmanager
 * How to install the OpenShift Logging stack (Loki, Vector, Cluster Observability)
 * How to configure ODF Object Bucket storage for logs (no external cloud required)
 * How to create and configure LokiStack for log storage
 * How to set up log collection with ClusterLogForwarder
 * How to view and filter logs in the OpenShift console
+* How OpenTelemetry provides distributed tracing for microservice architectures
 
 **Key operational commands:**
 
 [source,bash]
 ----
+# Cluster metrics
+oc adm top nodes
+oc adm top pods -A --sort-by=cpu | head -15
+
+# View alerting rules
+oc get prometheusrules -A
+
 # View logging pods
 oc get pods -n openshift-logging
 
@@ -601,7 +817,9 @@ oc get obc -n openshift-logging
 
 == Additional Resources
 
+* **OpenShift Monitoring:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/monitoring/index[Monitoring]
 * **OpenShift Logging Documentation:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/logging/index[Logging]
 * **Logging 6.2 Stack:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/logging/logging-6-2[Logging 6.2]
+* **Red Hat build of OpenTelemetry:** link:https://docs.redhat.com/en/documentation/red_hat_build_of_opentelemetry/[OpenTelemetry]
 * **ODF Object Storage:** link:https://docs.redhat.com/en/documentation/red_hat_openshift_data_foundation/4.20/html/managing_and_allocating_storage_resources/multicloud-object-gateway_rhodf[Multicloud Object Gateway]
 * **Loki Configuration:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/logging/log-storage[Log storage]

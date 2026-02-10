@@ -2,7 +2,7 @@
 
 == Module Overview
 
-**Duration:** 25 minutes +
+**Duration:** 35-40 minutes +
 **Format:** Hands-on OIDC identity provider configuration +
 **Audience:** Platform Engineers, Operations Teams, Security Administrators
 
@@ -41,7 +41,7 @@ OpenID Connect is an identity layer built on top of OAuth 2.0. It allows applica
 
 [cols="1,1,1"]
 |===
-|Feature |OIDC |LDAP (previous module)
+|Feature |OIDC |LDAP
 
 |Protocol
 |HTTP/REST with JSON
@@ -302,7 +302,7 @@ oc whoami --show-console
 ----
 
 2. Open the URL in a web browser
-3. If you're already logged in from previous modules, click on your username in the top-right corner and select **Log out**
+3. If you're already logged in, click on your username in the top-right corner and select **Log out**
 4. You'll see two login options:
 +
 image::oidc-login-options.png[OpenShift login page showing kube:admin and rhsso options]

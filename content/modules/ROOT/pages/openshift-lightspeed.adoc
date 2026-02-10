@@ -2,7 +2,7 @@
 
 == Module Overview
 
-**Duration:** 15 minutes +
+**Duration:** 15-20 minutes +
 **Format:** Hands-on AI assistant exploration +
 **Audience:** Platform Engineers, Developers, Operations Teams
 

@@ -62,43 +62,33 @@ The `router-default` service exposes the ingress controller:
 
 OpenShift **Routes** expose services externally. They're more feature-rich than Kubernetes Ingress.
 
-=== Use the Application from App Management
+=== Set Up the Application
 
-In the previous module, you deployed the `weathernow` application. Let's examine its networking.
-
-[source,bash,role="execute"]
-----
-oc project app-management
-----
-
-[NOTE]
-====
-**Skipped the App Management module?**
-
-Check if the weathernow app exists:
-
-[source,bash,role="execute"]
-----
-oc get pods -n app-management -l deployment=weathernow
-----
-
-If no pods are found, deploy the app now:
+This section uses the `weathernow` application. Run the following to ensure the project and app are ready:
 
 [source,bash,role="execute"]
 ----
 oc new-project app-management 2>/dev/null || oc project app-management
-oc new-app --name=weathernow --image=registry.access.redhat.com/ubi9/httpd-24
 ----
 
-Wait for the pod to be ready before continuing.
-
-**Create an Edge Route with TLS:**
+[source,bash,role="execute"]
+----
+oc get deployment weathernow -n app-management 2>/dev/null || oc new-app --name=weathernow --image=registry.access.redhat.com/ubi9/httpd-24
+----
 
 [source,bash,role="execute"]
 ----
 oc create route edge weathernow --service=weathernow 2>/dev/null || echo "Route already exists"
 ----
-====
+
+Wait for the pod to be ready:
+
+[source,bash,role="execute"]
+----
+oc rollout status deployment/weathernow -n app-management --timeout=60s
+----
+
+Now let's examine its networking.
 
 === View the Route Configuration
 

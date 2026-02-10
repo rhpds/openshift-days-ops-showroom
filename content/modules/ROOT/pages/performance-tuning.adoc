@@ -2,7 +2,7 @@
 
 == Module Overview
 
-**Duration:** 25-30 minutes +
+**Duration:** 30-35 minutes +
 **Audience:** Platform Engineers, SRE, Operations Teams
 
 **The Challenge:** Your applications are experiencing performance issues - pods crashing from resource exhaustion, slow response times under load, and unclear capacity planning.

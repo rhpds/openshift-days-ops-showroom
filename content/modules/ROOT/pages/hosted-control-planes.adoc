@@ -2,7 +2,7 @@
 
 == Module Overview
 
-**Duration:** 35 minutes +
+**Duration:** 40-45 minutes +
 **Format:** Architecture presentation + Demo + Operations +
 **Audience:** Infrastructure Architects, IT Operations, Cloud Platform Teams
 
