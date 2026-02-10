@@ -45,6 +45,7 @@ echo "  MODULE_ENABLE_VIRT=${MODULE_ENABLE_VIRT:-true}"
 echo "  MODULE_ENABLE_DEVHUB=${MODULE_ENABLE_DEVHUB:-true}"
 echo "  MODULE_ENABLE_OLS=${MODULE_ENABLE_OLS:-true}"
 echo "  MODULE_ENABLE_CLOUD_INFRA=${MODULE_ENABLE_CLOUD_INFRA:-true}"
+echo "  MODULE_ENABLE_HCP=${MODULE_ENABLE_HCP:-true}"
 echo "  MODULE_ENABLE_ACM=${MODULE_ENABLE_ACM:-true}"
 echo "  MODULE_ENABLE_SECURITY=${MODULE_ENABLE_SECURITY:-true}"
 
@@ -75,6 +76,7 @@ ATTRS="${ATTRS}    module_enable_virt: '${MODULE_ENABLE_VIRT:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_devhub: '${MODULE_ENABLE_DEVHUB:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_ols: '${MODULE_ENABLE_OLS:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_cloud_infra: '${MODULE_ENABLE_CLOUD_INFRA:-true}'"$'\n'
+ATTRS="${ATTRS}    module_enable_hcp: '${MODULE_ENABLE_HCP:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_acm: '${MODULE_ENABLE_ACM:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_security: '${MODULE_ENABLE_SECURITY:-true}'"$'\n'
 

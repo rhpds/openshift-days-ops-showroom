@@ -10,7 +10,7 @@
 //   module_enable_ldap, module_enable_oidc,
 //   module_enable_observability, module_enable_backup, module_enable_performance,
 //   module_enable_virt, module_enable_devhub, module_enable_ols,
-//   module_enable_cloud_infra, module_enable_acm, module_enable_security
+//   module_enable_cloud_infra, module_enable_hcp, module_enable_acm, module_enable_security
 
 // Getting Started (Environment Setup is always shown)
 * xref:index.adoc[Environment Setup]
@@ -70,7 +70,7 @@ endif::[]
 ifeval::["{module_enable_cloud_infra}" == "true"]
 * xref:cloud-infrastructure.adoc[Cloud Integration & Infrastructure]
 endif::[]
-ifeval::["{module_enable_acm}" == "true"]
+ifeval::["{module_enable_hcp}" == "true"]
 * xref:hosted-control-planes.adoc[Advanced Architecture - HCP]
 endif::[]
 
