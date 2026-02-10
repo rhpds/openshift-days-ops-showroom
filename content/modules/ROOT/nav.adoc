@@ -4,24 +4,39 @@
 // Flow: Getting Started → Core Ops → Identity → Day 2 Ops → Advanced → Sections
 //
 // Catalog parameters (from agnosticv):
-//   module_enable_virt, module_enable_backup, module_enable_acm,
-//   module_enable_devhub, module_enable_ols, module_enable_security,
-//   module_enable_ldap, module_enable_oidc, module_enable_observability,
-//   module_enable_performance, module_enable_cloud_infra, module_enable_waf
+//   module_enable_concepts, module_enable_install,
+//   module_enable_appmgmt, module_enable_ingress, module_enable_netsec,
+//   module_enable_waf, module_enable_debugging,
+//   module_enable_ldap, module_enable_oidc,
+//   module_enable_observability, module_enable_backup, module_enable_performance,
+//   module_enable_virt, module_enable_devhub, module_enable_ols,
+//   module_enable_cloud_infra, module_enable_acm, module_enable_security
 
-// Getting Started
+// Getting Started (Environment Setup is always shown)
 * xref:index.adoc[Environment Setup]
+ifeval::["{module_enable_concepts}" == "true"]
 * xref:ocp-concepts.adoc[OpenShift Platform Overview]
+endif::[]
+ifeval::["{module_enable_install}" == "true"]
 * xref:installation.adoc[Installation & Verification]
+endif::[]
 
 // Core Operations - deploy, expose, secure, debug
+ifeval::["{module_enable_appmgmt}" == "true"]
 * xref:app-mgmt-basics.adoc[Application Management Basics]
+endif::[]
+ifeval::["{module_enable_ingress}" == "true"]
 * xref:ingress-loadbalancing.adoc[Ingress & Load Balancing]
+endif::[]
+ifeval::["{module_enable_netsec}" == "true"]
 * xref:network-security.adoc[Network Security]
+endif::[]
 ifeval::["{module_enable_waf}" == "true"]
 * xref:aws-waf.adoc[AWS WAF - Web Application Firewall]
 endif::[]
+ifeval::["{module_enable_debugging}" == "true"]
 * xref:debugging-troubleshooting.adoc[Debugging & Troubleshooting]
+endif::[]
 
 // Identity & Access
 ifeval::["{module_enable_ldap}" == "true"]
