@@ -1,31 +1,37 @@
 // OpenShift Days - Ops Track (101)
 // Navigation with catalog parameter conditionals
 //
+// Flow: Getting Started → Core Ops → Identity → Day 2 Ops → Advanced → Sections
+//
 // Catalog parameters (from agnosticv):
 //   module_enable_virt, module_enable_backup, module_enable_acm,
 //   module_enable_devhub, module_enable_ols, module_enable_security,
 //   module_enable_ldap, module_enable_oidc, module_enable_observability,
 //   module_enable_performance, module_enable_cloud_infra, module_enable_waf
 
+// Getting Started
 * xref:index.adoc[Environment Setup]
 * xref:ocp-concepts.adoc[OpenShift Platform Overview]
 * xref:installation.adoc[Installation & Verification]
-ifeval::["{module_enable_cloud_infra}" == "true"]
-* xref:cloud-infrastructure.adoc[Cloud Integration & Infrastructure]
-endif::[]
+
+// Core Operations - deploy, expose, secure, debug
 * xref:app-mgmt-basics.adoc[Application Management Basics]
-ifeval::["{module_enable_ldap}" == "true"]
-* xref:ldap-groupsync.adoc[Identity - LDAP Authentication]
-endif::[]
-ifeval::["{module_enable_oidc}" == "true"]
-* xref:oidc-authentication.adoc[Identity - OIDC Authentication]
-endif::[]
 * xref:ingress-loadbalancing.adoc[Ingress & Load Balancing]
 * xref:network-security.adoc[Network Security]
 ifeval::["{module_enable_waf}" == "true"]
 * xref:aws-waf.adoc[AWS WAF - Web Application Firewall]
 endif::[]
 * xref:debugging-troubleshooting.adoc[Debugging & Troubleshooting]
+
+// Identity & Access
+ifeval::["{module_enable_ldap}" == "true"]
+* xref:ldap-groupsync.adoc[Identity - LDAP Authentication]
+endif::[]
+ifeval::["{module_enable_oidc}" == "true"]
+* xref:oidc-authentication.adoc[Identity - OIDC Authentication]
+endif::[]
+
+// Day 2 Operations
 ifeval::["{module_enable_observability}" == "true"]
 * xref:observability.adoc[Observability & Logging]
 endif::[]
@@ -35,24 +41,31 @@ endif::[]
 ifeval::["{module_enable_performance}" == "true"]
 * xref:performance-tuning.adoc[Performance Tuning]
 endif::[]
-ifeval::["{module_enable_ols}" == "true"]
-* xref:openshift-lightspeed.adoc[OpenShift Lightspeed]
-endif::[]
+
+// Advanced Topics
 ifeval::["{module_enable_virt}" == "true"]
 * xref:virtualization.adoc[Virtualization]
-endif::[]
-ifeval::["{module_enable_acm}" == "true"]
-* xref:hosted-control-planes.adoc[Advanced Architecture - HCP]
 endif::[]
 ifeval::["{module_enable_devhub}" == "true"]
 * xref:developer-hub.adoc[Developer Hub]
 endif::[]
+ifeval::["{module_enable_ols}" == "true"]
+* xref:openshift-lightspeed.adoc[OpenShift Lightspeed]
+endif::[]
+ifeval::["{module_enable_cloud_infra}" == "true"]
+* xref:cloud-infrastructure.adoc[Cloud Integration & Infrastructure]
+endif::[]
+ifeval::["{module_enable_acm}" == "true"]
+* xref:hosted-control-planes.adoc[Advanced Architecture - HCP]
+endif::[]
 
+// ACM Section
 ifeval::["{module_enable_acm}" == "true"]
 .ACM - Multi-Cluster Management
 * xref:acm-multicluster.adoc[ACM Overview & Fleet Management]
 endif::[]
 
+// ACS Section
 ifeval::["{module_enable_security}" == "true"]
 .ACS - Advanced Cluster Security
 * xref:security.adoc[Security - Secrets, Certs & ACS]
