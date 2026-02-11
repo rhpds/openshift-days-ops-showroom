@@ -45,16 +45,26 @@ echo "  MODULE_ENABLE_VIRT=${MODULE_ENABLE_VIRT:-true}"
 echo "  MODULE_ENABLE_DEVHUB=${MODULE_ENABLE_DEVHUB:-true}"
 echo "  MODULE_ENABLE_OLS=${MODULE_ENABLE_OLS:-true}"
 echo "  MODULE_ENABLE_CLOUD_INFRA=${MODULE_ENABLE_CLOUD_INFRA:-true}"
-echo "  MODULE_ENABLE_HCP=${MODULE_ENABLE_HCP:-true}"
+echo "  MODULE_ENABLE_HCP=${MODULE_ENABLE_HCP}"
 echo "  MODULE_ENABLE_ACM=${MODULE_ENABLE_ACM:-true}"
 echo "  MODULE_ENABLE_SECURITY=${MODULE_ENABLE_SECURITY:-true}"
 
 # Create attributes section for Antora
 # ifeval checks: ifeval::["{module_enable_virt}" == "true"]
 # So we set the attribute to 'true' or 'false'
+# If MODULE_ENABLE_HCP is not explicitly set (sandbox version has no HCP checkbox),
+# only show HCP module when both ACM and VIRT are enabled (HCP needs both)
+if [ -z "${MODULE_ENABLE_HCP+x}" ]; then
+  if [ "${MODULE_ENABLE_ACM:-true}" = "true" ] && [ "${MODULE_ENABLE_VIRT:-true}" = "true" ]; then
+    MODULE_ENABLE_HCP="true"
+  else
+    MODULE_ENABLE_HCP="false"
+  fi
+fi
+
 ATTRS=""
 
-# Module flags - all 18 catalog parameters
+# Module flags - all 19 catalog parameters
 # Getting Started
 ATTRS="${ATTRS}    module_enable_concepts: '${MODULE_ENABLE_CONCEPTS:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_install: '${MODULE_ENABLE_INSTALL:-true}'"$'\n'
@@ -76,7 +86,7 @@ ATTRS="${ATTRS}    module_enable_virt: '${MODULE_ENABLE_VIRT:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_devhub: '${MODULE_ENABLE_DEVHUB:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_ols: '${MODULE_ENABLE_OLS:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_cloud_infra: '${MODULE_ENABLE_CLOUD_INFRA:-true}'"$'\n'
-ATTRS="${ATTRS}    module_enable_hcp: '${MODULE_ENABLE_HCP:-true}'"$'\n'
+ATTRS="${ATTRS}    module_enable_hcp: '${MODULE_ENABLE_HCP}'"$'\n'
 ATTRS="${ATTRS}    module_enable_acm: '${MODULE_ENABLE_ACM:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_security: '${MODULE_ENABLE_SECURITY:-true}'"$'\n'
 
