@@ -12,7 +12,10 @@ This workshop puts you in the driver's seat of a live OpenShift cluster so you c
 
 Every module is hands-on. You'll deploy real applications, configure real security policies, break things on purpose and fix them, and explore the tools that make Day 2 operations manageable at scale.
 
-This workshop is modular — your session may not include every topic below. The modules available to you are shown in the navigation on the left. The full catalog includes:
+[NOTE]
+====
+**This workshop is modular.** Your session has been customised with a specific set of modules. Only the modules shown in the **navigation on the left** are available in your environment. The full catalog of topics includes:
+====
 
 [cols="1,3"]
 |===
