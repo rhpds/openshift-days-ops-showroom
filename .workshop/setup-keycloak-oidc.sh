@@ -18,10 +18,10 @@ echo "Admin User: $ADMIN_USER"
 echo "Getting admin token..."
 TOKEN=$(curl -sk -X POST "${KEYCLOAK_URL}/auth/realms/master/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=${ADMIN_USER}" \
-  -d "password=${ADMIN_PASS}" \
-  -d "grant_type=password" \
-  -d "client_id=admin-cli" | jq -r '.access_token')
+  --data-urlencode "username=${ADMIN_USER}" \
+  --data-urlencode "password=${ADMIN_PASS}" \
+  --data-urlencode "grant_type=password" \
+  --data-urlencode "client_id=admin-cli" | jq -r '.access_token')
 
 if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
   echo "ERROR: Failed to get admin token"
@@ -49,10 +49,10 @@ curl -sk -X POST "${KEYCLOAK_URL}/auth/admin/realms" \
 sleep 2
 TOKEN=$(curl -sk -X POST "${KEYCLOAK_URL}/auth/realms/master/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=${ADMIN_USER}" \
-  -d "password=${ADMIN_PASS}" \
-  -d "grant_type=password" \
-  -d "client_id=admin-cli" | jq -r '.access_token')
+  --data-urlencode "username=${ADMIN_USER}" \
+  --data-urlencode "password=${ADMIN_PASS}" \
+  --data-urlencode "grant_type=password" \
+  --data-urlencode "client_id=admin-cli" | jq -r '.access_token')
 
 # Create groups
 echo "Creating groups..."
