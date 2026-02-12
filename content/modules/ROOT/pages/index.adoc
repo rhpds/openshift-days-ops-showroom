@@ -1,31 +1,81 @@
-= Welcome
+= OpenShift Days - Operations Track
 
-== OpenShift Days - Ops Track
+== Why This Workshop Exists
 
-Welcome to the OpenShift Operations workshop. This hands-on lab covers platform setup, Day 2 operations, and advanced capabilities for OpenShift administrators and platform engineers.
+Running Kubernetes in production is hard. Running it well — with enterprise authentication, automated backup, fleet management, and security compliance — is where most teams struggle.
+
+OpenShift closes that gap. It takes upstream Kubernetes and adds the operational tooling that platform teams actually need: integrated monitoring, automated upgrades, built-in security policies, multi-cluster management, and developer self-service — all supported by Red Hat.
+
+This workshop puts you in the driver's seat of a live OpenShift cluster so you can see how these capabilities work in practice, not just in slides.
+
+== What You'll Do
+
+Every module is hands-on. You'll deploy real applications, configure real security policies, break things on purpose and fix them, and explore the tools that make Day 2 operations manageable at scale.
+
+This workshop is modular — your session may not include every topic below. The modules available to you are shown in the navigation on the left. The full catalog includes:
+
+[cols="1,3"]
+|===
+|Area |What you'll explore
+
+|**Platform Fundamentals**
+|What makes OpenShift different from upstream Kubernetes — integrated monitoring, routing, operators, automated upgrades, and why it matters for your operations team
+
+|**Application Operations**
+|Deploy, expose, scale, and manage workloads. Configure ingress, TLS termination, load balancing, and network security policies
+
+|**Identity & Access**
+|Plug OpenShift into your existing identity infrastructure — LDAP, OIDC, group sync, RBAC. See how enterprise authentication replaces temporary admin accounts
+
+|**Day 2 Operations**
+|The work that starts after the cluster is running — observability with Prometheus and Loki, backup and restore with OADP, performance tuning with autoscalers
+
+|**Advanced Capabilities**
+|Virtualization (run VMs alongside containers), Hosted Control Planes (provision clusters in minutes), multi-cluster fleet management with ACM, security scanning with ACS, and AI-assisted operations with Lightspeed
+
+|**Developer Productivity**
+|Red Hat Developer Hub — how ops teams enable developer self-service with golden paths, software catalogs, and standardised templates
+|===
+
+Each module is standalone. Your environment has been configured with a specific set of modules — only the ones shown in the navigation on the left are available in this session.
 
 == Your Environment
 
-You have access to an OpenShift 4.x cluster with:
+You have full cluster admin access to a production-grade OpenShift cluster:
 
-* 3 control plane nodes
-* 2+ worker nodes
-* Cluster admin privileges
+[cols="1,2"]
+|===
+|Cluster |OpenShift 4.x with 3 control plane + 2+ worker nodes
+|Access |Cluster admin privileges (full control)
+|Terminal |Use the terminal tab on the right to run commands
+|Console |Use the web console tab to explore the GUI
+|===
 
-== Getting Started
+== Verify Access
 
-Use the terminal and web console tabs to interact with your cluster. You're logged in as a cluster admin.
-
-Verify your access:
+Confirm you're connected:
 
 [source,bash,role="execute"]
 ----
 oc whoami
 ----
 
+You should see your service account or admin user.
+
 [source,bash,role="execute"]
 ----
 oc get nodes
 ----
 
-When ready, proceed to the first module in the navigation.
+You should see your control plane and worker nodes in `Ready` status.
+
+[source,bash,role="execute"]
+----
+oc get clusterversion
+----
+
+This confirms your cluster version and update channel.
+
+== Ready?
+
+Select the first module from the navigation on the left and let's get into it.
