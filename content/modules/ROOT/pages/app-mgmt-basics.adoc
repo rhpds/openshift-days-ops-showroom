@@ -208,23 +208,68 @@ Now if the application becomes unresponsive:
 * **Liveness** probe fails → pod restarted automatically
 * Combined with **self-healing** → your application maintains availability without ops intervention
 
+== Rollback a Bad Deployment
+
+Someone just pushed a bad image update. How do you undo it?
+
+Simulate a bad deploy by changing the image:
+
+[source,bash,role="execute"]
+----
+oc set image deployment/weathernow weathernow=registry.access.redhat.com/ubi9/nginx-124 -n app-management
+----
+
+Check the rollout history — OpenShift tracks every change:
+
+[source,bash,role="execute"]
+----
+oc rollout history deployment/weathernow -n app-management
+----
+
+You'll see multiple revisions. Each time you change the deployment, a new revision is created.
+
+Roll back to the previous working version:
+
+[source,bash,role="execute"]
+----
+oc rollout undo deployment/weathernow -n app-management
+----
+
+Verify the original image is restored:
+
+[source,bash,role="execute"]
+----
+oc get deployment weathernow -n app-management -o jsonpath='{.spec.template.spec.containers[0].image}'
+----
+
+[source,bash,role="execute"]
+----
+oc rollout status deployment/weathernow -n app-management --timeout=60s
+----
+
+The deployment is back to the working version. In production, `oc rollout undo` is often the fastest way to recover from a bad release — faster than fixing the code and redeploying.
+
 == Summary
 
 You completed the core application lifecycle on OpenShift:
 
 * **Deploy** — `oc new-app` creates deployment + service in one command
+* **Inspect** — `oc describe pod` and `oc logs` for diagnostics
 * **Expose** — `oc create route edge` adds TLS-terminated external access
 * **Scale** — `oc scale` adjusts replicas, service auto-balances
 * **Self-heal** — delete a pod, OpenShift replaces it in seconds
 * **Health checks** — probes ensure only healthy pods receive traffic
+* **Rollback** — `oc rollout undo` reverts a bad deployment instantly
 
 **Key commands:**
 
 [source,bash]
 ----
 oc new-app --name=myapp --image=myimage       # Deploy
+oc describe pod <pod-name>                     # Inspect
+oc logs <pod-name>                             # Check logs
 oc create route edge myapp --service=myapp     # Expose with TLS
 oc scale deployment myapp --replicas=N         # Scale
-oc get pods                                     # Check status
-oc rollout status deployment/myapp              # Watch rollout
+oc rollout undo deployment/myapp               # Rollback
+oc rollout status deployment/myapp             # Watch rollout
 ----
