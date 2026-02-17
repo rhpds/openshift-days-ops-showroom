@@ -37,6 +37,5 @@ asciidoc:
     module_enable_devhub: 'true'
     module_enable_ols: 'true'
     module_enable_cloud_infra: 'true'
-    module_enable_hcp: 'false'
     module_enable_acm: 'true'
     module_enable_security: 'true'

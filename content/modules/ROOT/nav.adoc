@@ -70,9 +70,6 @@ endif::[]
 ifeval::["{module_enable_cloud_infra}" == "true"]
 * xref:cloud-infrastructure.adoc[Cloud Integration & Infrastructure]
 endif::[]
-ifeval::["{module_enable_hcp}" == "true"]
-* xref:hosted-control-planes.adoc[Advanced Architecture - HCP]
-endif::[]
 
 // ACM Section
 ifeval::["{module_enable_acm}" == "true"]
