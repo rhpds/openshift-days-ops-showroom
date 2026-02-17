@@ -2,861 +2,205 @@
 
 == Module Overview
 
-**Duration:** 30-35 minutes +
-**Format:** Hands-on application deployment +
-**Audience:** Platform Engineers, Developers, Operations Teams
+**Duration:** 20 minutes +
+**Format:** Hands-on +
+**Audience:** Platform Engineers, Operations Teams
 
-In this module, you will deploy a sample application using the `oc` tool and learn about some of the core concepts, fundamental objects, and basics of application management on OpenShift Container Platform.
+In this module, you'll deploy an application, expose it to the outside world, scale it for capacity, see how OpenShift self-heals when things fail, and configure health checks. This is the core ops workflow for managing workloads on OpenShift.
 
-== Core OpenShift Concepts
-As a future administrator of OpenShift, it is important to understand several
-core building blocks as it relates to applications. Understanding these building
-blocks will help you better see the big picture of application management on the
-platform.
+== Learning Objectives
 
-=== Projects
-A *Project* is a "bucket" of sorts. It's a meta construct where all of a
-user's resources live. From an administrative perspective, each *Project* can
-be thought of like a tenant. *Projects* may have multiple users who can
-access them, and users may be able to access multiple *Projects*. Technically
-speaking, a user doesn't own the resources, the *Project* does. Deleting the
-user doesn't affect any of the created resources.
+By the end of this module, you will be able to:
 
-For this exercise, first create a *Project* to hold some resources:
+* Deploy an application from a container image
+* Expose it via a Route with TLS
+* Scale horizontally and observe the behaviour
+* Understand OpenShift self-healing (pod recreation)
+* Configure liveness and readiness probes
+
+== Deploy an Application
+
+Create a project and deploy a web server:
 
 [source,bash,role="execute"]
 ----
 oc new-project app-management
 ----
 
-=== Deploy a Sample Application
-The `new-app` command provides a very simple way to tell OpenShift to run
-things. You simply provide it with one of a wide array of inputs, and it figures
-out what to do. Users will commonly use this command to get OpenShift to launch
-existing images, to create builds of source code and ultimately deploy them, to
-instantiate templates, and so on.
+[source,bash,role="execute"]
+----
+oc new-app --name=weathernow --image=registry.access.redhat.com/ubi9/httpd-24
+----
 
-You will now launch a specific image that exists on Quay
+This single command creates three resources:
+
+* **Deployment** — defines what container to run and how many replicas
+* **Service** — internal load balancer that routes traffic to the pods
+* **ImageStream** — tracks the container image
+
+Check the pod is running:
 
 [source,bash,role="execute"]
 ----
-oc new-app quay.io/openshift-workshop-applications/weathernow:latest
+oc get pods -n app-management
 ----
 
-The output will look like:
-
-----
---> Found container image 6dbcf6a (5 minutes old) from quay.io for "quay.io/openshift-workshop-applications/weathernow:latest"
-
-    * An image stream tag will be created as "weathernow:latest" that will track this image
-
---> Creating resources ...
-    imagestream.image.openshift.io "weathernow" created
-    deployment.apps "weathernow" created
-    service "weathernow" created
---> Success
-    Application is not exposed. You can expose services to the outside world by executing one or more of the commands below:
-     'oc expose service/weathernow'
-    Run 'oc status' to view your app.
-----
-
-You can see that OpenShift automatically created several resources as the output
-of this command. We will take some time to explore the resources that were
-created.
-
-For more information on the capabilities of `new-app`, take a look at its help
-message by running `oc new-app -h`.
-
-=== Pods
-
-.OpenShift Pods
-image::openshift_pod_new.png[]
-
-Pods are one or more containers deployed together on a host. A pod is the
-smallest compute unit you can define, deploy and manage in OpenShift. Each pod is allocated
-its own internal IP address on the SDN and owns the entire port range. The
-containers within pods can share local storage space and networking resources.
-
-Pods are treated as **static** objects by OpenShift, i.e., one cannot change the
-pod definition while running.
-
-You can get a list of pods:
+You should see one pod in `Running` status. Check the service:
 
 [source,bash,role="execute"]
 ----
-oc get pods
+oc get svc -n app-management
 ----
 
-And you will see something like the following:
+The service has a `ClusterIP` — this is only reachable from inside the cluster. To expose it externally, we need a Route.
 
-----
-NAME                     READY   STATUS    RESTARTS   AGE
-weathernow-764c5bf8b8-l49z7   1/1     Running   0          2m53s
-----
+== Create a Route
 
-NOTE: Pod names are dynamically generated as part of the deployment process,
-which you will learn about shortly. Your name will be slightly different.
-
-
-The `describe` command will give you more information on the details of a pod.
-In the case of the pod name above:
-
-[source,bash,role="execute"]
-----
-oc describe pod -l deployment=weathernow
-----
-
-NOTE: The `-l deployment=weathernow` selects the pod that is related to the
-`Deployment` which will be discussed later.
-
-And you will see output similar to the following:
-
-----
-Name:             weathernow-85ddc7b8f-6kf4b
-Namespace:        app-management
-Priority:         0
-Service Account:  default
-Node:             worker-0/10.0.20.193
-Start Time:       Fri, 05 Jul 2024 13:36:23 +0000
-Labels:           deployment=weathernow
-                  pod-template-hash=85ddc7b8f
-Annotations:      k8s.ovn.org/pod-networks:
-                    {"default":{"ip_addresses":["10.128.2.75/23"],"mac_address":"0a:58:0a:80:02:4b","gateway_ips":
-["10.128.2.1"],"routes":[{"dest":"10.128.0.0...
-                  k8s.v1.cni.cncf.io/network-status:
-                    [{
-                        "name": "ovn-kubernetes",
-                        "interface": "eth0",
-                        "ips": [
-                            "10.128.2.75"
-                        ],
-                        "mac": "0a:58:0a:80:02:4b",
-                        "default": true,
-                        "dns": {}
-                    }]
-                  openshift.io/generated-by: OpenShiftNewApp
-                  openshift.io/scc: restricted-v2
-                  seccomp.security.alpha.kubernetes.io/pod: runtime/default
-Status:           Running
-SeccompProfile:   RuntimeDefault
-IP:               10.128.2.75
-IPs:
-  IP:           10.128.2.75
-Controlled By:  ReplicaSet/weathernow-85ddc7b8f
-Containers:
-  weathernow:
-    Container ID:   cri-o://6ac58477bc41b7428da44b8a4504384faa2cd772740ca21c963a1fa5c4578f65
-    Image:          quay.io/openshiftroadshow/weathernow@sha256:1366b430c7d4bddf35c7b2d067bc24e8d67ba297dbaacd10e0d8093
-9efd1de9d
-    Image ID:       quay.io/openshiftroadshow/weathernow@sha256:1366b430c7d4bddf35c7b2d067bc24e8d67ba297dbaacd10e0d8093
-9efd1de9d
-    Ports:          8080/TCP, 8778/TCP, 9779/TCP
-    Host Ports:     0/TCP, 0/TCP, 0/TCP
-    State:          Running
-      Started:      Fri, 05 Jul 2024 13:36:30 +0000
-    Ready:          True
-    Restart Count:  0
-    Environment:    <none>
-    Mounts:
-      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-79472 (ro)
-Conditions:
-  Type                        Status
-  PodReadyToStartContainers   True
-  Initialized                 True
-  Ready                       True
-  ContainersReady             True
-  PodScheduled                True
-Volumes:
-  kube-api-access-79472:
-    Type:                    Projected (a volume that contains injected data from multiple sources)
-    TokenExpirationSeconds:  3607
-    ConfigMapName:           kube-root-ca.crt
-    ConfigMapOptional:       <nil>
-    DownwardAPI:             true
-    ConfigMapName:           openshift-service-ca.crt
-    ConfigMapOptional:       <nil>
-QoS Class:                   BestEffort
-Node-Selectors:              <none>
-Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
-                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
-Events:
-  Type    Reason          Age   From               Message
-  ----    ------          ----  ----               -------
-  Normal  Scheduled       38s   default-scheduler  Successfully assigned app-management/weathernow-85ddc7b8f-6kf4b to worker-0
-  Normal  AddedInterface  38s   multus             Add eth0 [10.128.2.75/23] from ovn-kubernetes
-  Normal  Pulling         38s   kubelet            Pulling image "quay.io/openshiftroadshow/weathernow@sha256:1366b430c
-7d4bddf35c7b2d067bc24e8d67ba297dbaacd10e0d80939efd1de9d"
-  Normal  Pulled          32s   kubelet            Successfully pulled image "quay.io/openshiftroadshow/weathernow@sha2
-56:1366b430c7d4bddf35c7b2d067bc24e8d67ba297dbaacd10e0d80939efd1de9d" in 5.976s (5.976s including waiting)
-  Normal  Created         32s   kubelet            Created container weathernow
-  Normal  Started         32s   kubelet            Started container weathernow
-----
-
-This is a more detailed description of the pod that is running. You can see what
-node the pod is running on, the internal IP address of the pod, various labels,
-and other information about what is going on.
-
-=== Services
-.OpenShift Service
-image::openshift_service_new.png[]
-
-*Services* provide a convenient abstraction layer inside OpenShift to find a
-group of like *Pods*. They also act as an internal proxy/load balancer between
-those *Pods* and anything else that needs to access them from inside the
-OpenShift environment. For example, if you needed more `weathernow` instances to
-handle the load, you could spin up more *Pods*. OpenShift automatically maps
-them as endpoints to the *Service*, and the incoming requests would not notice
-anything different except that the *Service* was now doing a better job handling
-the requests.
-
-When you asked OpenShift to run the image, the `new-app` command
-automatically created a *Service* for you. Remember that services are an
-internal construct. They are not available to the "outside world", or
-anything that is outside the OpenShift environment. That's OK, as you will
-learn later.
-
-The way that a *Service* maps to a set of *Pods* is via a system of *Labels* and
-*Selectors*. *Services* are assigned a fixed IP address and many ports and
-protocols can be mapped.
-
-There is a lot more information about
-https://docs.openshift.com/container-platform/4.16/architecture/understanding-development.html#understanding-kubernetes-pods[Services],
-including the YAML format to make one by hand, in the official documentation.
-
-You can see the current list of services in a project with:
-
-[source,bash,role="execute"]
-----
-oc get services
-----
-
-You will see something like the following:
-
-----
-NAME    TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
-weathernow   ClusterIP   172.30.239.63   <none>        8080/TCP,8778/TCP,9779/TCP   2m35s
-----
-
-NOTE: Service IP addresses are dynamically assigned on creation and are
-immutable. The IP of a service will never change, and the IP is reserved until
-the service is deleted. Your service IP will likely be different.
-
-Just like with pods, you can `describe` services, too. In fact, you can
-`describe` most objects in OpenShift:
-
-[source,bash,role="execute"]
-----
-oc describe service weathernow
-----
-
-You will see something like the following:
-
-----
-Name:              weathernow
-Namespace:         app-management
-Labels:            app=weathernow
-                   app.kubernetes.io/component=weathernow
-                   app.kubernetes.io/instance=weathernow
-Annotations:       openshift.io/generated-by: OpenShiftNewApp
-Selector:          deployment=weathernow
-Type:              ClusterIP
-IP Family Policy:  SingleStack
-IP Families:       IPv4
-IP:                172.30.203.181
-IPs:               172.30.203.181
-Port:              8080-tcp  8080/TCP
-TargetPort:        8080/TCP
-Endpoints:         10.128.2.75:8080
-Port:              8778-tcp  8778/TCP
-TargetPort:        8778/TCP
-Endpoints:         10.128.2.75:8778
-Port:              9779-tcp  9779/TCP
-TargetPort:        9779/TCP
-Endpoints:         10.128.2.75:9779
-Session Affinity:  None
-Events:            <none>
-----
-
-Information about all objects (their definition, their state, and so forth) is
-stored in the etcd datastore. etcd stores data as key/value pairs, and all of
-this data can be represented as serializable data objects (JSON, YAML).
-
-Take a look at the YAML output for the service:
-
-[source,bash,role="execute"]
-----
-oc get service weathernow -o yaml
-----
-
-You will see something like the following:
-
-----
-apiVersion: v1
-kind: Service
-metadata:
-  annotations:
-    openshift.io/generated-by: OpenShiftNewApp
-  creationTimestamp: "2024-07-05T13:36:23Z"
-  labels:
-    app: weathernow
-    app.kubernetes.io/component: weathernow
-    app.kubernetes.io/instance: weathernow
-  name: weathernow
-  namespace: app-management
-  resourceVersion: "122841"
-  uid: 9f4b742b-cb10-472f-8e44-547c1fbdd490
-spec:
-  clusterIP: 172.30.203.181
-  clusterIPs:
-  - 172.30.203.181
-  internalTrafficPolicy: Cluster
-  ipFamilies:
-  - IPv4
-  ipFamilyPolicy: SingleStack
-  ports:
-  - name: 8080-tcp
-    port: 8080
-    protocol: TCP
-    targetPort: 8080
-  - name: 8778-tcp
-    port: 8778
-    protocol: TCP
-    targetPort: 8778
-  - name: 9779-tcp
-    port: 9779
-    protocol: TCP
-    targetPort: 9779
-  selector:
-    deployment: weathernow
-  sessionAffinity: None
-  type: ClusterIP
-status:
-  loadBalancer: {}
-----
-
-Take note of the `selector` stanza. Remember it.
-
-It is also of interest to view the YAML of the *Pod* to understand how OpenShift
-wires components together. Go back and find the name of your `weathernow` *Pod*, and
-then execute the following:
-
-[source,bash,role="execute"]
-----
-oc get pod -l deployment=weathernow -o jsonpath='{.items[*].metadata.labels}' | jq -r
-----
-
-NOTE: The `-o jsonpath` selects a specific field. In this case we are asking
-for the `labels` section in the manifest.
-
-The output should look something like this:
-
-----
-{
-  "deployment": "weathernow",
-  "pod-template-hash": "764c5bf8b8"
-}
-----
-
-* The *Service* has a `selector` stanza that refers to `deployment: weathernow`.
-* The *Pod* has multiple *Labels*:
-** `deployment: weathernow`
-** `pod-template-hash: 764c5bf8b8`
-
-*Labels* are just key/value pairs. Any *Pod* in this *Project* that has a *Label* that
-matches the *Selector* will be associated with the *Service*. If you look at the
-`describe` output again, you will see that there is one endpoint for the
-service: the existing `weathernow` *Pod*.
-
-The default behavior of `new-app` is to create just one instance of the item
-requested. We will see how to modify/adjust this in a moment, but there are a
-few more concepts to learn first.
-
-=== Background: Deployments and ReplicaSets in OpenShift
-
-While *Services* provide routing and load balancing for *Pods*, which may go in
-and out of existence, *ReplicaSets* (RS) are used to specify and then
-ensure the desired number of *Pods* (replicas) are in existence. For example, if
-you always want an application to be scaled to 3 *Pods* (instances), a
-*ReplicaSet* is needed. Without an RS, any *Pods* that are killed or
-somehow die/exit are not automatically restarted. *ReplicaSets* are
-how OpenShift "self heals".
-
-A *Deployment* (deploy) defines how something in OpenShift should be
-deployed. From the https://docs.openshift.com/container-platform/4.16/applications/deployments/what-deployments-are.html#deployments-kube-deployments_what-deployments-are[deployments documentation]:
-
-----
-Deployments describe the desired state of a particular component of an
-application as a Pod template. Deployments create ReplicaSets, which
-orchestrate Pod lifecycles.
-----
-
-In almost all cases, you will end up using the *Pod*, *Service*,
-*ReplicaSet* and *Deployment* resources together. And, in
-almost all of those cases, OpenShift will create all of them for you.
-
-There are some edge cases where you might want some *Pods* and an *RS* without a *Deployments*
-or a *Service*, and others, but these are advanced topics not covered in these
-exercises.
-
-NOTE: Earlier versions of OpenShift used something called a *DeploymentConfig*.
-While still a valid deployment mechanism, moving forward the *Deployment* will
-be what will be created with `oc new-app`. See the
-https://docs.openshift.com/container-platform/4.16/applications/deployments/what-deployments-are.html#deployments-comparing-deploymentconfigs_what-deployments-are[official
-documentation] for more details.
-
-
-=== Exploring Deployment-related Objects
-
-Now that we know the background of what a *ReplicaSet* and
-*Deployment* are, we can explore how they work and are related. Take a
-look at the *Deployment* (deploy) that was created for you when you told
-OpenShift to stand up the `weathernow` image:
-
-[source,bash,role="execute"]
-----
-oc get deployment
-----
-
-You will see something like the following:
-
-----
-NAME    READY   UP-TO-DATE   AVAILABLE   AGE
-weathernow   1/1     1            1           76m
-----
-
-you can also shorten the command to `oc get deploy`.
-
-To get more details, we can look into the *ReplicaSet* (*RS*).
-
-Take a look at the *ReplicaSet* (RS) that was created for you when
-you told OpenShift to stand up the `weathernow` image:
-
-[source,bash,role="execute"]
-----
-oc get replicaset
-----
-
-You will see something like the following:
-
-----
-NAME               DESIRED   CURRENT   READY   AGE
-weathernow-7bf4f447ff   0         0         0       18m
-weathernow-85fdb44576   1         1         1       18m
-----
-
-you can also shorten the command to `oc get rs`.
-
-This lets us know that, right now, we expect one *Pod* to be deployed
-(`Desired`), and we have one *Pod* actually deployed (`Current`). By changing
-the desired number, we can tell OpenShift that we want more or less *Pods*.
-
-=== Scaling the Application
-
-Let's scale our weathernow "application" up to 2 instances. We can do this with
-the `scale` command.
-
-[source,bash,role="execute"]
-----
-oc scale --replicas=2 deploy/weathernow
-----
-
-To verify that we changed the number of replicas, issue the following command:
-
-[source,bash,role="execute"]
-----
-oc get replicaset
-----
-
-You will see something like the following:
-
-----
-NAME               DESIRED   CURRENT   READY   AGE
-weathernow-764c5bf8b8   2         2         2       79m
-weathernow-8695cb9c67   0         0         0       79m
-----
-
-NOTE: The "older" version was kept. This is to we can "rollback" to a previous
-version of the application.
-
-You can see that we now have 2 replicas. Let's verify the number of pods with
-the `oc get pods` command:
-
-[source,bash,role="execute"]
-----
-oc get pods
-----
-
-You will see something like the following:
-
-----
-NAME                     READY   STATUS    RESTARTS   AGE
-weathernow-764c5bf8b8-b4vpn   1/1     Running   0          112s
-weathernow-764c5bf8b8-l49z7   1/1     Running   0          81m
-----
-
-And lastly, let's verify that the *Service* that we learned about in the
-previous lab accurately reflects two endpoints:
-
-[source,bash,role="execute"]
-----
-oc describe service weathernow
-----
-
-you can also shorten the command to `oc describe svc weathernow`.
-
-You will see something like the following:
-
-----
-Name:              weathernow
-Namespace:         app-management
-Labels:            app=weathernow
-                   app.kubernetes.io/component=weathernow
-                   app.kubernetes.io/instance=weathernow
-Annotations:       openshift.io/generated-by: OpenShiftNewApp
-Selector:          deployment=weathernow
-Type:              ClusterIP
-IP Family Policy:  SingleStack
-IP Families:       IPv4
-IP:                172.30.203.181
-IPs:               172.30.203.181
-Port:              8080-tcp  8080/TCP
-TargetPort:        8080/TCP
-Endpoints:         10.128.2.75:8080,10.131.0.124:8080
-Port:              8778-tcp  8778/TCP
-TargetPort:        8778/TCP
-Endpoints:         10.128.2.75:8778,10.131.0.124:8778
-Port:              9779-tcp  9779/TCP
-TargetPort:        9779/TCP
-Endpoints:         10.128.2.75:9779,10.131.0.124:9779
-Session Affinity:  None
-Events:            <none>
-----
-
-Another way to look at a *Service*'s endpoints is with the following:
-
-[source,bash,role="execute"]
-----
-oc get endpoints weathernow
-----
-
-And you will see something like the following:
-
-----
-NAME    ENDPOINTS                                                        AGE
-weathernow   10.128.2.94:8080,10.131.0.99:8080,10.128.2.94:9779 + 3 more...   4m32s
-----
-
-Your IP addresses will likely be different, as each pod receives a unique IP
-within the OpenShift environment. The endpoint list is a quick way to see how
-many pods are behind a service.
-
-Overall, that's how simple it is to scale an application (*Pods* in a
-*Service*). Application scaling can happen extremely quickly because OpenShift
-is just launching new instances of an existing image, especially if that image
-is already cached on the node.
-
-One last thing to note is that there are actually several ports defined on this
-*Service*. Earlier we said that a pod gets a single IP and has control of the
-entire port space on that IP. While something running inside the *Pod* may listen
-on multiple ports (single container using multiple ports, individual containers
-using individual ports, a mix), a *Service* can actually proxy/map ports to
-different places.
-
-For example, a *Service* could listen on port 80 (for legacy reasons) but the
-*Pod* could be listening on port 8080, 8888, or anything else.
-
-In this `weathernow` case, the image we ran has several `EXPOSE` statements in the
-`Dockerfile`, so OpenShift automatically created ports on the service and mapped
-them into the *Pods*.
-
-=== Application "Self Healing"
-
-Because OpenShift's *RSs* are constantly monitoring to see that the desired number
-of *Pods* are actually running, you might also expect that OpenShift will "fix" the
-situation if it is ever not right. You would be correct!
-
-Now that we have two *Pods* running right now, let's see what happens when we
-delete them. Frist, run the `oc get pods` command, and make note of the *Pod*
-names:
-
-[source,bash,role="execute"]
-----
-oc get pods
-----
-
-You will see something like the following:
-
-----
-NAME                     READY   STATUS    RESTARTS   AGE
-weathernow-764c5bf8b8-lxnvw   1/1     Running   0          2m28s
-weathernow-764c5bf8b8-rscss   1/1     Running   0          2m54s
-----
-
-Now, delete the pods that belong to the *Deployment* `weathernow`:
-
-[source,bash,role="execute"]
-----
-oc delete pods -l deployment=weathernow --wait=false
-----
-
-Run the `oc get pods` command once again:
-
-[source,bash,role="execute"]
-----
-oc get pods
-----
-
-Did you notice anything? There are new containers already running!
-
-The *Pods* has a different name. That's because OpenShift almost immediately
-detected that the current state (0 *Pods*, because they were deleted) didn't
-match the desired state (2 *Pods*), and it
-fixed it by scheduling the *Pods*.
-
-=== Background: Routes
-.OpenShift Route
-image::openshift_route_new.png[]
-
-While *Services* provide internal abstraction and load balancing within an
-OpenShift environment, sometimes clients (users, systems, devices, etc.)
-**outside** of OpenShift need to access an application. The way that external
-clients are able to access applications running in OpenShift is through the
-OpenShift routing layer. And the data object behind that is a *Route*.
-
-The default OpenShift router (HAProxy) uses the HTTP header of the incoming
-request to determine where to proxy the connection. You can optionally define
-security, such as TLS, for the *Route*. If you want your *Services* (and by
-extension, your *Pods*) to be accessible to the outside world, then you need to
-create a *Route*.
-
-Do you remember setting up the router? You probably don't. That's because the
-installation deployed an Operator for the router, and the operator created a
-router for you! The router lives in the `openshift-ingress`
-*Project*, and you can see information about it with the following command:
-
-[source,bash,role="execute"]
-----
-oc describe deployment router-default -n openshift-ingress
-----
-
-The Ingress Operator manages the router deployment automatically.
-
-=== Creating a Route
-Creating a *Route* is a pretty straight-forward process. We will create a
-secure HTTPS route. If you remember from earlier, your *Service* name is
-`weathernow`. With the *Service* name, creating a secure *Route* is a simple
-one-command task:
+A Route connects an external URL to your service through the OpenShift router (HAProxy-based ingress controller).
 
 [source,bash,role="execute"]
 ----
 oc create route edge weathernow --service=weathernow
 ----
 
-You will see:
+The `edge` termination means TLS is handled by the router — traffic is encrypted between the user and the router, then plain HTTP to the pod.
 
-----
-route.route.openshift.io/weathernow created
-----
-
-Verify the *Route* was created with the following command:
+Check the route:
 
 [source,bash,role="execute"]
 ----
-oc get route
+oc get route weathernow -n app-management
 ----
 
-You will see something like:
-
-[subs="attributes"]
-----
-NAME         HOST/PORT                                             PATH   SERVICES     PORT       TERMINATION   WILDCARD
-weathernow   weathernow-app-management.{route_subdomain}              weathernow   8080-tcp   edge          None
-----
-
-If you take a look at the `HOST/PORT` column, you'll see a familiar looking
-FQDN. The default behavior of OpenShift is to expose services on a formulaic
-hostname:
-
-`{SERVICENAME}-{PROJECTNAME}.{ROUTINGSUBDOMAIN}`
-
-The Ingress Operator handles these configuration options automatically.
-
-While the router configuration specifies the domain(s) that the router should
-listen for, something still needs to get requests for those domains to the
-Router in the first place. There is a wildcard DNS entry that points
-`+*.apps...+` to the host where the router lives. OpenShift concatenates the
-*Service* name, *Project* name, and the routing subdomain to create this
-FQDN/URL.
-
-You can visit this URL using your browser, or using `curl`, or any other tool.
-It should be accessible from anywhere on the internet.
-
-The *Route* is associated with the *Service*, and the router automatically
-proxies connections directly to the *Pod*. The router itself runs as a *Pod*. It
-bridges the "real" internet to the SDN.
-
-If you take a step back to examine everything you've done so far, in three
-commands you deployed an application, scaled it, and made it accessible to the
-outside world:
-
-----
-oc new-app quay.io/openshift-workshop-applications/weathernow:latest
-oc scale --replicas=2 deploy/weathernow
-oc create route edge weathernow --service=weathernow
-----
-
-=== Scale Down
-Before we continue, go ahead and scale your application down to a single
-instance:
+Test it:
 
 [source,bash,role="execute"]
 ----
-oc scale --replicas=1 deploy/weathernow
+curl -sk https://$(oc get route weathernow -n app-management -o jsonpath='{.spec.host}') | head -5
 ----
 
-=== Application Probes
-OpenShift provides rudimentary capabilities around checking the liveness and/or
-readiness of application instances. If the basic checks are insufficient,
-OpenShift also allows you to run a command inside the *Pod*/container in order
-to perform the check. That command could be a complicated script that uses any
-language already installed inside the container image.
+Your application is now accessible from outside the cluster.
 
-There are three types of application probes that can be defined:
+== Scale the Application
 
-*Liveness Probe*
-
-A liveness probe checks if the container in which it is configured is still
-running. If the liveness probe fails, the container is killed, which will be
-subjected to its restart policy.
-
-*Readiness Probe*
-
-A readiness probe determines if a container is ready to service requests. If the
-readiness probe fails, the endpoint's controller ensures the container has its IP
-address removed from the endpoints of all services that should match it. A
-readiness probe can be used to signal to the endpoint's controller that even
-though a container is running, it should not receive any traffic.
-
-*Startup Probe*
-
-A startup probe indicates whether the application within a container is started. 
-All other probes are disabled until the startup succeeds. If the startup probe 
-does not succeed within a specified time period, the kubelet kills the container, 
-and the container is subject to the pod restartPolicy.
-
-More information on probing applications is available in the
-https://docs.openshift.com/container-platform/4.16/applications/application-health.html[Application
-Health] section of the documentation.
-
-=== Add Probes to the Application
-The `oc set` command can be used to perform several different functions, one of
-which is creating and/or modifying probes. The `weathernow` application exposes an
-endpoint which we can check to see if it is alive and ready to respond. You can
-test it using `curl`:
-
-[source,bash,role="execute",subs="attributes"]
-----
-curl https://weathernow-app-management.{route_subdomain}/health
-----
-
-You will get some JSON as a response:
-
-[source,json]
-----
-{"checks":1,"pod":"weathernow-76cd968975-bv4rk","status":"UP"}
-----
-
-We can ask OpenShift to probe this endpoint for liveness with the following
-command:
+One pod isn't enough for production. Scale to 3 replicas:
 
 [source,bash,role="execute"]
 ----
-oc set probe deploy/weathernow --liveness --get-url=http://:8080/health --initial-delay-seconds=30
+oc scale deployment weathernow --replicas=3
 ----
 
-You can then see that this probe is defined in the `oc describe` output:
+Watch the new pods appear:
 
 [source,bash,role="execute"]
 ----
-oc describe deployment weathernow
+oc get pods -n app-management
 ----
 
-You will see a section like:
-
-----
-...
-  Containers:
-   weathernow:
-    Image:        quay.io/openshift-workshop-applications/weathernow@sha256:362b6db3baa0c17704ff670ecea1eb15054288750c62e91f1b683502f5ac7757
-    Ports:        8080/TCP
-    Host Ports:   0/TCP
-    Liveness:     http-get http://:8080/health delay=30s timeout=1s period=10s #success=1 #failure=3
-    Environment:  <none>
-    Mounts:       <none>
-  Volumes:        <none>
-...
-----
-
-Similarly, you can set a readiness probe in the same manner:
+You should see 3 pods, all `Running`. The service automatically load balances across all of them — no configuration needed. The service uses **label selectors** to find pods:
 
 [source,bash,role="execute"]
 ----
-oc set probe deploy/weathernow --readiness --get-url=http://:8080/health --initial-delay-seconds=30
+oc get endpoints weathernow -n app-management
 ----
 
-=== Examining Deployments and ReplicaSets
+Each pod's IP is listed as an endpoint. When a new pod starts, it's automatically added. When a pod dies, it's removed.
 
-Each change to the *Deployment* is counted as a _configuration_ change, which
-_triggers_ a new _deployment_. The *Deployment* is in charge of which
-*ReplicaSet* to deploy. The _newest_ is always deployed.
+== Self-Healing
 
-Execute the following:
+One of the core advantages of OpenShift over traditional VMs: when a pod dies, OpenShift automatically replaces it. Let's see this in action.
+
+Delete one of the running pods:
 
 [source,bash,role="execute"]
 ----
-oc get deployments
+oc delete pod $(oc get pods -n app-management -o jsonpath='{.items[0].metadata.name}') -n app-management
 ----
 
-You should see something like:
-
-----
-NAME    READY   UP-TO-DATE   AVAILABLE   AGE
-weathernow   1/1     1            1           131m
-----
-
-You made two material configuration changes (plus a scale), after the initial deployment,
-thus you are now on the fourth revision of the *Deployment*.
-
-Execute the following:
+Immediately check the pods:
 
 [source,bash,role="execute"]
 ----
-oc get replicasets
+oc get pods -n app-management
 ----
 
-You should see something like:
+You should see:
 
-----
-NAME               DESIRED   CURRENT   READY   AGE
-weathernow-5f695ff4b8   1         1         1       4m19s
-weathernow-668f69cdd5   0         0         0       6m18s
-weathernow-764c5bf8b8   0         0         0       133m
-weathernow-8695cb9c67   0         0         0       133m
-----
+* The deleted pod is `Terminating`
+* A new pod is already `ContainerCreating` or `Running`
+* The total stays at 3 replicas
 
-Each time a new deployment is triggered, the deployer pod creates a new
-*ReplicaSet* which then is responsible for ensuring that pods
-exist. Notice that the old RSs have a desired scale of zero, and the most
-recent RS has a desired scale of 1.
+**The Deployment controller** detected that the actual state (2 pods) didn't match the desired state (3 pods) and created a replacement. This happens in seconds, with no manual intervention. This is why OpenShift can maintain SLAs that are difficult with traditional VM-based deployments.
 
-If you `oc describe` each of these RSs you will see how earlier versions have
-no probes, and the latest running RS has the new probes.
+== Application Probes
 
-Feel free to try out the weathernow application:
+How does OpenShift know if your application is actually healthy and ready to receive traffic? **Probes.**
+
+* **Readiness probe** — "Is this pod ready to receive traffic?" If it fails, the pod is removed from the service endpoints (no traffic sent to it).
+* **Liveness probe** — "Is this pod still alive?" If it fails, OpenShift restarts the container.
+
+Add both probes to the deployment:
 
 [source,bash,role="execute"]
 ----
-oc get route weathernow -o jsonpath='{.spec.host}' | sed 's/^/https:\/\//'
+oc patch deployment weathernow -n app-management --type=json -p='[
+  {"op":"add","path":"/spec/template/spec/containers/0/readinessProbe","value":{
+    "httpGet":{"path":"/","port":8080},
+    "initialDelaySeconds":5,
+    "periodSeconds":10
+  }},
+  {"op":"add","path":"/spec/template/spec/containers/0/livenessProbe","value":{
+    "httpGet":{"path":"/","port":8080},
+    "initialDelaySeconds":15,
+    "periodSeconds":20
+  }}
+]'
 ----
 
-The application should now be accessible via the route. You can test it with curl or visit it in your browser to see the weather lookup interface.
+This triggers a rolling update. Watch the new pods replace the old ones:
+
+[source,bash,role="execute"]
+----
+oc rollout status deployment/weathernow -n app-management --timeout=60s
+----
+
+Check the new pods have probes configured:
+
+[source,bash,role="execute"]
+----
+oc describe deployment weathernow -n app-management | grep -A3 "Liveness:\|Readiness:"
+----
+
+You should see:
+
+----
+    Liveness:   http-get http://:8080/ delay=15s timeout=1s period=20s
+    Readiness:  http-get http://:8080/ delay=5s timeout=1s period=10s
+----
+
+Now if the application becomes unresponsive:
+
+* **Readiness** probe fails → pod removed from service (no traffic)
+* **Liveness** probe fails → pod restarted automatically
+* Combined with **self-healing** → your application maintains availability without ops intervention
+
+== Summary
+
+You completed the core application lifecycle on OpenShift:
+
+* **Deploy** — `oc new-app` creates deployment + service in one command
+* **Expose** — `oc create route edge` adds TLS-terminated external access
+* **Scale** — `oc scale` adjusts replicas, service auto-balances
+* **Self-heal** — delete a pod, OpenShift replaces it in seconds
+* **Health checks** — probes ensure only healthy pods receive traffic
+
+**Key commands:**
+
+[source,bash]
+----
+oc new-app --name=myapp --image=myimage       # Deploy
+oc create route edge myapp --service=myapp     # Expose with TLS
+oc scale deployment myapp --replicas=N         # Scale
+oc get pods                                     # Check status
+oc rollout status deployment/myapp              # Watch rollout
+----
