@@ -45,7 +45,31 @@ Check the pod is running:
 oc get pods -n app-management
 ----
 
-You should see one pod in `Running` status. Check the service:
+You should see one pod in `Running` status.
+
+== Inspect Your Application
+
+Before moving on, get familiar with the two most important diagnostic commands. These work on any pod in any namespace.
+
+Get detailed information about a pod — events, node placement, container status:
+
+[source,bash,role="execute"]
+----
+oc describe pod $(oc get pods -n app-management -o jsonpath='{.items[0].metadata.name}') -n app-management | tail -15
+----
+
+The **Events** section at the bottom shows exactly what happened: image pulled, container created, pod scheduled to a specific node.
+
+Check the container's logs:
+
+[source,bash,role="execute"]
+----
+oc logs $(oc get pods -n app-management -o jsonpath='{.items[0].metadata.name}') -n app-management | head -5
+----
+
+If the container were crashing, the logs would tell you why. Use `--previous` to see logs from the last crash.
+
+Check the service:
 
 [source,bash,role="execute"]
 ----
