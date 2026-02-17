@@ -42,16 +42,17 @@ Three applications have been deployed with intentional misconfigurations. Let's 
 oc get pods -n ops-track-demo
 ----
 
-You should see three pods in error states:
+You should see four pods in error states:
 
 ----
 NAME                             READY   STATUS                       RESTARTS      AGE
 broken-config-xxxxx              0/1     CreateContainerConfigError   0             30s
 broken-crash-xxxxx               0/1     CrashLoopBackOff             2 (20s ago)   30s
 broken-image-xxxxx               0/1     ImagePullBackOff             0             30s
+broken-oom-xxxxx                 0/1     OOMKilled                    3 (10s ago)   30s
 ----
 
-**Your mission:** Fix all three.
+**Your mission:** Fix all four.
 
 == Problem 1: ImagePullBackOff
 
@@ -219,6 +220,83 @@ LOG_LEVEL=info
 
 **Takeaway:** CreateContainerConfigError = a referenced ConfigMap or Secret doesn't exist. Check `oc describe pod` for "not found" messages. Create the missing resource and restart the pod.
 
+== Problem 4: OOMKilled
+
+=== Diagnose
+
+This pod keeps restarting, but it's not a startup failure — it runs for a few seconds then gets killed:
+
+[source,bash,role="execute"]
+----
+oc get pods -l app=broken-oom -n ops-track-demo
+----
+
+You should see:
+
+----
+NAME                          READY   STATUS    RESTARTS      AGE
+broken-oom-xxxxx              0/1     OOMKilled  3 (10s ago)   2m
+----
+
+The status `OOMKilled` means the Linux kernel terminated the process because it exceeded its memory limit.
+
+[source,bash,role="execute"]
+----
+oc describe pod -l app=broken-oom -n ops-track-demo | grep -A5 "Last State"
+----
+
+You should see:
+
+----
+    Last State:     Terminated
+      Reason:       OOMKilled
+      Exit Code:    137
+----
+
+**Exit Code 137** = killed by signal 9 (SIGKILL from the OOM killer).
+
+=== Check the Memory Limit
+
+[source,bash,role="execute"]
+----
+oc get deployment broken-oom -n ops-track-demo -o jsonpath='{.spec.template.spec.containers[0].resources}' | python3 -m json.tool
+----
+
+You should see:
+
+----
+{
+    "limits": {
+        "memory": "32Mi"
+    },
+    "requests": {
+        "memory": "16Mi"
+    }
+}
+----
+
+**Root Cause:** The memory limit is 32Mi — far too low for the application's processing workload.
+
+=== Fix
+
+Increase the memory limit to something reasonable:
+
+[source,bash,role="execute"]
+----
+oc set resources deployment/broken-oom -n ops-track-demo --limits=memory=256Mi --requests=memory=128Mi
+----
+
+=== Verify
+
+[source,bash,role="execute"]
+----
+oc get pods -l app=broken-oom -n ops-track-demo
+----
+
+You should see `1/1 Running` with 0 restarts.
+
+**Takeaway:** OOMKilled = the app consumed more memory than its limit allows. Check `oc describe pod` → Last State → Reason: OOMKilled. The fix is either increase the limit or fix the memory leak in the application.
+
 == All Fixed
 
 [source,bash,role="execute"]
@@ -226,13 +304,14 @@ LOG_LEVEL=info
 oc get pods -n ops-track-demo
 ----
 
-All three pods should now be `Running`:
+All four pods should now be `Running`:
 
 ----
 NAME                             READY   STATUS    RESTARTS   AGE
 broken-config-xxxxx              1/1     Running   0          30s
 broken-crash-xxxxx               1/1     Running   0          45s
 broken-image-xxxxx               1/1     Running   0          60s
+broken-oom-xxxxx                 1/1     Running   0          20s
 ----
 
 == Quick Reference
@@ -268,10 +347,11 @@ broken-image-xxxxx               1/1     Running   0          60s
 
 == Summary
 
-You diagnosed and fixed three of the most common OpenShift issues:
+You diagnosed and fixed four of the most common OpenShift issues:
 
 * **ImagePullBackOff** — wrong image tag → `oc set image`
 * **CrashLoopBackOff** — missing config file → create ConfigMap + volume mount
 * **CreateContainerConfigError** — missing ConfigMap → `oc create configmap`
+* **OOMKilled** — memory limit too low → `oc set resources`
 
 The pattern is always the same: **check status → describe pod → read logs/events → fix → verify.**
