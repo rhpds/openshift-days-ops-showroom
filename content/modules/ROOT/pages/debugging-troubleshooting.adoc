@@ -279,11 +279,20 @@ You should see:
 
 === Fix
 
-Increase the memory limit to something reasonable:
+First, increase the memory limit to give the app more room:
 
 [source,bash,role="execute"]
 ----
 oc set resources deployment/broken-oom -n ops-track-demo --limits=memory=256Mi --requests=memory=128Mi
+----
+
+In this case, the application also has a memory leak that would eventually consume any limit. In a real scenario, you'd file a bug with the development team. For now, let's also fix the application command:
+
+[source,bash,role="execute"]
+----
+oc patch deployment broken-oom -n ops-track-demo --type=json -p='[
+  {"op":"replace","path":"/spec/template/spec/containers/0/command","value":["/bin/sh","-c","echo Data processing started; sleep 3600"]}
+]'
 ----
 
 === Verify
@@ -295,7 +304,7 @@ oc get pods -l app=broken-oom -n ops-track-demo
 
 You should see `1/1 Running` with 0 restarts.
 
-**Takeaway:** OOMKilled = the app consumed more memory than its limit allows. Check `oc describe pod` → Last State → Reason: OOMKilled. The fix is either increase the limit or fix the memory leak in the application.
+**Takeaway:** OOMKilled = the app consumed more memory than its limit allows. Check `oc describe pod` → Last State → Reason: OOMKilled → Exit Code 137. The fix is either increase the limit or fix the memory leak in the application. In production, use `oc adm top pods` to monitor actual memory usage over time.
 
 == All Fixed
 
