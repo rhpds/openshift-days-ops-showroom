@@ -343,13 +343,31 @@ oc get pods -n openshift-logging
 
 You should see the logging operator, collector pods (one per node), and multiple Loki component pods all `Running`.
 
-Once the UIPlugin is active, navigate to **Observe -> Logs** in the console. You'll see three log types:
+After the UIPlugin is created, you may see a notification in the console:
+
+image::Loki_refresh.png[Web console update notification]
+
+Click **Refresh** to reload the console with the new Logs view.
+
+Navigate to **Observe -> Logs** in the console. You'll see three log types:
 
 * **Application** — Logs from user workloads
 * **Infrastructure** — Logs from OpenShift components
 * **Audit** — Kubernetes API audit logs
 
-Use the filters to search by namespace, pod name, or severity level. The histogram at the top shows log volume over time.
+image::appinfraaudit.png[Log type selector]
+
+Use the filters to search by namespace, pod name, or severity level:
+
+image::filterlogs.png[Log filters]
+
+Filter by severity (Critical, Error, Warning, Info, Debug):
+
+image::severity.png[Severity filter]
+
+The histogram at the top shows log volume over time:
+
+image::histogram.png[Log histogram]
 
 [NOTE]
 ====
