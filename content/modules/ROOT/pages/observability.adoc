@@ -2,19 +2,11 @@
 
 == Module Overview
 
-**Duration:** 50-55 minutes +
+**Duration:** 30-35 minutes +
 **Format:** Hands-on observability configuration +
 **Audience:** Platform Engineers, Operations Teams
 
-**Narrative Context:**
-
-Your cluster is running workloads and you need visibility into what's happening. OpenShift provides a full observability stack out of the box — metrics, alerts, and dashboards via Prometheus and Alertmanager, plus a logging pipeline you'll configure with Vector and Loki. You'll also explore OpenTelemetry for distributed tracing.
-
-The three pillars of observability:
-
-* **Metrics** - Prometheus collects and stores time-series data (built-in, no setup required)
-* **Logs** - Vector collects logs, Loki stores them with label-based indexing
-* **Traces** - OpenTelemetry provides distributed tracing for request flows across services
+Your cluster is running workloads and you need visibility into what's happening. OpenShift provides metrics and alerting out of the box via Prometheus and Alertmanager. In this module, you'll explore those built-in capabilities and then set up the logging pipeline with Loki and Vector.
 
 == Learning Objectives
 
@@ -22,44 +14,8 @@ By the end of this module, you will be able to:
 
 * Explore the built-in Prometheus metrics and dashboards
 * Configure alerting rules and understand Alertmanager
-* Install and configure the OpenShift Logging stack (Logging 6.2)
-* Configure ODF Object Bucket storage for log retention
-* Create and configure LokiStack for log storage
-* Set up log collection with ClusterLogForwarder
+* Install and configure the OpenShift Logging stack
 * Query logs using the OpenShift console
-* Understand OpenTelemetry integration for distributed tracing
-
-== Prerequisites
-
-This module requires:
-
-* Cluster admin access
-* OpenShift Data Foundation (ODF) with NooBaa (already installed on your cluster)
-* The Loki, Cluster Logging, and Cluster Observability operators (we'll install these)
-
-== Understanding the Architecture
-
-The OpenShift Logging stack consists of:
-
-[cols="1,3"]
-|===
-|Component |Purpose
-
-|**Loki Operator**
-|Manages LokiStack instances for log storage
-
-|**Cluster Logging Operator**
-|Manages log collection (Vector) and forwarding configuration
-
-|**Cluster Observability Operator**
-|Provides the UI integration for viewing logs in the console
-
-|**Vector (Collectors)**
-|DaemonSet that runs on every node, collecting and forwarding logs
-
-|**LokiStack**
-|Stores logs in S3-compatible object storage with efficient indexing
-|===
 
 == Built-in Metrics with Prometheus
 
@@ -121,39 +77,16 @@ OpenShift includes Alertmanager for routing alerts to notification channels (ema
 
 === View Current Alerts
 
-Check what alerts are currently firing:
+Check what alerting rules exist:
 
 [source,bash,role="execute"]
 ----
 oc get prometheusrules -A | head -15
 ----
 
-View active alerts through the API:
-
-[source,bash,role="execute"]
-----
-oc exec -n openshift-monitoring -c alertmanager alertmanager-main-0 -- curl -s 'http://localhost:9093/api/v2/alerts?active=true&silenced=false' | python3 -m json.tool | head -40
-----
-
 You can also view alerts in the console under **Observe -> Alerting**.
 
-=== Alerting Rules
-
-OpenShift comes with hundreds of pre-configured alert rules. View some examples:
-
-[source,bash,role="execute"]
-----
-oc get prometheusrules -n openshift-monitoring -o custom-columns=NAME:.metadata.name | head -10
-----
-
-Examine a specific rule to see how alerts are defined:
-
-[source,bash,role="execute"]
-----
-oc get prometheusrule -n openshift-monitoring cluster-monitoring-operator-prometheus-rules -o jsonpath='{.spec.groups[0].rules[0]}' | python3 -m json.tool
-----
-
-=== Create a Custom Alert (User Workload)
+=== Create a Custom Alert
 
 You can define your own alerts for application namespaces. Here's an example that fires when a pod has been restarting:
 
@@ -189,51 +122,72 @@ oc get prometheusrule ops-track-alerts -n openshift-logging
 
 Navigate to **Observe -> Alerting -> Alerting Rules** in the console to see your custom rule alongside the built-in ones.
 
-== Logging Stack
+== Set Up the Logging Stack
 
-Now let's set up the logging pipeline. While metrics tell you *what* is happening, logs tell you *why*.
+While metrics tell you *what* is happening, logs tell you *why*. Let's set up the full logging pipeline.
 
-== Install the Operators
-
-We need to install three operators via the OpenShift Console.
+=== Install the Loki Operator (GUI)
 
 [IMPORTANT]
 ====
 In OpenShift 4.20, the OperatorHub has moved to **Ecosystem -> Software Catalog**. You must select a namespace before viewing available operators.
 ====
 
-1. **Install the Loki Operator:**
-+
-a. In the OpenShift console, click `Ecosystem` -> `Software Catalog`
-b. Select namespace `openshift-operators-redhat` from the Project dropdown (create it first if needed: `oc create namespace openshift-operators-redhat`)
-c. Search for `Loki Operator` and select the one provided by Red Hat
-d. Click `Install`
-e. Select Update Channel `stable-6.2` (or the latest `stable-6.x` available)
-f. Select `Enable Operator recommended cluster monitoring on this Namespace`
-g. Click `Install` and wait for completion
+1. In the OpenShift console, click **Ecosystem** -> **Software Catalog**
+2. Select namespace `openshift-operators-redhat` from the Project dropdown (create it first if needed: `oc create namespace openshift-operators-redhat`)
+3. Search for **Loki Operator** and select the one provided by Red Hat
+4. Click **Install**
+5. Select Update Channel `stable-6.2` (or the latest `stable-6.x` available)
+6. Select **Enable Operator recommended cluster monitoring on this Namespace**
+7. Click **Install** and wait for completion
 
-2. **Install the Cluster Logging Operator:**
-+
-a. In the OpenShift console, click `Ecosystem` -> `Software Catalog`
-b. Select namespace `openshift-logging` from the Project dropdown (create it first if needed: `oc create namespace openshift-logging`)
-c. Search for `Red Hat OpenShift Logging`
-d. Click `Install`
-e. Select Update Channel `stable-6.2` (or the latest `stable-6.x` available - must match Loki Operator version)
-f. Select `Enable Operator recommended cluster monitoring on this Namespace`
-g. Click `Install` and wait for completion
+=== Install the Remaining Operators (CLI)
 
-3. **Install the Cluster Observability Operator:**
-+
-a. In the OpenShift console, click `Ecosystem` -> `Software Catalog`
-b. Select namespace `openshift-operators` from the Project dropdown
-c. Search for `Cluster Observability Operator` (provided by Red Hat)
-d. Click `Install`
-e. Select Update Channel `stable` (or the latest stable channel available)
-f. Click `Install` and wait for completion
+While the Loki Operator installs, install the other two operators via CLI:
 
-=== Verify Operator Installation
+[source,bash,role="execute"]
+----
+oc create namespace openshift-logging 2>/dev/null || true
 
-Wait about 60 seconds, then verify all operators are installed:
+cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: cluster-logging
+  namespace: openshift-logging
+spec:
+  targetNamespaces:
+  - openshift-logging
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: cluster-logging
+  namespace: openshift-logging
+spec:
+  channel: stable-6.2
+  installPlanApproval: Automatic
+  name: cluster-logging
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: cluster-observability-operator
+  namespace: openshift-operators
+spec:
+  channel: stable
+  installPlanApproval: Automatic
+  name: cluster-observability-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+----
+
+=== Verify All Operators
+
+Wait about 60 seconds, then verify all three operators are installed:
 
 [source,bash,role="execute"]
 ----
@@ -242,15 +196,11 @@ oc get csv -n openshift-logging | grep logging
 oc get csv -n openshift-operators | grep observability
 ----
 
-All operators should show `Succeeded` in the status.
+All operators should show `Succeeded`.
 
-== Configure ODF Object Storage
+=== Configure Storage and Create LokiStack
 
-LokiStack requires S3-compatible object storage for log data. We'll use OpenShift Data Foundation (ODF) with NooBaa to provide this.
-
-=== Create an Object Bucket Claim
-
-An Object Bucket Claim (OBC) dynamically provisions an S3-compatible bucket using NooBaa:
+Create an Object Bucket Claim for log storage and the LokiStack secret in one step:
 
 [source,bash,role="execute"]
 ----
@@ -270,39 +220,18 @@ Wait for the bucket to be provisioned:
 
 [source,bash,role="execute"]
 ----
-oc get obc loki-bucket -n openshift-logging
+oc wait --for=jsonpath='{.status.phase}'=Bound obc/loki-bucket -n openshift-logging --timeout=60s
 ----
 
-You should see:
-
-----
-NAME          STORAGE-CLASS                 PHASE   AGE
-loki-bucket   openshift-storage.noobaa.io   Bound   10s
-----
-
-=== Verify the OBC Created Resources
-
-The OBC automatically creates a Secret and ConfigMap with the bucket credentials:
+Now extract the credentials and create the LokiStack:
 
 [source,bash,role="execute"]
 ----
-oc get secret loki-bucket -n openshift-logging
-oc get configmap loki-bucket -n openshift-logging
-----
-
-== Create the LokiStack Secret
-
-The LokiStack needs credentials in a specific format. We'll extract the OBC credentials and create the proper secret:
-
-[source,bash,role="execute"]
-----
-# Get values from OBC
 ACCESS_KEY=$(oc get secret loki-bucket -n openshift-logging -o jsonpath='{.data.AWS_ACCESS_KEY_ID}' | base64 -d)
 SECRET_KEY=$(oc get secret loki-bucket -n openshift-logging -o jsonpath='{.data.AWS_SECRET_ACCESS_KEY}' | base64 -d)
 BUCKET_NAME=$(oc get configmap loki-bucket -n openshift-logging -o jsonpath='{.data.BUCKET_NAME}')
 BUCKET_HOST=$(oc get configmap loki-bucket -n openshift-logging -o jsonpath='{.data.BUCKET_HOST}')
 
-# Create LokiStack secret
 cat <<EOF | oc apply -f -
 apiVersion: v1
 kind: Secret
@@ -315,29 +244,7 @@ stringData:
   bucketnames: ${BUCKET_NAME}
   endpoint: https://${BUCKET_HOST}
   region: ""
-EOF
-----
-
-Verify the secret was created:
-
-[source,bash,role="execute"]
-----
-oc get secrets -n openshift-logging | grep lokistack
-----
-
-You should see:
-
-----
-lokistack-dev-s3                           Opaque                    5      10s
-----
-
-== Create the LokiStack
-
-Now create the LokiStack custom resource that will deploy all the Loki components:
-
-[source,bash,role="execute"]
-----
-cat <<EOF | oc apply -f -
+---
 apiVersion: loki.grafana.com/v1
 kind: LokiStack
 metadata:
@@ -359,22 +266,9 @@ spec:
 EOF
 ----
 
-Wait for the LokiStack pods to become ready (this may take 2-3 minutes):
+=== Set Up Log Collection
 
-[source,bash,role="execute"]
-----
-oc get pods -n openshift-logging -l app.kubernetes.io/instance=logging-loki -w
-----
-
-Press `Ctrl+C` when you see all pods showing `Running` and `1/1` or `2/2` ready.
-
-You should see pods for: compactor, distributor, gateway, index-gateway, ingester, querier, and query-frontend.
-
-== Set Up Log Collection
-
-=== Create the Collector Service Account
-
-The collector needs permissions to gather logs from across the cluster:
+Create the collector service account and ClusterLogForwarder:
 
 [source,bash,role="execute"]
 ----
@@ -384,10 +278,6 @@ oc adm policy add-cluster-role-to-user collect-application-logs -z collector -n 
 oc adm policy add-cluster-role-to-user collect-audit-logs -z collector -n openshift-logging
 oc adm policy add-cluster-role-to-user collect-infrastructure-logs -z collector -n openshift-logging
 ----
-
-=== Create the ClusterLogForwarder
-
-The ClusterLogForwarder configures what logs to collect and where to send them:
 
 [source,bash,role="execute"]
 ----
@@ -425,24 +315,7 @@ spec:
 EOF
 ----
 
-This configures collection of:
-
-* **application** - Logs from user workloads
-* **infrastructure** - Logs from OpenShift system components
-* **audit** - Kubernetes API audit logs
-
-Verify the ClusterLogForwarder status:
-
-[source,bash,role="execute"]
-----
-oc get clusterlogforwarder collector -n openshift-logging -o jsonpath='{.status.conditions}' | python3 -m json.tool
-----
-
-You should see `Authorized` and `Valid` conditions with status `True`.
-
-== Enable the Logging UI
-
-Create the UIPlugin to enable the Logs view in the OpenShift console:
+=== Enable the Logging UI
 
 [source,bash,role="execute"]
 ----
@@ -459,243 +332,40 @@ spec:
 EOF
 ----
 
-== Verify the Logging Stack
+== Verify and View Logs
 
-Check that all logging pods are running:
+Wait 2-3 minutes for LokiStack pods and collectors to start, then verify the full stack:
 
 [source,bash,role="execute"]
 ----
 oc get pods -n openshift-logging
 ----
 
-You should see:
+You should see the logging operator, collector pods (one per node), and multiple Loki component pods all `Running`.
 
-* `cluster-logging-operator-*` - The operator pod
-* `collector-*` - One pod per node (DaemonSet)
-* `logging-loki-*` - Multiple Loki component pods
+Once the UIPlugin is active, navigate to **Observe -> Logs** in the console. You'll see three log types:
 
-Example output:
+* **Application** — Logs from user workloads
+* **Infrastructure** — Logs from OpenShift components
+* **Audit** — Kubernetes API audit logs
 
-----
-NAME                                           READY   STATUS    RESTARTS   AGE
-cluster-logging-operator-7995b4b97d-qn5br      1/1     Running   0          10m
-collector-422sn                                1/1     Running   0          5m
-collector-95z2w                                1/1     Running   0          5m
-collector-bttm8                                1/1     Running   0          5m
-logging-loki-compactor-0                       1/1     Running   0          8m
-logging-loki-distributor-74bb98c756-594f7      1/1     Running   0          8m
-logging-loki-gateway-588489bdd5-qfc5c          2/2     Running   0          8m
-logging-loki-index-gateway-0                   1/1     Running   0          8m
-logging-loki-ingester-0                        1/1     Running   0          8m
-logging-loki-querier-856c48f66-cj24w           1/1     Running   0          8m
-logging-loki-query-frontend-67f489c64c-m6x87   1/1     Running   0          8m
-----
-
-[IMPORTANT]
-====
-The `collector-*` pods are critical - these are the Vector pods that collect and forward logs. If you don't see collector pods, check that the ClusterLogForwarder CR was created correctly.
-====
-
-== Viewing Logs in the Console
-
-After the UIPlugin is created, you may see a notification in the console:
-
-image::Loki_refresh.png[Web console update notification]
-
-Click **Refresh** to reload the console with the new Logs view.
-
-=== Navigate to Logs
-
-1. In the OpenShift console, go to **Observe** -> **Logs**
-
-2. You'll see three log types available:
-+
-* **Application** - Logs from user workloads
-* **Infrastructure** - Logs from OpenShift components
-* **Audit** - Kubernetes API audit logs
-
-image::appinfraaudit.png[Log type selector]
-
-=== Filtering Logs
-
-You can filter logs by:
-
-* **Content** - Free text search
-* **Namespaces** - Filter by project
-* **Pods** - Filter by pod name
-* **Containers** - Filter by container name
-
-image::filterlogs.png[Log filters]
-
-=== Severity Levels
-
-Use the Severity dropdown to filter by log level:
-
-* Critical
-* Error
-* Warning
-* Info
-* Debug
-* Trace
-* Unknown
-
-image::severity.png[Severity filter]
-
-=== Log Histogram
-
-The histogram provides a visual view of log volume over time:
-
-image::histogram.png[Log histogram]
+Use the filters to search by namespace, pod name, or severity level. The histogram at the top shows log volume over time.
 
 [NOTE]
 ====
 It may take 1-2 minutes for logs to start appearing after the collector pods are running. If you see "No datapoints found", wait a moment and refresh.
 ====
 
-'''
-
-.**Troubleshooting** (click to expand)
-[%collapsible]
-====
-If logs are not appearing, check the following:
-
-**Verify Collector Pods**
-
-[source,bash,role="execute"]
-----
-oc get pods -n openshift-logging -l app.kubernetes.io/component=collector
-----
-
-All collector pods should be `Running`.
-
-**Check Collector Logs**
-
-[source,bash,role="execute"]
-----
-oc logs -n openshift-logging -l app.kubernetes.io/component=collector --tail=20
-----
-
-Common issues:
-
-* `certificate verify failed` - The TLS CA configmap name is incorrect in the ClusterLogForwarder
-* `429 Too Many Requests` - Rate limiting from Loki during initial ingestion (this is normal and will clear up)
-
-**Verify ClusterLogForwarder Status**
-
-[source,bash,role="execute"]
-----
-oc get clusterlogforwarder collector -n openshift-logging -o jsonpath='{.status.conditions}' | python3 -m json.tool
-----
-
-You should see `Authorized` and `Valid` conditions with status `True`.
-
-**Check LokiStack Status**
-
-[source,bash,role="execute"]
-----
-oc get lokistack logging-loki -n openshift-logging -o jsonpath='{.status.conditions}' | python3 -m json.tool
-----
-
-The LokiStack should show `Ready` status.
-
-**Check Object Bucket Claim**
-
-[source,bash,role="execute"]
-----
-oc get obc loki-bucket -n openshift-logging
-----
-
-The OBC should show `Bound` status. If it's stuck in `Pending`, check that ODF/NooBaa is running:
-
-[source,bash,role="execute"]
-----
-oc get pods -n openshift-storage | grep noobaa
-----
-====
-
-== Distributed Tracing with OpenTelemetry
-
-The third pillar of observability is **tracing** — understanding how requests flow across services. OpenShift supports the **OpenTelemetry Collector** for collecting traces, metrics, and logs from instrumented applications.
-
-=== Check OpenTelemetry Operator Availability
-
-[source,bash,role="execute"]
-----
-oc get csv -A | grep opentelemetry || echo "OpenTelemetry Operator not installed"
-----
-
-If the operator is not installed, you can find it in the OperatorHub under **Red Hat build of OpenTelemetry**.
-
-=== How OpenTelemetry Fits In
-
-[cols="1,2,2"]
-|===
-|Signal |Built-in (No Setup) |OpenTelemetry Adds
-
-|**Metrics**
-|Prometheus scrapes cluster and pod metrics automatically
-|Application-level custom metrics via OTLP export
-
-|**Logs**
-|Vector + Loki (configured in this module)
-|Correlated logs with trace IDs for request tracking
-
-|**Traces**
-|Not available without instrumentation
-|End-to-end request tracing across microservices
-|===
-
-=== OpenTelemetry Collector Architecture
-
-When the operator is installed, you deploy an `OpenTelemetryCollector` CR that acts as a pipeline:
-
-[source,yaml]
-----
-apiVersion: opentelemetry.io/v1beta1
-kind: OpenTelemetryCollector
-metadata:
-  name: otel
-  namespace: observability
-spec:
-  config:
-    receivers:
-      otlp:
-        protocols:
-          grpc:
-            endpoint: 0.0.0.0:4317
-          http:
-            endpoint: 0.0.0.0:4318
-    exporters:
-      otlp/tempo:
-        endpoint: tempo-distributor.observability:4317
-        tls:
-          insecure: true
-    service:
-      pipelines:
-        traces:
-          receivers: [otlp]
-          exporters: [otlp/tempo]
-----
-
-Applications send traces to the collector using the OTLP protocol. The collector forwards them to a backend like Tempo for storage and querying.
-
-[NOTE]
-====
-OpenTelemetry instrumentation requires application-side changes — adding the OTel SDK to your code or using auto-instrumentation for Java, Python, Node.js, and .NET. The collector itself is infrastructure you manage as an ops team.
-====
-
 == Summary
 
 **What you learned:**
 
-* How OpenShift's built-in Prometheus stack provides metrics and dashboards with no setup
-* How to view alerts, create custom alerting rules, and understand Alertmanager
-* How to install the OpenShift Logging stack (Loki, Vector, Cluster Observability)
-* How to configure ODF Object Bucket storage for logs (no external cloud required)
-* How to create and configure LokiStack for log storage
-* How to set up log collection with ClusterLogForwarder
+* OpenShift's built-in Prometheus stack provides metrics and dashboards with no setup
+* How to create custom alerting rules with PrometheusRule
+* How to install and configure the full logging stack (Loki + Vector)
 * How to view and filter logs in the OpenShift console
-* How OpenTelemetry provides distributed tracing for microservice architectures
+
+OpenShift also supports **OpenTelemetry** for distributed tracing across microservices. The Red Hat build of OpenTelemetry operator is available in OperatorHub for teams that need request-level tracing.
 
 **Key operational commands:**
 
@@ -716,12 +386,6 @@ oc get lokistack -n openshift-logging
 
 # Check ClusterLogForwarder status
 oc get clusterlogforwarder -n openshift-logging
-
-# View collector logs
-oc logs -n openshift-logging -l app.kubernetes.io/component=collector --tail=20
-
-# Check Object Bucket Claim
-oc get obc -n openshift-logging
 ----
 
 == Additional Resources
@@ -730,5 +394,3 @@ oc get obc -n openshift-logging
 * **OpenShift Logging Documentation:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/logging/index[Logging]
 * **Logging 6.2 Stack:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/logging/logging-6-2[Logging 6.2]
 * **Red Hat build of OpenTelemetry:** link:https://docs.redhat.com/en/documentation/red_hat_build_of_opentelemetry/[OpenTelemetry]
-* **ODF Object Storage:** link:https://docs.redhat.com/en/documentation/red_hat_openshift_data_foundation/4.20/html/managing_and_allocating_storage_resources/multicloud-object-gateway_rhodf[Multicloud Object Gateway]
-* **Loki Configuration:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/logging/log-storage[Log storage]
