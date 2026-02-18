@@ -195,14 +195,7 @@ Now let's set up the logging pipeline. While metrics tell you *what* is happenin
 
 == Install the Operators
 
-We need to install three operators. You can do this via the GUI or CLI.
-
-=== Option A: Install via OpenShift Console (GUI)
-
-[NOTE]
-====
-If you prefer CLI installation, skip to Option B below.
-====
+We need to install three operators via the OpenShift Console.
 
 [IMPORTANT]
 ====
@@ -237,90 +230,6 @@ c. Search for `Cluster Observability Operator` (provided by Red Hat)
 d. Click `Install`
 e. Select Update Channel `stable` (or the latest stable channel available)
 f. Click `Install` and wait for completion
-
-=== Option B: Install via CLI
-
-Create the required namespaces and operator subscriptions:
-
-[source,bash,role="execute"]
-----
-# Create namespaces
-oc create namespace openshift-logging
-oc create namespace openshift-operators-redhat
-----
-
-Install the Loki Operator (adjust `channel` to the latest `stable-6.x` available if needed):
-
-[source,bash,role="execute"]
-----
-cat <<EOF | oc apply -f -
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  name: openshift-operators-redhat
-  namespace: openshift-operators-redhat
-spec: {}
----
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: loki-operator
-  namespace: openshift-operators-redhat
-spec:
-  channel: stable-6.2
-  installPlanApproval: Automatic
-  name: loki-operator
-  source: redhat-operators
-  sourceNamespace: openshift-marketplace
-EOF
-----
-
-Install the Cluster Logging Operator (channel must match Loki Operator version):
-
-[source,bash,role="execute"]
-----
-cat <<EOF | oc apply -f -
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  name: cluster-logging
-  namespace: openshift-logging
-spec:
-  targetNamespaces:
-  - openshift-logging
----
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: cluster-logging
-  namespace: openshift-logging
-spec:
-  channel: stable-6.2
-  installPlanApproval: Automatic
-  name: cluster-logging
-  source: redhat-operators
-  sourceNamespace: openshift-marketplace
-EOF
-----
-
-Install the Cluster Observability Operator (adjust `channel` to the latest stable channel available if needed):
-
-[source,bash,role="execute"]
-----
-cat <<EOF | oc apply -f -
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: cluster-observability-operator
-  namespace: openshift-operators
-spec:
-  channel: stable
-  installPlanApproval: Automatic
-  name: cluster-observability-operator
-  source: redhat-operators
-  sourceNamespace: openshift-marketplace
-EOF
-----
 
 === Verify Operator Installation
 
