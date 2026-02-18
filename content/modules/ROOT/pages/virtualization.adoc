@@ -108,7 +108,13 @@ Press `Ctrl+C` when STATUS shows `Running`.
 === Web Console
 
 1. In the OpenShift console, select the **Fleet Virtualization** perspective from the top-left dropdown
+
+image::virt-fleet-dropdown.png[Fleet Virtualization dropdown]
+
 2. Click on **rhel9-vm** in the VM list
+
+image::virt-rhel9-vm-details.png[rhel9-vm details page]
+
 3. Click **Open Web Console**
 4. Login with: `cloud-user` / `redhat`
 
