@@ -67,9 +67,10 @@ endif::[]
 ifeval::["{module_enable_ols}" == "true"]
 * xref:openshift-lightspeed.adoc[OpenShift Lightspeed]
 endif::[]
-ifeval::["{module_enable_cloud_infra}" == "true"]
-* xref:cloud-infrastructure.adoc[Cloud Integration & Infrastructure]
-endif::[]
+// Cloud Infrastructure module disabled — adoc kept in repo for future use
+// ifeval::["{module_enable_cloud_infra}" == "true"]
+// * xref:cloud-infrastructure.adoc[Cloud Integration & Infrastructure]
+// endif::[]
 
 // ACM Section
 ifeval::["{module_enable_acm}" == "true"]
