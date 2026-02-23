@@ -129,7 +129,7 @@ Navigate to the Console URL (provided by your instructor):
 Login with your credentials:
 
 * Username: `admin` (or as provided)
-* Password: `{kubeadmin_password}`
+* Password: `{admin_password}`
 
 === Step 2: Switch to Administrator Perspective
 

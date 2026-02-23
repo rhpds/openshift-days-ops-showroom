@@ -82,7 +82,7 @@ ATTRS="${ATTRS}    toclevels: 2"$'\n'
 # Standard workshop variables
 ATTRS="${ATTRS}    api_url: '${API_URL:-}'"$'\n'
 ATTRS="${ATTRS}    master_url: '${MASTER_URL:-}'"$'\n'
-ATTRS="${ATTRS}    kubeadmin_password: '${KUBEADMIN_PASSWORD:-}'"$'\n'
+ATTRS="${ATTRS}    admin_password: '${ADMIN_PASSWORD:-}'"$'\n'
 ATTRS="${ATTRS}    ssh_username: '${SSH_USERNAME:-}'"$'\n'
 ATTRS="${ATTRS}    ssh_password: '${SSH_PASSWORD:-}'"$'\n'
 ATTRS="${ATTRS}    bastion_fqdn: '${BASTION_FQDN:-}'"$'\n'
