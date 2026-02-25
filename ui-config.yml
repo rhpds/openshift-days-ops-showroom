@@ -7,15 +7,12 @@ default_width: 30
 persist_url_state: true
 
 tabs:
-  # OCP Console - uncomment and configure when deployed
-  # - name: OCP Console
-  #   url: 'https://console-openshift-console.${DOMAIN}'
+  - name: OCP Console
+    url: 'https://console-openshift-console.${DOMAIN}'
 
-  # Terminal - uncomment and configure when deployed
-  # - name: Terminal
-  #   path: /wetty
-  #   port: 443
+  - name: Terminal
+    path: /wetty
+    port: 443
 
-  # Useful documentation links
   - name: OpenShift Docs
     url: 'https://docs.openshift.com/container-platform/latest/welcome/index.html'
