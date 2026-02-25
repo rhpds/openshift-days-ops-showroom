@@ -1,10 +1,12 @@
 ---
 type: showroom
 
-# Set the left column width to 30%
 default_width: 30
-# Persist the URL state so browser refresh doesn't reset the UI
 persist_url_state: true
+
+antora:
+  name: openshift-days-ops-track
+  version: main
 
 tabs:
   - name: OCP Console

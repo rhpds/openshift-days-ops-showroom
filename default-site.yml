@@ -11,7 +11,7 @@ content:
 
 ui:
   bundle:
-    url: https://github.com/jnewsome97/rhdp_showroom_theme_execute/releases/download/rh-one-2025-execute/ui-bundle.zip
+    url: https://github.com/jnewsome97/rhdp_showroom_theme_execute/releases/download/rh-one-2025-execute-v2/ui-bundle.zip
     snapshot: true
 
 output:
