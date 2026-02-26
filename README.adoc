@@ -52,11 +52,13 @@ Output is generated in `./www/`.
 This workshop uses a custom theme with click-to-execute functionality:
 
 * Theme repo: https://github.com/jnewsome97/rhdp_showroom_theme_execute
-* Release: `rh-one-2025-execute`
+* Release: `rh-one-2025-execute-v2`
 
-The execute button allows code blocks with `role="execute"` to send commands directly to the terminal.
+The execute button allows code blocks with `role="execute"` to send commands directly to the wetty terminal via `socket.emit`.
 
-== Related Resources
+== Related Repos
 
-* AgnosticV config: https://github.com/rhpds/agnosticv/tree/main/agd_v2/openshift-days-ops-track-cnv
-* Theme source: https://github.com/jnewsome97/rhdp_showroom_theme_execute
+* Automation (Ansible roles): https://github.com/rhpds/openshift-days-roadshow-automation
+* AgnosticV (Catalog config): https://github.com/rhpds/agnosticv
+* Showroom (Workshop content): https://github.com/rhpds/openshift-days-ops-showroom
+* Execute theme (UI bundle): https://github.com/jnewsome97/rhdp_showroom_theme_execute
