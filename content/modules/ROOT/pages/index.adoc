@@ -1,4 +1,4 @@
-= OpenShift Days - Operations Track
+= OpenShift Days - Ops Track
 
 == Why This Workshop Exists
 
