@@ -19,9 +19,6 @@ tabs:
   - name: RHACS
     url: 'https://central-stackrox.${DOMAIN}'
 
-  - name: ACM
-    url: 'https://multicloud-console.${DOMAIN}'
-
   - name: ArgoCD
     url: 'https://openshift-gitops-server-openshift-gitops.${DOMAIN}'
 
