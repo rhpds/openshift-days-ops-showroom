@@ -131,6 +131,71 @@ echo "asciidoc:" >> "$SITE_FILE"
 echo "  attributes:" >> "$SITE_FILE"
 echo -n "$ATTRS" >> "$SITE_FILE"
 
-echo "=== Injection complete ==="
-echo "Updated ${SITE_FILE}:"
-cat "$SITE_FILE"
+echo "=== Antora injection complete ==="
+
+# ==============================================================================
+# Generate ui-config.yml with conditional tabs based on enabled modules
+# OCP Console, Terminal, and Quay are always shown (base workloads)
+# RHACS, ArgoCD, Developer Hub are conditional on their module flags
+# ==============================================================================
+echo "=== Generating ui-config.yml with conditional tabs ==="
+
+UI_CONFIG="${REPO_DIR}/ui-config.yml"
+DOMAIN="${ROUTE_SUBDOMAIN:-}"
+
+cat > "$UI_CONFIG" <<UIEOF
+---
+type: showroom
+
+default_width: 30
+persist_url_state: true
+
+antora:
+  name: openshift-days-ops-track
+  version: main
+
+tabs:
+  - name: OCP Console
+    url: 'https://console-openshift-console.${DOMAIN}'
+
+  - name: Terminal
+    path: /wetty
+    port: 443
+
+  - name: Quay
+    url: 'https://quay.${DOMAIN}'
+UIEOF
+
+# Add RHACS tab if security module is enabled
+if [ "${MODULE_ENABLE_SECURITY:-true}" = "true" ]; then
+cat >> "$UI_CONFIG" <<UIEOF
+
+  - name: RHACS
+    url: 'https://central-stackrox.${DOMAIN}'
+UIEOF
+fi
+
+# Add ArgoCD tab if ACM module is enabled
+if [ "${MODULE_ENABLE_ACM:-true}" = "true" ]; then
+cat >> "$UI_CONFIG" <<UIEOF
+
+  - name: ArgoCD
+    url: 'https://openshift-gitops-server-openshift-gitops.${DOMAIN}'
+UIEOF
+fi
+
+# Add Developer Hub tab if devhub module is enabled
+if [ "${MODULE_ENABLE_DEVHUB:-true}" = "true" ]; then
+cat >> "$UI_CONFIG" <<UIEOF
+
+  - name: Developer Hub
+    url: 'https://backstage-developer-hub-backstage.${DOMAIN}'
+UIEOF
+fi
+
+# Copy to served location
+cp "$UI_CONFIG" /showroom/www/ui-config.yml 2>/dev/null || true
+
+echo "Generated ui-config.yml:"
+cat "$UI_CONFIG"
+echo "=== All injection complete ==="
