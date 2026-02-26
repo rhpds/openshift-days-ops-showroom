@@ -4,16 +4,41 @@ Showroom content for the OpenShift Days Ops Track workshop, covering Day 2 opera
 
 == Workshop Overview
 
-A comprehensive modular workshop for OpenShift administrators using CNV-based infrastructure with Hosted Control Planes for multi-cluster scenarios.
+A comprehensive modular workshop for OpenShift administrators. Modules are selectable at catalog order time so instructors can tailor the content to their audience.
 
 === Available Modules
 
-* *Platform Foundation* - OpenShift concepts, installation verification, application management
-* *Networking* - Ingress, load balancing, network security
-* *Day 2 Operations* - Debugging, troubleshooting, backup/restore (OADP), OpenShift Lightspeed
-* *Workloads & Architecture* - Virtualization, ACM multi-cluster management, Hosted Control Planes
-* *Security* - Secrets, certificates, Advanced Cluster Security (RHACS)
-* *Platform Engineering* - Red Hat Developer Hub
+*Getting Started*
+
+* *OpenShift Platform Overview* (30 min) - Integrated platform approach, console, monitoring, registry, routing, MachineSets, upgrades, operator ecosystem
+* *Installation & Verification* (20-25 min) - Installation methods (IPI, UPI, Agent-based, Assisted), cluster health checks, storage provisioning
+
+*Core Operations*
+
+* *Application Management Basics* (20 min) - Deployment, Routes with TLS, scaling, self-healing, probes, rollback
+* *Ingress & Load Balancing* (25 min) - Ingress Controller, Routes with TLS termination, rate limiting, IP whitelist, Services
+* *Network Security* (25 min) - OVN-Kubernetes, NetworkPolicy, EgressFirewall, EgressIP
+* *AWS WAF* (10 min) - Educational overview of AWS WAF architecture and ALB/NLB integration
+* *Debugging & Troubleshooting* (20 min) - Diagnostic toolkit, fixing ImagePullBackOff, CrashLoopBackOff, OOMKilled
+
+*Identity & Access*
+
+* *LDAP Authentication* - OAuth configuration, LDAP structure, group sync, RBAC
+* *OIDC Authentication* (35-40 min) - Red Hat SSO deployment, Keycloak configuration, OIDC group sync, RBAC
+
+*Day 2 Operations*
+
+* *Observability & Logging* (30-35 min) - Prometheus metrics, dashboards, user workload monitoring, Alertmanager, logging stack
+* *Backup & Restore* (20 min) - OADP/Velero deployment, backup creation, restore operations, scheduled backups
+* *Performance Tuning* (30-35 min) - Resource diagnostics, VPA right-sizing, HPA autoscaling, performance monitoring
+
+*Advanced Topics*
+
+* *Virtualization* (25 min) - VM creation, networking, live migration, snapshots
+* *Developer Hub* (15-20 min) - Software catalog, templates, deployment verification
+* *OpenShift Lightspeed* (15-20 min) - AI assistant operator, LLM provider configuration, console integration
+* *ACM Multi-Cluster Management* - _Coming soon_
+* *Security - ACS & Compliance* - _Coming soon_
 
 == Module Selection
 
