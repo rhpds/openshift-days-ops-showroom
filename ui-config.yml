@@ -16,5 +16,17 @@ tabs:
     path: /wetty
     port: 443
 
-  - name: OpenShift Docs
-    url: 'https://docs.openshift.com/container-platform/latest/welcome/index.html'
+  - name: RHACS
+    url: 'https://central-stackrox.${DOMAIN}'
+
+  - name: ACM
+    url: 'https://multicloud-console.${DOMAIN}'
+
+  - name: ArgoCD
+    url: 'https://openshift-gitops-server-openshift-gitops.${DOMAIN}'
+
+  - name: Quay
+    url: 'https://quay.${DOMAIN}'
+
+  - name: Developer Hub
+    url: 'https://backstage-developer-hub-backstage.${DOMAIN}'
