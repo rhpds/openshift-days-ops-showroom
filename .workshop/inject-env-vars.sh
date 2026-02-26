@@ -97,6 +97,16 @@ ATTRS="${ATTRS}    openshift_cluster_console_url: '${MASTER_URL:-}'"$'\n'
 ATTRS="${ATTRS}    openshift_api_server_url: '${API_URL:-}'"$'\n'
 ATTRS="${ATTRS}    openshift_cluster_admin_password: '${ADMIN_PASSWORD:-}'"$'\n'
 ATTRS="${ATTRS}    openshift_cluster_admin_username: 'admin'"$'\n'
+# Service URLs - derived from ROUTE_SUBDOMAIN
+ATTRS="${ATTRS}    console_url: 'https://console-openshift-console.${ROUTE_SUBDOMAIN:-}'"$'\n'
+ATTRS="${ATTRS}    rhacs_url: 'https://central-stackrox.${ROUTE_SUBDOMAIN:-}'"$'\n'
+ATTRS="${ATTRS}    rhacs_admin_username: 'admin'"$'\n'
+ATTRS="${ATTRS}    rhacs_admin_password: '${ADMIN_PASSWORD:-}'"$'\n'
+ATTRS="${ATTRS}    quay_url: 'https://quay.${ROUTE_SUBDOMAIN:-}'"$'\n'
+ATTRS="${ATTRS}    quay_admin_username: 'quayadmin'"$'\n'
+ATTRS="${ATTRS}    quay_admin_password: '${ADMIN_PASSWORD:-}'"$'\n'
+ATTRS="${ATTRS}    argocd_url: 'https://openshift-gitops-server-openshift-gitops.${ROUTE_SUBDOMAIN:-}'"$'\n'
+ATTRS="${ATTRS}    devhub_url: 'https://backstage-developer-hub-backstage.${ROUTE_SUBDOMAIN:-}'"$'\n'
 
 echo "Attributes to inject:"
 echo "$ATTRS"
