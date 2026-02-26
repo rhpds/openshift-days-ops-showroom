@@ -89,6 +89,14 @@ ATTRS="${ATTRS}    bastion_fqdn: '${BASTION_FQDN:-}'"$'\n'
 ATTRS="${ATTRS}    guid: '${GUID:-}'"$'\n'
 ATTRS="${ATTRS}    route_subdomain: '${ROUTE_SUBDOMAIN:-}'"$'\n'
 ATTRS="${ATTRS}    environment: '${ENVIRONMENT:-Amazon Web Services}'"$'\n'
+# Aliases - common alternate names content authors may use
+ATTRS="${ATTRS}    bastion_ssh_user: '${SSH_USERNAME:-}'"$'\n'
+ATTRS="${ATTRS}    bastion_ssh_password: '${SSH_PASSWORD:-}'"$'\n'
+ATTRS="${ATTRS}    bastion_public_hostname: '${BASTION_FQDN:-}'"$'\n'
+ATTRS="${ATTRS}    openshift_cluster_console_url: '${MASTER_URL:-}'"$'\n'
+ATTRS="${ATTRS}    openshift_api_server_url: '${API_URL:-}'"$'\n'
+ATTRS="${ATTRS}    openshift_cluster_admin_password: '${ADMIN_PASSWORD:-}'"$'\n'
+ATTRS="${ATTRS}    openshift_cluster_admin_username: 'admin'"$'\n'
 
 echo "Attributes to inject:"
 echo "$ATTRS"
