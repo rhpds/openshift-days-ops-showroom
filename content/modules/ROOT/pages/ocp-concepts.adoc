@@ -288,18 +288,16 @@ View your cluster nodes:
 oc get nodes
 ----
 
-Output shows:
+Your environment uses a **compact cluster** — 3 nodes that serve as both control plane and worker:
 
 ----
-NAME       STATUS   ROLES                  AGE   VERSION
-master-0   Ready    control-plane,master   91m   v1.33.5
-master-1   Ready    control-plane,master   91m   v1.33.5
-master-2   Ready    control-plane,master   89m   v1.33.5
-worker-0   Ready    worker                 84m   v1.33.5
-worker-1   Ready    worker                 83m   v1.33.5
+NAME                            STATUS   ROLES                         AGE   VERSION
+control-plane-cluster-xxxxx-1   Ready    control-plane,master,worker   20h   v1.33.6
+control-plane-cluster-xxxxx-2   Ready    control-plane,master,worker   20h   v1.33.6
+control-plane-cluster-xxxxx-3   Ready    control-plane,master,worker   20h   v1.33.6
 ----
 
-NOTE: Node names vary by platform. Cloud platforms use internal DNS names, bare metal uses hostnames you define.
+NOTE: Node names and count vary by deployment. Production clusters typically have separate control plane and worker nodes. This workshop uses a compact topology where all nodes serve both roles.
 
 === Check Node Details (Console)
 
