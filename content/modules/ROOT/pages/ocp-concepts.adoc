@@ -17,51 +17,14 @@ By the end of this module, you will understand:
 
 == Accessing the Cluster
 
-For some commands in this module, you'll need full cluster administrator access. Log in to the bastion host:
-
-[source,bash,role="execute",subs="attributes"]
-----
-ssh -l {ssh_username} {bastion_fqdn} -o ServerAliveInterval=120
-----
-
-When prompted to confirm the host key, type:
-
-[source,bash,role="execute"]
-----
-yes
-----
-
-Then enter the password:
-
-[source,bash,role="execute",subs="attributes"]
-----
-{ssh_password}
-----
-
-Then become the cluster admin user:
-
-[source,bash,role="execute",subs="attributes"]
-----
-sudo su - {bastion_ssh_user}
-----
-
-Set your GUID environment variable:
-
-[source,bash,role="execute"]
-----
-export GUID=`hostname | cut -d. -f2`
-----
-
-Verify you're logged in as cluster admin:
+Your terminal is already connected to the cluster with admin access. Verify by clicking the command below:
 
 [source,bash,role="execute"]
 ----
 oc whoami
 ----
 
-You should see `system:admin`.
-
-NOTE: The web terminal runs as `lab-user` with limited permissions. For commands requiring cluster admin access, use the bastion host SSH session.
+You should see your admin user.
 
 == What is OpenShift?
 
