@@ -113,6 +113,8 @@ Make sure **Administrator** is selected.
 
 Once in the Administrator perspective, you'll see the **Overview** dashboard under **Home → Overview**.
 
+image::ocp-dashboard-overview.png[OpenShift Administrator Dashboard Overview]
+
 **Key sections to notice:**
 
 1. **Cluster Status** - Overall health at a glance
