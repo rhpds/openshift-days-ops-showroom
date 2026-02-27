@@ -94,7 +94,7 @@ You can access the console in two ways:
 
 Login with your credentials:
 
-* Username: `admin`
+* Username: `{openshift_cluster_admin_username}`
 * Password: `{admin_password}`
 
 === Step 2: Switch to Administrator Perspective
