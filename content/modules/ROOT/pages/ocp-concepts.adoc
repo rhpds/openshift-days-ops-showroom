@@ -82,7 +82,10 @@ Let's explore the console now.
 
 The OpenShift Web Console provides a unified view of your entire cluster.
 
-Navigate to the Console URL (provided by your instructor):
+You can access the console in two ways:
+
+* **OCP Console tab** — Click the **OCP Console** tab at the top of this workshop. The console is embedded directly in the workshop interface so you can follow along without switching windows.
+* **Separate browser tab** — If you prefer a full-screen experience, open the console URL directly:
 
 [subs="attributes"]
 ----
@@ -91,7 +94,7 @@ Navigate to the Console URL (provided by your instructor):
 
 Login with your credentials:
 
-* Username: `admin` (or as provided)
+* Username: `admin`
 * Password: `{admin_password}`
 
 === Step 2: Switch to Administrator Perspective
