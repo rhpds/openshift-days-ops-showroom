@@ -320,7 +320,7 @@ image::nodes-console-view.png[Nodes Console View]
 
 ==== MachineSets - Automated Infrastructure Scaling
 
-OpenShift on cloud platforms (AWS, Azure, GCP) uses **MachineSets** to automate infrastructure:
+OpenShift uses **MachineSets** to automate infrastructure scaling. On cloud platforms (AWS, Azure, GCP), MachineSets manage worker nodes across availability zones — you can scale up by changing a replica count rather than manually provisioning machines.
 
 NOTE: When ACM is installed, `machinesets` exists in two API groups (Cluster API and OpenShift Machine API). We use the full resource name `machinesets.machine.openshift.io` to target OpenShift's Machine API.
 
@@ -329,28 +329,23 @@ NOTE: When ACM is installed, `machinesets` exists in two API groups (Cluster API
 oc get machinesets.machine.openshift.io -n openshift-machine-api
 ----
 
-You'll see:
+Your compact cluster has a single MachineSet scaled to 0 — all 3 nodes serve as both control plane and worker, so no separate worker machines are needed:
 
 ----
-NAME                             DESIRED   CURRENT   READY   AVAILABLE   AGE
-cluster-xxxxx-worker-zone-a      1         1         1       1           104m
-cluster-xxxxx-worker-zone-b      1         1         1       1           104m
-cluster-xxxxx-worker-zone-c      0         0                             104m
+NAME                           DESIRED   CURRENT   READY   AVAILABLE   AGE
+cluster-xxxxx-worker-0         0         0                             20h
 ----
 
-This shows:
-- **Multiple MachineSets** (typically one per availability zone or failure domain)
-- **Active workers** distributed across zones
-- **Scaled to 0** - zone is available but not in use
+In a production cloud deployment, you'd see multiple MachineSets (one per availability zone) with active worker replicas that can be scaled up or down.
 
-You can also view the actual machine resources:
+You can also view the machine resources:
 
 [source,bash,role="execute"]
 ----
 oc get machines.machine.openshift.io -n openshift-machine-api
 ----
 
-This shows the underlying compute instances that OpenShift is managing for you.
+This shows the underlying compute instances that OpenShift is managing.
 
 ==== Scaling Workers
 
