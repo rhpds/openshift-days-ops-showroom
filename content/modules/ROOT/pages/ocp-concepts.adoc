@@ -82,6 +82,8 @@ Let's explore the console now.
 
 The OpenShift Web Console provides a unified view of your entire cluster.
 
+image::ocp-console-overview.png[OpenShift Administrator Console Overview]
+
 You can access the console in two ways:
 
 * **OCP Console tab** — Click the **OCP Console** tab at the top of this workshop. The console is embedded directly in the workshop interface so you can follow along without switching windows.
