@@ -48,8 +48,8 @@ oc get network.config cluster -o yaml
 Key fields:
 
 * `networkType: OVNKubernetes` - Confirms OVN-Kubernetes is active
-* `clusterNetwork` - IP range for pod networking (typically 10.128.0.0/14)
-* `serviceNetwork` - IP range for Services (typically 172.30.0.0/16)
+* `clusterNetwork` - IP range for pod networking (varies by cluster)
+* `serviceNetwork` - IP range for Services (varies by cluster)
 
 === Verify Network Operator Health
 
@@ -65,7 +65,7 @@ The network operator should show `AVAILABLE: True` and `DEGRADED: False`.
 oc get pods -n openshift-ovn-kubernetes
 ----
 
-You'll see OVN pods running on every node: `ovnkube-node`, `ovnkube-controller`, and `ovs-daemon`.
+You'll see OVN pods running on the cluster: `ovnkube-node` (a DaemonSet running on every node) and `ovnkube-control-plane` (a Deployment managing the OVN control plane).
 
 == NetworkPolicy: Pod-to-Pod Security
 
@@ -405,11 +405,11 @@ oc exec -n netpol-frontend deployment/frontend -- nslookup backend.netpol-backen
 oc get dns cluster -o yaml
 ----
 
-Shows:
+Shows the cluster's DNS configuration. The key field is:
 
-* `baseDomain` - Cluster's base DNS domain
-* `publicZone` - External DNS zone
-* `privateZone` - Internal DNS zone
+* `baseDomain` - Cluster's base DNS domain (e.g., `cluster-xxxxx.dynamic.redhatworkshops.io`)
+
+NOTE: On cloud platforms (AWS, Azure, GCP), you'll also see `publicZone` and `privateZone` fields for the cloud DNS zones. On other platforms these may not be present.
 
 === View CoreDNS Pods
 

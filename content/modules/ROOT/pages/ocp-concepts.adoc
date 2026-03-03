@@ -87,12 +87,8 @@ image::ocp-console-overview.png[OpenShift Administrator Console Overview]
 You can access the console in two ways:
 
 * **OCP Console tab** — Click the **OCP Console** tab at the top of this workshop. The console is embedded directly in the workshop interface so you can follow along without switching windows.
-* **Separate browser tab** — If you prefer a full-screen experience, open the console URL directly:
-
-[subs="attributes"]
-----
-{master_url}
-----
+* **Separate browser tab** — If you prefer a full-screen experience, open the console URL directly: +
+link:{master_url}[{master_url}, window="_blank"]
 
 Login with your credentials:
 
@@ -130,6 +126,7 @@ This single dashboard shows you information that in vanilla Kubernetes would req
 == Built-in Monitoring
 
 In vanilla Kubernetes, you must:
+
 1. Install Prometheus manually
 2. Configure scraping
 3. Install Grafana
@@ -388,6 +385,8 @@ image::cluster-settings-details.png[Cluster Settings Details Tab]
 2. Click **Select a version** button (if available)
 3. See available upgrade paths
 
+NOTE: If your cluster shows **Update status: Up to date**, the **Select a version** button will not appear. This means your cluster is already running the latest available version in its update channel.
+
 image::cluster-upgrade-versions.png[Available Upgrade Versions,width=600]
 
 **This is completely automated:**
@@ -412,12 +411,12 @@ OpenShift includes a **Software Catalog** - a marketplace of pre-certified opera
 oc get packagemanifests -n openshift-marketplace | wc -l
 ----
 
-You'll see **700+ operators** available out of the box.
+You'll see **hundreds of operators** available out of the box.
 
 === Explore Software Catalog (Console)
 
 1. Navigate to **Ecosystem → Software Catalog**
-2. Select a project from the list (e.g., click **default**)
+2. You may need to select a project from the dropdown — if one is not already selected, choose **default**
 3. You'll see the unified software catalog with categories on the left:
    - **AI/Machine Learning** - Red Hat OpenShift AI, Open Data Hub
    - **CI/CD** - Red Hat OpenShift GitOps, Red Hat OpenShift Pipelines
@@ -426,8 +425,8 @@ You'll see **700+ operators** available out of the box.
    - **Storage** - Red Hat OpenShift Data Foundation
    - **Integration & Delivery** - Red Hat Integration, Red Hat Service Mesh, Red Hat Serverless
    - And many more...
-4. Filter by **Type** and select **Operators** to see only operators (701 available)
-5. Click any operator tile to view details and install
+4. Filter by **Type** and select **Operators** to see the full list of available operators
+5. Feel free to click any operator tile to browse its details — this is just for exploration, no need to install anything
 
 Install enterprise-grade software with **one click**.
 
@@ -455,7 +454,7 @@ Install enterprise-grade software with **one click**.
 |MachineSets API
 
 |"How do I add capabilities?"
-|Software Catalog with 700+ operators
+|Software Catalog with hundreds of operators
 
 |"Who supports this stack?"
 |Single Red Hat support contract

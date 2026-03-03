@@ -18,7 +18,7 @@ By the end of this module, you will be able to:
 * Create Routes with different TLS termination strategies
 * Configure rate limiting and IP-based access control
 * Understand load balancing options (Services, Ingress)
-* Implement network security policies for traffic control
+* Scale the ingress controller
 
 == Ingress Controller & Load Balancing
 
@@ -33,9 +33,10 @@ oc get ingresscontroller default -n openshift-ingress-operator -o yaml | head -6
 
 Key configuration options:
 
-* `replicas` - Number of router pods (default: 2 for HA)
+* `replicas` - Number of router pods for HA
 * `routeAdmission.wildcardPolicy` - Whether wildcard routes are allowed
 * `defaultCertificate` - TLS certificate for *.apps domain
+* `endpointPublishingStrategy` - How the router is exposed (HostNetwork, LoadBalancer, NodePort)
 
 === View Router Pods
 
@@ -44,7 +45,7 @@ Key configuration options:
 oc get pods -n openshift-ingress -o wide
 ----
 
-Router pods run on worker nodes and handle incoming HTTP/HTTPS traffic.
+Router pods handle incoming HTTP/HTTPS traffic. On this cluster they run on the control-plane nodes using HostNetwork, meaning they bind directly to the node's network interfaces on ports 80 and 443.
 
 === View Ingress Service
 
@@ -53,10 +54,18 @@ Router pods run on worker nodes and handle incoming HTTP/HTTPS traffic.
 oc get svc -n openshift-ingress
 ----
 
-The `router-default` service exposes the ingress controller:
+The ingress service varies by platform:
 
-* On cloud platforms: `LoadBalancer` type with external IP
-* On bare metal: Typically `NodePort` or MetalLB `LoadBalancer`
+* **HostNetwork** (this cluster): `router-internal-default` service with ClusterIP — routers bind directly to node IPs
+* **Cloud platforms**: `router-default` service with LoadBalancer type and external IP
+* **Bare metal**: Typically NodePort or MetalLB LoadBalancer
+
+=== Check Endpoint Publishing Strategy
+
+[source,bash,role="execute"]
+----
+oc get ingresscontroller default -n openshift-ingress-operator -o jsonpath='{.status.endpointPublishingStrategy}' | python3 -m json.tool
+----
 
 == Routes: OpenShift's Ingress Resource
 
@@ -112,9 +121,9 @@ Test with HTTPS (edge TLS):
 curl -sk https://$(oc get route weathernow -o jsonpath='{.spec.host}') | head -5
 ----
 
-This request flows: **Client -> Load Balancer -> Ingress Controller -> Service -> Pod**
+This request flows: **Client -> Ingress Controller -> Service -> Pod**
 
-You should see the WeatherNow HTML page returned.
+You should see HTML returned from the web server (the default RHEL test page).
 
 == TLS Termination Strategies
 
@@ -177,7 +186,7 @@ Verify the annotations were applied:
 
 [source,bash,role="execute"]
 ----
-oc get route weathernow -n app-management -o jsonpath='{.metadata.annotations}' | python3 -m json.tool | grep rate
+oc get route weathernow -n app-management -o jsonpath='{.metadata.annotations}' | python3 -m json.tool | grep rate-limit
 ----
 
 === View Existing Routes Across Cluster
@@ -212,20 +221,50 @@ OpenShift Services provide internal load balancing and service discovery.
 |External via dedicated IP
 |===
 
-=== View the Ingress LoadBalancer Service
+=== View the Ingress Service
 
-The ingress controller itself uses a LoadBalancer service:
+Examine how the ingress controller is exposed on this cluster:
 
 [source,bash,role="execute"]
 ----
-oc get svc router-default -n openshift-ingress -o wide
+oc get svc -n openshift-ingress -o wide
 ----
 
-On cloud platforms, this creates a cloud load balancer (NLB on AWS, Azure LB, etc.). On bare metal or virtualized environments, MetalLB provides LoadBalancer functionality.
+On this cluster, you'll see `router-internal-default` with ClusterIP type because the ingress controller uses HostNetwork — it binds directly to the node's network interfaces rather than going through a separate LoadBalancer service. On cloud platforms, you'd see a `router-default` service with `LoadBalancer` type instead.
 
 == Ingress Controller Scaling
 
+The ingress controller can be scaled to run more router pods for higher availability and throughput.
+
+=== Check Current Replicas
+
+[source,bash,role="execute"]
+----
+oc get ingresscontroller default -n openshift-ingress-operator -o jsonpath='{.spec.replicas}'
+----
+
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-ingress
+----
+
 === Scale Ingress Controller
+
+Scale to a different replica count to see the behaviour. Let's scale down to 2 and then back:
+
+[source,bash,role="execute"]
+----
+oc patch ingresscontroller default -n openshift-ingress-operator --type=merge -p '{"spec":{"replicas":2}}'
+----
+
+Watch a router pod terminate:
+
+[source,bash,role="execute"]
+----
+oc get pods -n openshift-ingress -w
+----
+
+Press `Ctrl+C` when you see 2 pods running. Now scale back:
 
 [source,bash,role="execute"]
 ----
@@ -239,7 +278,7 @@ Watch the new router pod come up:
 oc get pods -n openshift-ingress -w
 ----
 
-Press Ctrl+C when you see 3 pods running.
+Press `Ctrl+C` when you see 3 pods running.
 
 === View Ingress Controller Status
 
@@ -257,9 +296,6 @@ oc annotate route weathernow -n app-management \
   haproxy.router.openshift.io/rate-limit-connections- \
   haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp- \
   haproxy.router.openshift.io/rate-limit-connections.rate-http-
-
-# Scale ingress controller back to 2
-oc patch ingresscontroller default -n openshift-ingress-operator --type=merge -p '{"spec":{"replicas":2}}'
 
 echo "Cleanup complete"
 ----

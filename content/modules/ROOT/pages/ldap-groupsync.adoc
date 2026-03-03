@@ -67,21 +67,11 @@ Check the current OAuth configuration:
 oc get oauth cluster -o yaml
 ----
 
-The key thing to look for is an empty `spec: {}`:
-
-[source,yaml]
-----
-apiVersion: config.openshift.io/v1
-kind: OAuth
-metadata:
-  name: cluster
-  # ... additional metadata and annotations can be ignored
-spec: {}
-----
+Look at the `spec.identityProviders` section. You'll see that an `htpasswd` identity provider is already configured — this was set up during cluster provisioning to provide the `admin` account you're using now.
 
 [NOTE]
 ====
-You may see additional metadata and annotations (like `kubectl.kubernetes.io/last-applied-configuration`). These are historical records and don't affect authentication. The important thing is that `spec: {}` is empty, meaning no identity providers are currently configured.
+In a fresh cluster, `spec` would be empty (`spec: {}`). This workshop cluster has HTPasswd pre-configured. When you add LDAP below, it will be added alongside the existing HTPasswd provider so both work simultaneously.
 ====
 
 **How does `kubeadmin` work then?**
@@ -95,7 +85,7 @@ oc get secret -n kube-system kubeadmin -o yaml
 
 This Secret contains the hashed `kubeadmin` password. **Security note:** This account bypasses identity providers and should be removed after configuring real authentication.
 
-**Note:** If the secret doesn't exist, it means kubeadmin has already been removed (which is correct for production security).
+NOTE: On this workshop cluster, the kubeadmin secret has already been removed (you'll see "not found"). This is correct — the cluster uses HTPasswd authentication instead. In production, you'd remove kubeadmin after configuring LDAP or OIDC.
 
 == Step 2: Understand LDAP Structure
 
@@ -130,7 +120,7 @@ oc create secret generic ldap-secret \
 [source,bash,role="execute"]
 ----
 mkdir -p $HOME/support
-wget https://certs.godaddy.com/repository/gd-class2-root.crt -O $HOME/support/ca.crt
+curl -sL https://certs.godaddy.com/repository/gd-class2-root.crt -o $HOME/support/ca.crt
 ----
 
 **Create ConfigMap with CA certificate:**
@@ -265,7 +255,7 @@ Notice the user was **automatically created** on first login. Log back in as adm
 
 [source,bash,role="execute"]
 ----
-oc login --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) --server=https://kubernetes.default.svc --insecure-skip-tls-verify
+oc login -u admin -p $ADMIN_PASSWORD $API_URL --insecure-skip-tls-verify
 ----
 
 **View the auto-created user:**
@@ -433,7 +423,7 @@ Log back in as cluster admin:
 
 [source,bash,role="execute"]
 ----
-oc login --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) --server=https://kubernetes.default.svc --insecure-skip-tls-verify
+oc login -u admin -p $ADMIN_PASSWORD $API_URL --insecure-skip-tls-verify
 ----
 
 Create a typical SDLC project structure:
@@ -591,7 +581,7 @@ Filter by project to see who has access to what.
 
 [source,bash,role="execute"]
 ----
-oc login --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) --server=https://kubernetes.default.svc --insecure-skip-tls-verify
+oc login -u admin -p $ADMIN_PASSWORD $API_URL --insecure-skip-tls-verify
 ----
 
 First, grant cluster-admin to a real user:
@@ -719,6 +709,7 @@ Check for degraded conditions and follow remediation steps.
 **Key takeaway:** OpenShift authentication integrates with existing identity management (LDAP, OIDC, SAML) and uses group-based RBAC for scalable permission management.
 
 **Production recommendations:**
+
 1. Use LDAP/OIDC, never HTPasswd
 2. Remove kubeadmin after configuring real identity provider
 3. Automate group sync with CronJob
@@ -740,5 +731,5 @@ Check for degraded conditions and follow remediation steps.
 
 [source,bash,role="execute"]
 ----
-oc login --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) --server=https://kubernetes.default.svc --insecure-skip-tls-verify
+oc login -u admin -p $ADMIN_PASSWORD $API_URL --insecure-skip-tls-verify
 ----

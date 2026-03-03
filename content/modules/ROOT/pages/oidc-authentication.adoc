@@ -192,11 +192,9 @@ Note these credentials - you'll use them to access the Keycloak admin console.
 
 Run the setup script to configure Keycloak with users, groups, and the OIDC client:
 
-**Option A: Automated setup script (recommended for lab environment):**
-
 [source,bash,role="execute"]
 ----
-bash /showroom/repo/.workshop/setup-keycloak-oidc.sh
+curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/.workshop/setup-keycloak-oidc.sh | bash
 ----
 
 This script creates:
@@ -476,11 +474,11 @@ First returns: `no`, second returns: `yes` (view role)
 
 **Restore cluster admin access:**
 
-Log back in using the terminal's service account token:
+Log back in as cluster admin:
 
 [source,bash,role="execute"]
 ----
-oc login --token=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token) --server=https://kubernetes.default.svc --insecure-skip-tls-verify
+oc login -u admin -p $ADMIN_PASSWORD $API_URL --insecure-skip-tls-verify
 ----
 
 This restores cluster-admin permissions via the terminal's service account.
@@ -570,7 +568,7 @@ Check if groups claim is in the ID token:
 oc get user developer1 -o yaml
 ----
 
-Verify the Keycloak client has the groups protocol mapper configured (setup script in Step 3).
+Verify the Keycloak client has the groups protocol mapper configured (created by the setup script in Step 3).
 
 **Issue: Redirect loop when logging in**
 

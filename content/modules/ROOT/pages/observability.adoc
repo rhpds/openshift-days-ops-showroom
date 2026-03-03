@@ -88,7 +88,7 @@ You can also view alerts in the console under **Observe -> Alerting**.
 
 === Create a Custom Alert
 
-You can define your own alerts for application namespaces. Here's an example that fires when a pod has been restarting:
+You can define your own alerts for application namespaces. Here's an example that fires when a pod has been restarting. We'll create it in the `openshift-monitoring` namespace where the built-in alerting rules live:
 
 [source,bash,role="execute"]
 ----
@@ -97,13 +97,13 @@ apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
   name: ops-track-alerts
-  namespace: openshift-logging
+  namespace: openshift-monitoring
 spec:
   groups:
   - name: ops-track
     rules:
     - alert: HighPodRestartRate
-      expr: increase(kube_pod_container_status_restarts_total{namespace="openshift-logging"}[15m]) > 3
+      expr: increase(kube_pod_container_status_restarts_total[15m]) > 3
       for: 5m
       labels:
         severity: warning
@@ -117,7 +117,7 @@ Verify the rule was created:
 
 [source,bash,role="execute"]
 ----
-oc get prometheusrule ops-track-alerts -n openshift-logging
+oc get prometheusrule ops-track-alerts -n openshift-monitoring
 ----
 
 Navigate to **Observe -> Alerting -> Alerting Rules** in the console to see your custom rule alongside the built-in ones.
@@ -126,30 +126,40 @@ Navigate to **Observe -> Alerting -> Alerting Rules** in the console to see your
 
 While metrics tell you *what* is happening, logs tell you *why*. Let's set up the full logging pipeline.
 
-=== Install the Loki Operator (GUI)
+=== Install the Logging Operators
 
-[IMPORTANT]
-====
-In OpenShift 4.20, the OperatorHub has moved to **Ecosystem -> Software Catalog**. You must select a namespace before viewing available operators.
-====
-
-1. In the OpenShift console, click **Ecosystem** -> **Software Catalog**
-2. Select namespace `openshift-operators-redhat` from the Project dropdown (create it first if needed: `oc create namespace openshift-operators-redhat`)
-3. Search for **Loki Operator** and select the one provided by Red Hat
-4. Click **Install**
-5. Select Update Channel `stable-6.2` (or the latest `stable-6.x` available)
-6. Select **Enable Operator recommended cluster monitoring on this Namespace**
-7. Click **Install** and wait for completion
-
-=== Install the Remaining Operators (CLI)
-
-While the Loki Operator installs, install the other two operators via CLI:
+First, create the required namespaces:
 
 [source,bash,role="execute"]
 ----
+oc create namespace openshift-operators-redhat 2>/dev/null || true
 oc create namespace openshift-logging 2>/dev/null || true
+----
 
+Install all three logging operators (Loki, Cluster Logging, Cluster Observability):
+
+[source,bash,role="execute"]
+----
 cat <<EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: openshift-operators-redhat
+  namespace: openshift-operators-redhat
+spec: {}
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: loki-operator
+  namespace: openshift-operators-redhat
+spec:
+  channel: stable-6.2
+  installPlanApproval: Automatic
+  name: loki-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+---
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
@@ -187,7 +197,7 @@ EOF
 
 === Verify All Operators
 
-Wait about 60 seconds, then verify all three operators are installed:
+Wait about 90 seconds for the operators to install, then verify all three are ready:
 
 [source,bash,role="execute"]
 ----

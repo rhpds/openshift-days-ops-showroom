@@ -299,6 +299,7 @@ oc scale machineset <name> --replicas=4 -n openshift-machine-api
 |===
 
 In all cases:
+
 1. OpenShift calls the platform API
 2. Installs RHEL CoreOS automatically
 3. Joins the node to the cluster

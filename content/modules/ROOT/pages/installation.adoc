@@ -90,7 +90,7 @@ OpenShift can be installed on:
 
 * Installation method: Installer-provisioned infrastructure (IPI)
 * Infrastructure: Fully automated provisioning of compute, network, and storage
-* Result: Production-ready cluster with 3 control plane + 3 worker nodes
+* Result: Production-ready 3-node compact cluster (combined control-plane and worker roles)
 
 NOTE: The installation details are provided for educational purposes. Your focus in this workshop is on **Day 2 operations** - managing a running cluster.
 
@@ -148,7 +148,7 @@ The `openshift-install` command automates the entire installation:
 
 == Accessing the Cluster
 
-This workshop provides a pre-installed OpenShift cluster. The terminal runs as a service account with **cluster-admin** privileges.
+This workshop provides a pre-installed OpenShift cluster. The terminal is connected to a bastion host with **cluster-admin** privileges already configured.
 
 Verify you can access the cluster:
 
@@ -159,12 +159,9 @@ oc whoami
 
 Expected output:
 
-[subs="attributes"]
 ----
-system:serviceaccount:showroom-{guid}:showroom
+system:admin
 ----
-
-NOTE: You're logged in as a service account, not `kubeadmin`. The service account has full cluster-admin permissions.
 
 Check your permissions:
 
@@ -195,21 +192,21 @@ You'll see ~34 operators. Example output:
 
 ----
 NAME                         VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE
-authentication               4.20.1    True        False         False      3h
-cloud-credential             4.20.1    True        False         False      4h
-console                      4.20.1    True        False         False      3h
-dns                          4.20.1    True        False         False      4h
-etcd                         4.20.1    True        False         False      4h
-ingress                      4.20.1    True        False         False      3h
-kube-apiserver               4.20.1    True        False         False      4h
-kube-controller-manager      4.20.1    True        False         False      4h
-kube-scheduler               4.20.1    True        False         False      4h
-machine-api                  4.20.1    True        False         False      4h
-machine-config               4.20.1    True        False         False      4h
-monitoring                   4.20.1    True        False         False      3h
-network                      4.20.1    True        False         False      4h
-openshift-apiserver          4.20.1    True        False         False      3h
-storage                      4.20.1    True        False         False      4h
+authentication               4.20.x    True        False         False      3h
+cloud-credential             4.20.x    True        False         False      4h
+console                      4.20.x    True        False         False      3h
+dns                          4.20.x    True        False         False      4h
+etcd                         4.20.x    True        False         False      4h
+ingress                      4.20.x    True        False         False      3h
+kube-apiserver               4.20.x    True        False         False      4h
+kube-controller-manager      4.20.x    True        False         False      4h
+kube-scheduler               4.20.x    True        False         False      4h
+machine-api                  4.20.x    True        False         False      4h
+machine-config               4.20.x    True        False         False      4h
+monitoring                   4.20.x    True        False         False      3h
+network                      4.20.x    True        False         False      4h
+openshift-apiserver          4.20.x    True        False         False      3h
+storage                      4.20.x    True        False         False      4h
 ----
 
 **What to check:**
@@ -248,10 +245,10 @@ View the current cluster version:
 oc get clusterversion
 ----
 
-Output:
+Your output will look similar to:
 ----
 NAME      VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
-version   4.20.1    True        False         3h      Cluster version is 4.20.1
+version   4.20.x    True        False         3h      Cluster version is 4.20.x
 ----
 
 Check which update channel you're subscribed to:
@@ -262,6 +259,7 @@ oc get clusterversion version -o jsonpath='{.spec.channel}'
 ----
 
 Common channels:
+
 * **stable-4.20** - Production-ready releases (recommended)
 * **fast-4.20** - Early access to stable releases
 * **eus-4.20** - Extended Update Support (14-month lifecycle)
@@ -274,20 +272,14 @@ View available updates:
 oc adm upgrade
 ----
 
-Example output:
+If updates are available, you'll see a list of recommended versions. If your cluster is already up to date, you'll see:
+
 ----
-Cluster version is 4.20.1
-
-Channel: stable-4.20
-
-Recommended updates:
-
-  VERSION     IMAGE
-  4.20.8      quay.io/openshift-release-dev/ocp-release@sha256:91606a5...
-  4.20.3      quay.io/openshift-release-dev/ocp-release@sha256:24da92...
+No updates available. You may still upgrade to a specific release image
+with --to-image or wait for new updates to be available.
 ----
 
-**Key takeaway:** Operators manage cluster updates. You can upgrade with a single command: `oc adm upgrade --to=4.20.8`
+**Key takeaway:** Operators manage cluster updates. When updates are available, you can upgrade with a single command: `oc adm upgrade --to=<version>`
 
 == Step 3: Verify Node Health and Resources
 
@@ -298,23 +290,19 @@ List all nodes in the cluster:
 oc get nodes
 ----
 
-Output shows:
+Your output will look similar to:
 ----
-NAME            STATUS   ROLES                  AGE     VERSION
-master-0        Ready    control-plane,master   4h      v1.33.5
-master-1        Ready    control-plane,master   4h      v1.33.5
-master-2        Ready    control-plane,master   4h      v1.33.5
-worker-0        Ready    worker                 4h      v1.33.5
-worker-1        Ready    worker                 4h      v1.33.5
-worker-2        Ready    worker                 4h      v1.33.5
+NAME                            STATUS   ROLES                         AGE   VERSION
+control-plane-cluster-xxxxx-1   Ready    control-plane,master,worker   20h   v1.33.x
+control-plane-cluster-xxxxx-2   Ready    control-plane,master,worker   21h   v1.33.x
+control-plane-cluster-xxxxx-3   Ready    control-plane,master,worker   21h   v1.33.x
 ----
 
-NOTE: Node names vary by platform. Cloud platforms use internal DNS names, bare metal uses hostnames you define.
+NOTE: Node names and count vary by platform. This workshop uses a 3-node compact cluster where each node serves as both control-plane and worker.
 
 **What you see:**
 
-* **3 control-plane nodes** - Run API server, etcd, scheduler, controllers
-* **2 worker nodes** - Run application workloads
+* **3 nodes with combined roles** - Each node runs control-plane components (API server, etcd, scheduler) and worker workloads
 * **STATUS = Ready** - Node is healthy and can schedule pods
 
 Check actual resource usage on nodes:
@@ -324,15 +312,12 @@ Check actual resource usage on nodes:
 oc adm top nodes
 ----
 
-Output:
+You'll see resource usage for each node — the exact values will vary based on what's deployed:
 ----
-NAME            CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)
-master-0        1666m        22%      7935Mi          26%
-master-1        1837m        24%      9913Mi          32%
-master-2        1192m        15%      8226Mi          27%
-worker-0        1941m        12%      16838Mi         27%
-worker-1        1381m        8%       12931Mi         20%
-worker-2        1024m        6%       10240Mi         16%
+NAME                            CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)
+control-plane-cluster-xxxxx-1   5143m        33%      21901Mi         34%
+control-plane-cluster-xxxxx-2   4114m        26%      34972Mi         55%
+control-plane-cluster-xxxxx-3   4923m        31%      42917Mi         67%
 ----
 
 **What to monitor:**
@@ -348,12 +333,14 @@ worker-2        1024m        6%       10240Mi         16%
 oc get machineconfigpool
 ----
 
-Output:
+Your output will look similar to:
 ----
-NAME     CONFIG                                             UPDATED   UPDATING   DEGRADED   MACHINECOUNT   READYMACHINECOUNT
-master   rendered-master-48ba1948abe0e71d6f961d60b60a7b09   True      False      False      3              3
-worker   rendered-worker-bd1b92e5c23309874c8d04cde3e7709f   True      False      False      2              2
+NAME     CONFIG             UPDATED   UPDATING   DEGRADED   MACHINECOUNT   READYMACHINECOUNT
+master   rendered-master-…  True      False      False      3              3
+worker   rendered-worker-…  True      False      False      0              0
 ----
+
+NOTE: On this compact cluster the worker pool shows 0 machines because all nodes serve both control-plane and worker roles under the master pool.
 
 **What this shows:**
 
@@ -417,7 +404,7 @@ Watch it provision:
 oc get pvc test-pvc
 ----
 
-TIP: Cloud storage provisioning is fast - the PVC may already show `Bound` by the time you check. That's a good sign - it means dynamic provisioning is working correctly.
+TIP: The PVC may show `Pending` — this is normal. The default storage class uses `WaitForFirstConsumer` volume binding, which means it won't provision the volume until a pod actually mounts it. If it shows `Bound`, that means a volume was immediately available. Either status confirms dynamic storage provisioning is configured correctly.
 
 Clean up:
 

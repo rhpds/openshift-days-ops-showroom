@@ -2,45 +2,139 @@
 
 == Module Overview
 
-**Duration:** 20 minutes +
+**Duration:** 25 minutes +
 **Format:** Hands-on backup and restore operations +
 **Audience:** Platform Engineers, Operations Teams
 
-Data protection is critical for production OpenShift clusters. In this module, you'll use **OADP (OpenShift API for Data Protection)** to backup a running application, simulate a disaster by deleting it, and restore it from backup.
+Data protection is critical for production OpenShift clusters. In this module, you'll configure **OADP (OpenShift API for Data Protection)** with on-cluster S3 storage, backup a running application, simulate a disaster by deleting it, and restore it from backup.
 
 == Learning Objectives
 
+* Configure OADP with S3-compatible storage
 * Create application backups
 * Restore applications from backups
 * Implement backup schedules
 * Understand the backup/restore workflow
 
-== Verify OADP is Ready
+== Step 1: Configure OADP Storage
 
-OADP and its backup storage have been pre-configured. Verify everything is working:
+The OADP operator is pre-installed but needs to be configured with a backup storage target. This cluster has OpenShift Data Foundation (ODF) which provides S3-compatible object storage via NooBaa.
+
+Verify OADP operator is installed:
 
 [source,bash,role="execute"]
 ----
 oc get csv -n openshift-adp | grep oadp
 ----
 
-Check Velero is running:
+You should see the OADP operator with `Succeeded` status.
+
+=== Create a Storage Bucket
+
+Create an ObjectBucketClaim to provision an S3 bucket for backups:
 
 [source,bash,role="execute"]
 ----
-oc get pods -n openshift-adp -l app.kubernetes.io/name=velero
+cat <<EOF | oc apply -f -
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  name: oadp-bucket
+  namespace: openshift-adp
+spec:
+  generateBucketName: oadp-backup
+  storageClassName: openshift-storage.noobaa.io
+EOF
 ----
 
-Check the backup storage location is available:
+Wait for the bucket to be ready:
+
+[source,bash,role="execute"]
+----
+oc wait --for=jsonpath='{.status.phase}'=Bound obc/oadp-bucket -n openshift-adp --timeout=60s
+----
+
+=== Create Velero Credentials
+
+Extract the S3 credentials from the bucket claim and create a credentials secret for Velero:
+
+[source,bash,role="execute"]
+----
+AWS_ACCESS_KEY=$(oc get secret oadp-bucket -n openshift-adp -o jsonpath='{.data.AWS_ACCESS_KEY_ID}' | base64 -d)
+AWS_SECRET_KEY=$(oc get secret oadp-bucket -n openshift-adp -o jsonpath='{.data.AWS_SECRET_ACCESS_KEY}' | base64 -d)
+
+cat <<EOF | oc apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloud-credentials
+  namespace: openshift-adp
+type: Opaque
+stringData:
+  cloud: |
+    [default]
+    aws_access_key_id=${AWS_ACCESS_KEY}
+    aws_secret_access_key=${AWS_SECRET_KEY}
+EOF
+----
+
+=== Create the DataProtectionApplication
+
+Configure OADP to use the NooBaa bucket as its backup target:
+
+[source,bash,role="execute"]
+----
+BUCKET_NAME=$(oc get obc oadp-bucket -n openshift-adp -o jsonpath='{.spec.bucketName}')
+
+cat <<EOF | oc apply -f -
+apiVersion: oadp.openshift.io/v1alpha1
+kind: DataProtectionApplication
+metadata:
+  name: oadp-dpa
+  namespace: openshift-adp
+spec:
+  configuration:
+    velero:
+      defaultPlugins:
+      - openshift
+      - aws
+    nodeAgent:
+      enable: false
+      uploaderType: kopia
+  backupLocations:
+  - velero:
+      provider: aws
+      default: true
+      objectStorage:
+        bucket: ${BUCKET_NAME}
+        prefix: velero
+      config:
+        region: noobaa
+        s3ForcePathStyle: "true"
+        s3Url: https://s3.openshift-storage.svc:443
+        insecureSkipTLSVerify: "true"
+      credential:
+        name: cloud-credentials
+        key: cloud
+EOF
+----
+
+Wait for Velero to start and verify the backup storage location is available:
+
+[source,bash,role="execute"]
+----
+sleep 15
+oc get pods -n openshift-adp -l app.kubernetes.io/name=velero
+----
 
 [source,bash,role="execute"]
 ----
 oc get backupstoragelocations -n openshift-adp
 ----
 
-You should see `Available` in the PHASE column. This means OADP can connect to the S3 storage and is ready to take backups.
+You should see the Velero pod `Running` and the backup storage location showing `Available`. OADP is now ready to take backups.
 
-== Deploy an Application
+== Step 2: Deploy an Application
 
 Let's deploy a sample application with configuration data and secrets — the kind of workload you'd protect in production:
 
@@ -121,7 +215,7 @@ oc get pods -n backup-demo -w
 
 Press `Ctrl+C` when both pods show `Running`.
 
-== Backup the Application
+== Step 3: Backup the Application
 
 Create a backup of the entire `backup-demo` namespace:
 
@@ -144,12 +238,12 @@ Watch the backup complete:
 
 [source,bash,role="execute"]
 ----
-oc get backup backup-demo-full -n openshift-adp -w
+oc get backups.velero.io backup-demo-full -n openshift-adp -w
 ----
 
 Press `Ctrl+C` when STATUS shows `Completed`. This backs up every resource in the namespace — Deployments, Services, ConfigMaps, Secrets, everything.
 
-== Simulate a Disaster
+== Step 4: Simulate a Disaster
 
 Delete the entire namespace:
 
@@ -171,7 +265,14 @@ Error from server (NotFound): namespaces "backup-demo" not found
 
 **Everything is gone.** In production, this could be accidental deletion, ransomware, or infrastructure failure.
 
-== Restore from Backup
+Wait a moment for the namespace to fully terminate before restoring:
+
+[source,bash,role="execute"]
+----
+sleep 10
+----
+
+== Step 5: Restore from Backup
 
 Bring it all back:
 
@@ -195,12 +296,12 @@ Watch the restore:
 
 [source,bash,role="execute"]
 ----
-oc get restore restore-demo-full -n openshift-adp -w
+oc get restores.velero.io restore-demo-full -n openshift-adp -w
 ----
 
 Press `Ctrl+C` when `Completed`.
 
-== Verify the Restore
+== Step 6: Verify the Restore
 
 Check everything is back:
 
@@ -222,7 +323,7 @@ This is important configuration data that must survive disasters!
 
 The application, its configuration, and its secrets are all restored exactly as they were.
 
-== Schedule Regular Backups
+== Step 7: Schedule Regular Backups
 
 For production, automate backups with a schedule:
 
@@ -252,7 +353,7 @@ oc get schedules -n openshift-adp
 
 == Summary
 
-You backed up a running application, deleted it completely, and restored it in seconds. In production, this same workflow protects against:
+You configured OADP with on-cluster S3 storage, backed up a running application, deleted it completely, and restored it in seconds. In production, this same workflow protects against:
 
 * Accidental namespace deletion
 * Failed upgrades or patches
@@ -263,8 +364,10 @@ You backed up a running application, deleted it completely, and restored it in s
 
 [source,bash]
 ----
-oc get backups -n openshift-adp          # List backups
-oc get restores -n openshift-adp         # List restores
-oc get schedules -n openshift-adp        # List schedules
-oc get backupstoragelocations -n openshift-adp  # Check storage
+oc get backups.velero.io -n openshift-adp          # List backups
+oc get restores.velero.io -n openshift-adp         # List restores
+oc get schedules -n openshift-adp                  # List schedules
+oc get backupstoragelocations -n openshift-adp     # Check storage
 ----
+
+NOTE: This cluster has multiple CRDs for `backup` and `restore` (from ACM and NooBaa). Always use the fully qualified names `backups.velero.io` and `restores.velero.io` to ensure you're targeting the OADP resources.

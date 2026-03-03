@@ -6,14 +6,14 @@
 **Format:** Hands-on Lab — Real Problem Solving +
 **Audience:** IT Operations, SRE, Platform Engineers
 
-Your cluster is running workloads. Some of them have just broken. Your job is to diagnose and fix three applications that have common production issues — the same kinds of issues that generate real support tickets.
+Your cluster is running a weather application made up of several microservices. Some of them have just broken. Your job is to diagnose and fix each one — these are the same kinds of issues that generate real support tickets.
 
 == Learning Objectives
 
 By the end of this module, you will be able to:
 
 * Read pod events and logs to identify root causes
-* Fix ImagePullBackOff, CrashLoopBackOff, and ConfigMap errors
+* Fix ImagePullBackOff, CrashLoopBackOff, ConfigMap errors, resource constraint violations, and service routing issues
 * Use the Observe → Diagnose → Fix → Verify workflow
 
 == Your Diagnostic Toolkit
@@ -31,72 +31,87 @@ oc describe pod <pod-name> -n <namespace>
 # What did the app say before it died?
 oc logs <pod-name> -n <namespace>
 oc logs <pod-name> -n <namespace> --previous
+
+# Check deployment events (for pods that never got created)
+oc describe deployment <deployment-name> -n <namespace>
+----
+
+== Deploy the Broken Applications
+
+First, create the namespace and deploy the intentionally broken applications:
+
+[source,bash,role="execute"]
+----
+oc create namespace ops-track-demo 2>/dev/null || true
+oc apply -f https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/broken-apps.yaml
 ----
 
 == See What's Broken
 
-Three applications have been deployed with intentional misconfigurations. Let's see the damage:
+Five microservices have been deployed with intentional misconfigurations. Let's see the damage:
 
 [source,bash,role="execute"]
 ----
 oc get pods -n ops-track-demo
 ----
 
-You should see four pods in error states:
+You should see something like:
 
 ----
-NAME                             READY   STATUS                       RESTARTS      AGE
-broken-config-xxxxx              0/1     CreateContainerConfigError   0             30s
-broken-crash-xxxxx               0/1     CrashLoopBackOff             2 (20s ago)   30s
-broken-image-xxxxx               0/1     ImagePullBackOff             0             30s
-broken-oom-xxxxx                 0/1     OOMKilled                    3 (10s ago)   30s
+NAME                                READY   STATUS                       RESTARTS   AGE
+weather-api-xxxxx                   0/1     CrashLoopBackOff             2          30s
+weather-backend-xxxxx               0/1     CreateContainerConfigError   0          30s
+weather-frontend-xxxxx              0/1     ImagePullBackOff             0          30s
+weather-proxy-xxxxx                 1/1     Running                      0          30s
 ----
 
-**Your mission:** Fix all four.
+NOTE: You might notice `weather-cache` is missing from the pod list — that's one of the problems to investigate. Also, `weather-proxy` shows Running but has its own issue.
 
-== Problem 1: ImagePullBackOff
+**Your mission:** Fix all five.
+
+== Problem 1: ImagePullBackOff (weather-frontend)
 
 === Diagnose
 
 [source,bash,role="execute"]
 ----
-oc describe pod -l app=broken-image -n ops-track-demo | tail -10
+oc describe pod -l app=weather-frontend -n ops-track-demo | tail -10
 ----
 
-Look at the **Events** section. You should see something like:
+Look at the **Events** section. You should see:
 
 ----
-Warning  Failed     Back-off pulling image "registry.access.redhat.com/ubi9/httpd-24:v9.99-DOESNOTEXIST"
+Warning  Failed   Back-off pulling image "quay.io/openshifttest/hello-openshift:1.2.1"
 ----
 
-The image tag doesn't exist. Let's confirm:
+The image tag `1.2.1` doesn't exist. Let's confirm the image reference:
 
 [source,bash,role="execute"]
 ----
-oc get deployment broken-image -n ops-track-demo -o jsonpath='{.spec.template.spec.containers[0].image}'
+oc get deployment weather-frontend -n ops-track-demo -o jsonpath='{.spec.template.spec.containers[0].image}'
 ----
 
 === Fix
 
-Update the image to a valid tag:
+Update the image to the correct tag (`1.2.0`):
 
 [source,bash,role="execute"]
 ----
-oc set image deployment/broken-image app=registry.access.redhat.com/ubi9/httpd-24:latest -n ops-track-demo
+oc set image deployment/weather-frontend weather-frontend=quay.io/openshifttest/hello-openshift:1.2.0 -n ops-track-demo
 ----
 
 === Verify
 
 [source,bash,role="execute"]
 ----
-oc get pods -l app=broken-image -n ops-track-demo
+oc get pods -l app=weather-frontend -n ops-track-demo
 ----
 
 You should see `1/1 Running`.
 
 **Takeaway:** ImagePullBackOff = wrong image name, missing tag, or no pull credentials. Always check `oc describe pod` → Events.
 
-== Problem 2: CrashLoopBackOff
+== Problem 2: CrashLoopBackOff (weather-api)
 
 === Diagnose
 
@@ -104,37 +119,32 @@ The pod keeps starting and crashing. The first thing to check is **logs** — wh
 
 [source,bash,role="execute"]
 ----
-oc logs deployment/broken-crash -n ops-track-demo
+oc logs deployment/weather-api -n ops-track-demo
 ----
 
 You should see:
 
 ----
-cat: /config/app.conf: No such file or directory
+Error: Missing required config file /etc/weather/config.yaml
 ----
 
-The app is trying to read a config file that doesn't exist. Let's check the command:
-
-[source,bash,role="execute"]
-----
-oc get deployment broken-crash -n ops-track-demo -o jsonpath='{.spec.template.spec.containers[0].command}'
-----
+The app is trying to read a config file that doesn't exist.
 
 === Fix
 
-Create the missing config file as a ConfigMap and mount it into the container:
+Create the missing config file as a ConfigMap and mount it into the container. We'll also fix the container command to run the actual application:
 
 [source,bash,role="execute"]
 ----
-oc create configmap app-config --from-literal=app.conf="server.port=8080" -n ops-track-demo
+oc create configmap weather-api-config --from-literal=config.yaml="port: 8080" -n ops-track-demo
 ----
 
 [source,bash,role="execute"]
 ----
-oc patch deployment broken-crash -n ops-track-demo --type=json -p='[
-  {"op":"add","path":"/spec/template/spec/volumes","value":[{"name":"config","configMap":{"name":"app-config"}}]},
-  {"op":"add","path":"/spec/template/spec/containers/0/volumeMounts","value":[{"name":"config","mountPath":"/config"}]},
-  {"op":"replace","path":"/spec/template/spec/containers/0/command","value":["/bin/sh","-c","cat /config/app.conf && sleep 3600"]}
+oc patch deployment weather-api -n ops-track-demo --type=json -p='[
+  {"op":"add","path":"/spec/template/spec/volumes","value":[{"name":"config","configMap":{"name":"weather-api-config"}}]},
+  {"op":"add","path":"/spec/template/spec/containers/0/volumeMounts","value":[{"name":"config","mountPath":"/etc/weather"}]},
+  {"op":"replace","path":"/spec/template/spec/containers/0/command","value":["/bin/sh","-c","cat /etc/weather/config.yaml && echo Config loaded successfully && sleep 3600"]}
 ]'
 ----
 
@@ -142,40 +152,89 @@ oc patch deployment broken-crash -n ops-track-demo --type=json -p='[
 
 [source,bash,role="execute"]
 ----
-oc get pods -l app=broken-crash -n ops-track-demo
+oc get pods -l app=weather-api -n ops-track-demo
 ----
 
-You should see `1/1 Running`. Check it read the config:
-
-[source,bash,role="execute"]
-----
-oc logs deployment/broken-crash -n ops-track-demo
-----
-
-You should see `server.port=8080`.
+You should see `1/1 Running`.
 
 **Takeaway:** CrashLoopBackOff = the app starts then exits. Always check `oc logs` and `oc logs --previous`. Common causes: missing config, bad command, failed health checks, out of memory.
 
-== Problem 3: CreateContainerConfigError
+== Problem 3: Resource Constraint Violation (weather-cache)
 
 === Diagnose
 
+You may have noticed `weather-cache` doesn't appear in the pod list at all. Let's check the deployment:
+
 [source,bash,role="execute"]
 ----
-oc describe pod -l app=broken-config -n ops-track-demo | grep -E "Warning|Error|configmap"
+oc get deployment weather-cache -n ops-track-demo
+----
+
+It shows `0/1` ready — the pod was never created. When a pod can't even be created, check the **ReplicaSet** events:
+
+[source,bash,role="execute"]
+----
+oc describe replicaset -l app=weather-cache -n ops-track-demo | tail -5
 ----
 
 You should see:
 
 ----
-Warning  Failed  Error: configmap "app-settings" not found
+Warning  FailedCreate  ...  maximum memory usage per Container is 2Gi, but limit is 1Ti
+----
+
+A `LimitRange` in the namespace caps containers at 2Gi memory, but the deployment requests `512Gi` (a typo — should be `512Mi`). Let's confirm:
+
+[source,bash,role="execute"]
+----
+oc get deployment weather-cache -n ops-track-demo -o jsonpath='{.spec.template.spec.containers[0].resources}' | python3 -m json.tool
+----
+
+[source,bash,role="execute"]
+----
+oc get limitrange -n ops-track-demo -o yaml | grep -A4 "max:"
+----
+
+=== Fix
+
+Fix the memory typo — change `512Gi` to `512Mi` and `1Ti` to `1Gi`:
+
+[source,bash,role="execute"]
+----
+oc set resources deployment/weather-cache -n ops-track-demo --requests=cpu=100m,memory=512Mi --limits=cpu=500m,memory=1Gi
+----
+
+=== Verify
+
+[source,bash,role="execute"]
+----
+oc get pods -l app=weather-cache -n ops-track-demo
+----
+
+You should see `1/1 Running`. The pod can now be created because the resource requests fit within the LimitRange.
+
+**Takeaway:** When a pod never appears at all, check the ReplicaSet events (`oc describe replicaset`). LimitRanges and ResourceQuotas can silently prevent pods from being created.
+
+== Problem 4: CreateContainerConfigError (weather-backend)
+
+=== Diagnose
+
+[source,bash,role="execute"]
+----
+oc describe pod -l app=weather-backend -n ops-track-demo | grep -E "Warning|Error|configmap"
+----
+
+You should see:
+
+----
+Warning  Failed  Error: configmap "weather-config" not found
 ----
 
 The deployment references a ConfigMap that doesn't exist:
 
 [source,bash,role="execute"]
 ----
-oc get deployment broken-config -n ops-track-demo -o jsonpath='{.spec.template.spec.containers[0].envFrom}' | python3 -m json.tool
+oc get deployment weather-backend -n ops-track-demo -o jsonpath='{.spec.template.spec.containers[0].envFrom}' | python3 -m json.tool
 ----
 
 === Fix
@@ -184,9 +243,9 @@ Create the missing ConfigMap with the keys the app expects:
 
 [source,bash,role="execute"]
 ----
-oc create configmap app-settings \
-  --from-literal=DATABASE_URL="postgresql://db:5432/myapp" \
-  --from-literal=LOG_LEVEL="info" \
+oc create configmap weather-config \
+  --from-literal=API_ENDPOINT="http://weather-api:8080" \
+  --from-literal=CACHE_TTL="300" \
   -n ops-track-demo
 ----
 
@@ -194,117 +253,73 @@ Restart the pod to pick up the new ConfigMap:
 
 [source,bash,role="execute"]
 ----
-oc delete pod -l app=broken-config -n ops-track-demo
+oc delete pod -l app=weather-backend -n ops-track-demo
 ----
 
 === Verify
 
 [source,bash,role="execute"]
 ----
-oc get pods -l app=broken-config -n ops-track-demo
+oc get pods -l app=weather-backend -n ops-track-demo
 ----
 
 You should see `1/1 Running`. Confirm the environment variables are injected:
 
 [source,bash,role="execute"]
 ----
-oc exec deployment/broken-config -n ops-track-demo -- env | grep -E "DATABASE|LOG"
+oc exec deployment/weather-backend -n ops-track-demo -- env | grep -E "API_ENDPOINT|CACHE_TTL"
 ----
 
 You should see:
 
 ----
-DATABASE_URL=postgresql://db:5432/myapp
-LOG_LEVEL=info
+API_ENDPOINT=http://weather-api:8080
+CACHE_TTL=300
 ----
 
 **Takeaway:** CreateContainerConfigError = a referenced ConfigMap or Secret doesn't exist. Check `oc describe pod` for "not found" messages. Create the missing resource and restart the pod.
 
-== Problem 4: OOMKilled
+== Problem 5: Service Routing Broken (weather-proxy)
 
 === Diagnose
 
-This pod keeps restarting, but it's not a startup failure — it runs for a few seconds then gets killed:
+This pod is `Running` — so what's wrong? The service isn't routing traffic to it. Check the endpoints:
 
 [source,bash,role="execute"]
 ----
-oc get pods -l app=broken-oom -n ops-track-demo
+oc get endpointslice -l kubernetes.io/service-name=weather-proxy -n ops-track-demo
 ----
 
-You should see:
+You should see `ENDPOINTS` is empty (`<unset>`). The service has no backends.
 
-----
-NAME                          READY   STATUS    RESTARTS      AGE
-broken-oom-xxxxx              0/1     OOMKilled  3 (10s ago)   2m
-----
-
-The status `OOMKilled` means the Linux kernel terminated the process because it exceeded its memory limit.
+Compare the service selector with the pod labels:
 
 [source,bash,role="execute"]
 ----
-oc describe pod -l app=broken-oom -n ops-track-demo | grep -A5 "Last State"
+echo "=== Service selector ===" && oc get svc weather-proxy -n ops-track-demo -o jsonpath='{.spec.selector}' | python3 -m json.tool && echo "=== Pod labels ===" && oc get pod -l app=weather-proxy -n ops-track-demo -o jsonpath='{.items[0].metadata.labels}' | python3 -m json.tool
 ----
 
-You should see:
-
-----
-    Last State:     Terminated
-      Reason:       OOMKilled
-      Exit Code:    137
-----
-
-**Exit Code 137** = killed by signal 9 (SIGKILL from the OOM killer).
-
-=== Check the Memory Limit
-
-[source,bash,role="execute"]
-----
-oc get deployment broken-oom -n ops-track-demo -o jsonpath='{.spec.template.spec.containers[0].resources}' | python3 -m json.tool
-----
-
-You should see:
-
-----
-{
-    "limits": {
-        "memory": "32Mi"
-    },
-    "requests": {
-        "memory": "16Mi"
-    }
-}
-----
-
-**Root Cause:** The memory limit is 32Mi — far too low for the application's processing workload.
+Spot the difference? The service selector says `weather-proxi` (typo) but the pod label is `weather-proxy`.
 
 === Fix
 
-First, increase the memory limit to give the app more room:
+Patch the service selector to match the actual pod label:
 
 [source,bash,role="execute"]
 ----
-oc set resources deployment/broken-oom -n ops-track-demo --limits=memory=256Mi --requests=memory=128Mi
-----
-
-In this case, the application also has a memory leak that would eventually consume any limit. In a real scenario, you'd file a bug with the development team. For now, let's also fix the application command:
-
-[source,bash,role="execute"]
-----
-oc patch deployment broken-oom -n ops-track-demo --type=json -p='[
-  {"op":"replace","path":"/spec/template/spec/containers/0/command","value":["/bin/sh","-c","echo Data processing started; sleep 3600"]}
-]'
+oc patch svc weather-proxy -n ops-track-demo -p '{"spec":{"selector":{"app":"weather-proxy"}}}'
 ----
 
 === Verify
 
 [source,bash,role="execute"]
 ----
-oc get pods -l app=broken-oom -n ops-track-demo
+oc get endpointslice -l kubernetes.io/service-name=weather-proxy -n ops-track-demo
 ----
 
-You should see `1/1 Running` with 0 restarts.
+You should now see the pod's IP in the `ENDPOINTS` column. Traffic will flow to the pod.
 
-**Takeaway:** OOMKilled = the app consumed more memory than its limit allows. Check `oc describe pod` → Last State → Reason: OOMKilled → Exit Code 137. The fix is either increase the limit or fix the memory leak in the application. In production, use `oc adm top pods` to monitor actual memory usage over time.
+**Takeaway:** When a pod is Running but the service isn't working, check if the service selector matches the pod labels. A single character typo can break routing. Use `oc get endpointslice` to verify.
 
 == All Fixed
 
@@ -313,14 +328,15 @@ You should see `1/1 Running` with 0 restarts.
 oc get pods -n ops-track-demo
 ----
 
-All four pods should now be `Running`:
+All five pods should now be `Running`:
 
 ----
-NAME                             READY   STATUS    RESTARTS   AGE
-broken-config-xxxxx              1/1     Running   0          30s
-broken-crash-xxxxx               1/1     Running   0          45s
-broken-image-xxxxx               1/1     Running   0          60s
-broken-oom-xxxxx                 1/1     Running   0          20s
+NAME                                READY   STATUS    RESTARTS   AGE
+weather-api-xxxxx                   1/1     Running   0          1m
+weather-backend-xxxxx               1/1     Running   0          1m
+weather-cache-xxxxx                 1/1     Running   0          1m
+weather-frontend-xxxxx              1/1     Running   0          1m
+weather-proxy-xxxxx                 1/1     Running   0          5m
 ----
 
 == Quick Reference
@@ -341,26 +357,27 @@ broken-oom-xxxxx                 1/1     Running   0          20s
 |ConfigMap/Secret missing
 |`oc describe pod` → Events → "not found" message
 
+|**No pod created**
+|LimitRange/ResourceQuota violation
+|`oc describe replicaset` → Events → Check resource requests
+
 |**Pending**
 |Can't schedule pod
 |`oc describe pod` → Events → Check resources/node capacity
 
-|**OOMKilled**
-|Out of memory
-|`oc describe pod` → Last State → Increase memory limits
-
 |**Running but not working**
-|App bug or network issue
-|`oc logs <pod>` + `oc get endpoints`
+|Service selector mismatch or app bug
+|`oc get endpointslice` + `oc logs <pod>`
 |===
 
 == Summary
 
-You diagnosed and fixed four of the most common OpenShift issues:
+You diagnosed and fixed five common OpenShift issues:
 
 * **ImagePullBackOff** — wrong image tag → `oc set image`
 * **CrashLoopBackOff** — missing config file → create ConfigMap + volume mount
+* **Resource constraint** — memory typo exceeded LimitRange → `oc set resources`
 * **CreateContainerConfigError** — missing ConfigMap → `oc create configmap`
-* **OOMKilled** — memory limit too low → `oc set resources`
+* **Service selector mismatch** — typo in selector → `oc patch svc`
 
-The pattern is always the same: **check status → describe pod → read logs/events → fix → verify.**
+The pattern is always the same: **check status → describe pod/replicaset → read logs/events → fix → verify.**

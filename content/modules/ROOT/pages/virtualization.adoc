@@ -122,6 +122,17 @@ image::virt-rhel9-vm-console.png[rhel9-vm web console]
 
 === Serial Console (CLI)
 
+First, install the `virtctl` CLI tool (downloaded directly from the cluster):
+
+[source,bash,role="execute"]
+----
+VIRTCTL_URL=$(oc get consoleclidownload virtctl-clidownloads-kubevirt-hyperconverged -o jsonpath='{.spec.links[?(@.text=="Download virtctl for Linux for x86_64")].href}')
+curl -sL "$VIRTCTL_URL" | tar xz -C /tmp && sudo mv /tmp/virtctl /usr/local/bin/
+virtctl version --client
+----
+
+Now connect to the VM's serial console:
+
 [source,bash,role="execute"]
 ----
 virtctl console rhel9-vm
