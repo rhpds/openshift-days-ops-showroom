@@ -27,7 +27,7 @@ By the end of this module, you will be able to:
 
 == OpenShift Networking Architecture
 
-OpenShift 4.x uses **OVN-Kubernetes** as the default Container Network Interface (CNI) plugin. OVN-Kubernetes replaced the legacy OpenShift SDN in OpenShift 4.12.
+OpenShift uses **OVN-Kubernetes** as the default network plugin. OVN-Kubernetes became the default for new installations in OpenShift 4.12 and is the only supported network plugin in OpenShift 4.20.
 
 **What OVN-Kubernetes provides:**
 
@@ -207,6 +207,63 @@ You should see both `deny-all` and `allow-from-frontend` policies.
 |Use annotations to document policy purpose
 |===
 
+=== AdminNetworkPolicy: Cluster-Scoped Policies
+
+Standard NetworkPolicies are namespace-scoped — each team manages their own. **AdminNetworkPolicy (ANP)** is a cluster-scoped resource that lets platform administrators enforce network policies across all namespaces, with priority over namespace-scoped policies.
+
+View the available ANP API:
+
+[source,bash,role="execute"]
+----
+oc api-resources | grep adminnetworkpolicy
+----
+
+Create a cluster-wide policy that blocks external DNS to a specific provider:
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: policy.networking.k8s.io/v1alpha1
+kind: AdminNetworkPolicy
+metadata:
+  name: cluster-deny-external-dns
+spec:
+  priority: 50
+  subject:
+    namespaces:
+      matchLabels:
+        kubernetes.io/metadata.name: netpol-backend
+  egress:
+  - name: deny-external-dns
+    action: Deny
+    to:
+    - networks:
+      - 8.8.8.8/32
+    ports:
+    - portNumber:
+        port: 53
+        protocol: UDP
+EOF
+----
+
+Verify it was created:
+
+[source,bash,role="execute"]
+----
+oc get adminnetworkpolicy
+----
+
+The `PRIORITY` field determines evaluation order — lower numbers are evaluated first. This allows platform teams to enforce security baselines that namespace owners cannot override.
+
+Clean up:
+
+[source,bash,role="execute"]
+----
+oc delete adminnetworkpolicy cluster-deny-external-dns
+----
+
+NOTE: AdminNetworkPolicy uses `policy.networking.k8s.io/v1alpha1`. There is also `BaselineAdminNetworkPolicy` which acts as a fallback — it applies only when no other ANP or NetworkPolicy matches. Together, ANP and BANP give platform teams guardrails while still allowing namespace-level customization.
+
 == EgressFirewall: Controlling Outbound Traffic
 
 **EgressFirewall** controls which external IPs/domains pods can reach. This is an OVN-Kubernetes feature.
@@ -266,7 +323,7 @@ oc get egressfirewall -n netpol-frontend -o yaml
 
 === DNS-Based EgressFirewall
 
-You can also use DNS names (OVN resolves them):
+You can also use DNS names (OVN resolves them). Wildcard DNS name resolution in EgressFirewall rules is a Technology Preview feature in OpenShift 4.20:
 
 [source,bash,role="execute"]
 ----
@@ -310,6 +367,17 @@ This allows only Red Hat and Quay traffic, blocking everything else.
 |Block unknown external endpoints
 |===
 
+[IMPORTANT]
+====
+**EgressFirewall limitations to be aware of in production:**
+
+* Only **one EgressFirewall** object per namespace (must be named `default`)
+* Rules do not apply to traffic routed through OpenShift Routes or Ingress
+* Maximum of **8000 rules** per EgressFirewall
+* If you use a deny-all rule, pods lose access to the OpenShift API server unless you explicitly allow it
+* NetworkPolicy does **not** apply to pods using host networking — those pods bypass network policies entirely
+====
+
 == EgressIP: Predictable Source IPs
 
 **EgressIP** assigns a fixed source IP for egress traffic from specific pods. Useful when external firewalls need to allowlist your cluster.
@@ -334,7 +402,7 @@ EgressIP requires:
 oc get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.annotations.k8s\.ovn\.org/node-egress-label}{"\n"}{end}'
 ----
 
-Nodes need the annotation `k8s.ovn.org/node-egress-label` or the label `k8s.ovn.org/egress-assignable` to host EgressIPs.
+Nodes must have the label `k8s.ovn.org/egress-assignable=""` to be eligible to host EgressIPs.
 
 === EgressIP Configuration Example
 

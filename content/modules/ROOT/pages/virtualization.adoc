@@ -276,7 +276,23 @@ Check snapshot status:
 oc get vmsnapshot
 ----
 
-To restore, stop the VM first then apply a `VirtualMachineRestore` CR pointing to the snapshot.
+To restore from a snapshot, you would stop the VM and apply a `VirtualMachineRestore` CR:
+
+[source,yaml]
+----
+apiVersion: snapshot.kubevirt.io/v1beta1
+kind: VirtualMachineRestore
+metadata:
+  name: rhel9-vm-restore
+spec:
+  target:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: rhel9-vm
+  virtualMachineSnapshotName: rhel9-vm-snap-1
+----
+
+This restores the VM's disks and configuration to the exact state captured in the snapshot.
 
 == Summary
 

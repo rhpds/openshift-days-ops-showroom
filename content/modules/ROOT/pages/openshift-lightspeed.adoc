@@ -86,7 +86,7 @@ Key configuration parameters:
 ** `models` - The model name to use from this provider
 * `spec.ols.defaultModel` - Specifies which model to use by default for queries
 * `spec.ols.defaultProvider` - Sets the default provider when multiple are configured
-* `spec.ols.introspectionEnabled` - When set to `true`, OpenShift Lightspeed automatically deploys an MCP server that allows users to query cluster resources to provide context-aware responses
+* `spec.ols.introspectionEnabled` - When set to `true`, OpenShift Lightspeed automatically deploys an MCP server that allows users to query cluster resources to provide context-aware responses (Technology Preview in OpenShift 4.20)
 
 == Wait for OpenShift Lightspeed to Initialize
 

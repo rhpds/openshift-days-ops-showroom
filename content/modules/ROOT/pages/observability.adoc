@@ -62,7 +62,7 @@ Navigate to **Observe -> Dashboards** in the OpenShift console. Key dashboards i
 
 === User Workload Monitoring
 
-OpenShift can also scrape metrics from your own applications. Verify user workload monitoring is enabled:
+OpenShift can also scrape metrics from your own applications. User workload monitoring is not enabled by default — it has been pre-enabled on this workshop cluster. Verify it's running:
 
 [source,bash,role="execute"]
 ----
@@ -70,6 +70,24 @@ oc get pods -n openshift-user-workload-monitoring
 ----
 
 If pods are running, any application that exposes a `/metrics` endpoint can be scraped by creating a `ServiceMonitor` or `PodMonitor` resource.
+
+To enable user workload monitoring on a new cluster, you would apply:
+
+[source,bash,role="copypaste"]
+----
+oc apply -f - <<EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+data:
+  config.yaml: |
+    enableUserWorkload: true
+EOF
+----
+
+This creates Prometheus and Thanos Ruler pods in the `openshift-user-workload-monitoring` namespace dedicated to scraping user application metrics.
 
 == Alerting with Alertmanager
 

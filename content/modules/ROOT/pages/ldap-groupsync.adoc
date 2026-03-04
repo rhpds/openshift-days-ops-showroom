@@ -20,7 +20,7 @@ As an operations team, you need to:
 
 By the end of this module, you will be able to:
 
-* Understand OpenShift identity provider options (LDAP, OIDC, SAML, GitHub)
+* Understand OpenShift identity provider options (LDAP, OIDC, HTPasswd, GitHub)
 * Configure LDAP authentication with OAuth
 * Sync LDAP groups to OpenShift groups
 * Implement role-based access control (RBAC)
@@ -40,9 +40,9 @@ OpenShift uses an **OAuth server** for authentication. The OAuth server validate
 * **GitHub** - OAuth authentication with GitHub or GitHub Enterprise
 * **GitLab** - OAuth authentication with GitLab
 * **Google** - OAuth authentication with Google accounts
-* **OpenID Connect** - Integrate with OpenID Connect identity providers (Azure AD, Okta, Keycloak, Red Hat SSO)
+* **OpenID Connect** - Integrate with OpenID Connect identity providers (Microsoft Entra ID, Okta, Keycloak, Red Hat SSO)
 * **Request header** - Proxy authentication for enterprise SSO systems
-* **Basic authentication (deprecated)** - Remote Basic authentication (not recommended)
+* **Basic authentication** - Remote Basic authentication (not recommended for most use cases)
 
 **When to use each:**
 
@@ -712,7 +712,7 @@ Check for degraded conditions and follow remediation steps.
 ✅ **Permission Testing** - Verified users have correct access levels +
 ✅ **Security Hardening** - Learned to remove kubeadmin and automate group sync
 
-**Key takeaway:** OpenShift authentication integrates with existing identity management (LDAP, OIDC, SAML) and uses group-based RBAC for scalable permission management.
+**Key takeaway:** OpenShift authentication integrates with existing identity management (LDAP, OIDC, HTPasswd, GitHub, and others) and uses group-based RBAC for scalable permission management.
 
 **Production recommendations:**
 

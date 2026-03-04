@@ -75,8 +75,7 @@ OpenShift can be installed on virtually any infrastructure:
 * Microsoft Azure
 * Google Cloud Platform (GCP)
 * IBM Cloud
-* Alibaba Cloud
-* Oracle Cloud
+* Oracle Cloud Infrastructure (OCI)
 
 **Private Infrastructure:**
 

@@ -10,7 +10,7 @@
 
 Modern organizations use OpenID Connect (OIDC) for single sign-on across applications. In this hands-on lab, you'll deploy **Red Hat Single Sign-On (based on Keycloak)** in your OpenShift cluster and integrate it with OpenShift authentication.
 
-This demonstrates how to integrate OpenShift with enterprise OIDC providers - the same concepts apply to Azure AD, Okta, Google Workspace, and other OIDC providers.
+This demonstrates how to integrate OpenShift with enterprise OIDC providers - the same concepts apply to Microsoft Entra ID, Okta, Google Workspace, and other OIDC providers.
 
 As an operations team, you will:
 - Deploy Red Hat SSO using OpenShift Operators
@@ -71,7 +71,7 @@ OpenID Connect is an identity layer built on top of OAuth 2.0. It allows applica
 **Key OIDC Advantage:** Groups automatically sync from ID token claims without manual commands!
 
 **When to use OIDC:**
-- Azure Active Directory (Microsoft 365, Azure)
+- Microsoft Entra ID (formerly Azure Active Directory)
 - Okta (Enterprise SSO platform)
 - Google Workspace
 - Red Hat Single Sign-On (self-hosted)
@@ -89,6 +89,8 @@ The Red Hat SSO Operator manages Keycloak instances in OpenShift.
 ----
 oc create namespace rhsso
 ----
+
+NOTE: This lab uses Red Hat Single Sign-On (RHSSO). For new deployments, consider the **Red Hat build of Keycloak (RHBK)** which is the successor product with a Quarkus-based architecture and improved performance.
 
 **Install the operator:**
 
@@ -220,6 +222,8 @@ oc create secret generic rhsso-client-secret \
 
 **Configure OAuth to use Red Hat SSO:**
 
+IMPORTANT: This `oc apply` replaces the entire OAuth spec, including any previously configured identity providers (e.g., HTPasswd from the LDAP module). Only the OIDC provider defined below will be active after applying.
+
 [source,bash,role="execute"]
 ----
 KEYCLOAK_URL=$(oc get route keycloak -n rhsso -o jsonpath='{.spec.host}')
@@ -279,7 +283,7 @@ All oauth-openshift pods should be `Running` and `Ready 1/1`.
 
 == Step 5: Test OIDC Authentication
 
-OIDC uses the **authorization code flow** which requires a web browser for authentication. Unlike LDAP, you cannot use `oc login -u username -p password` directly with OIDC.
+OIDC typically uses the **authorization code flow** which requires a web browser for authentication. Unlike LDAP, you generally cannot use `oc login -u username -p password` directly with OIDC unless your provider supports the Resource Owner Password Credentials (ROPC) grant flow.
 
 **Understanding OIDC Login Flow:**
 
@@ -528,7 +532,7 @@ This demonstrates automatic group sync - no manual `oc adm groups sync` command 
 **For production OIDC integration:**
 
 1. **Use external identity provider:**
-   - Azure AD (Microsoft Entra ID)
+   - Microsoft Entra ID (formerly Azure Active Directory)
    - Okta
    - Google Workspace
    - Enterprise Keycloak cluster
@@ -659,7 +663,7 @@ This cleanup ensures the cluster is ready for other authentication modules. The 
 * **Red Hat SSO (Keycloak)** - Official Red Hat product for enterprise SSO
 * **Operator-based deployment** - Kubernetes-native management
 * **Real-time updates** - Group membership changes take effect on next login
-* **Production-ready** - Same approach for Azure AD, Okta, Google Workspace
+* **Production-ready** - Same approach for Microsoft Entra ID, Okta, Google Workspace
 
 **OIDC vs LDAP:**
 - **OIDC:** Automatic group sync, modern auth, cloud-native, better for SaaS/cloud environments
