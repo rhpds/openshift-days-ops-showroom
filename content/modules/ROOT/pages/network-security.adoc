@@ -188,6 +188,8 @@ oc get networkpolicy -n netpol-backend
 
 You should see both `deny-all` and `allow-from-frontend` policies.
 
+TIP: In the **OCP Console**, navigate to **Networking -> NetworkPolicies** (project: `netpol-backend`). Click on any policy to see the ingress/egress rules rendered visually — peer selectors and allowed ports are displayed as readable rules rather than nested YAML. This is useful for auditing security policies across namespaces.
+
 === NetworkPolicy Best Practices
 
 [cols="1,2"]

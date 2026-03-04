@@ -279,6 +279,8 @@ No updates available. You may still upgrade to a specific release image
 with --to-image or wait for new updates to be available.
 ----
 
+In the **OCP Console**, navigate to **Administration -> Cluster Settings**. The **Details** tab shows the current version, update channel, and — when updates are available — a visual upgrade path graph showing the route from your current version to available targets. This is far more informative than the CLI text output for planning upgrades.
+
 **Key takeaway:** Operators manage cluster updates. When updates are available, you can upgrade with a single command: `oc adm upgrade --to=<version>`
 
 == Step 3: Verify Node Health and Resources
@@ -433,7 +435,9 @@ oc get pods -n openshift-monitoring | grep prometheus
 
 You should see `prometheus-k8s-0` and `prometheus-k8s-1` pods in Running state.
 
-**Accessing Prometheus:** In OpenShift, Prometheus is accessed through the web console at **Observe → Metrics**, not via direct URL. The prometheus-k8s route only exposes the `/api` endpoint for programmatic access, not the web UI.
+The best way to verify monitoring is working is to actually use it. In the **OCP Console**, navigate to **Observe -> Dashboards** and select any dashboard (try **etcd** or **Kubernetes / Compute Resources / Cluster**). If the dashboards load with real data and graphs, monitoring is fully operational.
+
+**Accessing Prometheus:** Prometheus is accessed through the web console at **Observe -> Metrics**, not via direct URL. The prometheus-k8s route only exposes the `/api` endpoint for programmatic access, not the web UI.
 
 **Note:** In production, you'd set up alerts, custom dashboards, and integrate with external monitoring systems
 

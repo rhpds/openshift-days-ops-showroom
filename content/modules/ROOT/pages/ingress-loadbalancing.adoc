@@ -198,6 +198,8 @@ oc get routes -A | head -20
 
 Notice different termination types: `edge`, `passthrough`, `reencrypt`.
 
+TIP: In the **OCP Console**, navigate to **Networking -> Routes** (select **All Projects**). The console shows each route with its TLS termination type as a badge, the target service, and a clickable URL — you can test routes directly from the console without needing `curl`.
+
 == Services: Internal Load Balancing
 
 OpenShift Services provide internal load balancing and service discovery.

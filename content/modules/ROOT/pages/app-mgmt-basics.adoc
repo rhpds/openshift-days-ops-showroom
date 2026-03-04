@@ -208,6 +208,8 @@ You should see:
     Readiness:  tcp-socket :8080 delay=5s timeout=1s period=10s
 ----
 
+TIP: In the **OCP Console**, navigate to **Workloads -> Deployments -> weathernow** and select **Actions -> Edit Health Checks**. The form visually explains the difference between liveness, readiness, and startup probes — and lets you configure them without writing YAML. This is a great way to understand the probe types.
+
 Now if the application becomes unresponsive:
 
 * **Readiness** probe fails → pod removed from service (no traffic)

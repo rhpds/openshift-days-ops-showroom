@@ -233,7 +233,9 @@ Trigger a live migration:
 virtctl migrate rhel9-vm
 ----
 
-Watch the migration:
+In the **Fleet Virtualization** console, click **rhel9-vm** and watch the **Migrations** tab — it shows migration progress with phases (Scheduling → TargetReady → Running → Succeeded). The **Overview** tab updates the node name when the migration completes.
+
+You can also watch via CLI:
 
 [source,bash,role="execute"]
 ----
