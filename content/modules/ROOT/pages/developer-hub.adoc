@@ -166,7 +166,7 @@ Click on a pod to see:
 
 The RHDH Operator manages the Backstage instance:
 
-1. Go to **Operators** -> **Installed Operators**
+1. Go to **Ecosystem** -> **Installed Operators**
 2. Select **All Projects** or **rhdh-operator**
 3. Click on **Red Hat Developer Hub**
 4. Under **Provided APIs**, you'll see the `Backstage` custom resource

@@ -58,7 +58,7 @@ Think of it as: **Kubernetes + Everything Ops Teams Need**
 - Security scanning
 |**All included:** +
 - Integrated image registry +
-- Prometheus & Grafana +
+- Prometheus monitoring stack with built-in dashboards +
 - Loki logging +
 - Ingress routing +
 - Tekton Pipelines +

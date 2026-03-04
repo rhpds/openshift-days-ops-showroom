@@ -77,8 +77,8 @@ Red Hat categorizes installations into two main approaches:
 
 OpenShift can be installed on:
 
-* **Public cloud**: AWS, Azure, GCP, IBM Cloud, Alibaba Cloud
-* **Private cloud**: VMware vSphere, Red Hat Virtualization, Red Hat OpenStack
+* **Public cloud**: AWS, Azure, GCP, IBM Cloud, Oracle Cloud Infrastructure (OCI)
+* **Private cloud**: VMware vSphere, Red Hat OpenStack Platform (RHOSP), Nutanix
 * **Bare metal**: Physical servers (via Assisted Installer or Agent-based Installer)
 * **Specialized platforms**: IBM Z, IBM LinuxONE, IBM Power
 

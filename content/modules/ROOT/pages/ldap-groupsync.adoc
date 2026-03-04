@@ -71,7 +71,7 @@ Look at the `spec.identityProviders` section. You'll see that an `htpasswd` iden
 
 [NOTE]
 ====
-In a fresh cluster, `spec` would be empty (`spec: {}`). This workshop cluster has HTPasswd pre-configured. When you add LDAP below, it will be added alongside the existing HTPasswd provider so both work simultaneously.
+In a fresh cluster, `spec` would be empty (`spec: {}`). This workshop cluster has HTPasswd pre-configured. The OAuth configuration below includes both the existing HTPasswd provider and the new LDAP provider so both work simultaneously.
 ====
 
 **How does `kubeadmin` work then?**
@@ -143,6 +143,12 @@ metadata:
   name: cluster
 spec:
   identityProviders:
+  - name: htpasswd
+    mappingMethod: claim
+    type: HTPasswd
+    htpasswd:
+      fileData:
+        name: htpasswd
   - name: ldap
     mappingMethod: claim
     type: LDAP
