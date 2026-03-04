@@ -45,11 +45,11 @@ Check the pod is running:
 oc get pods -n app-management
 ----
 
-You should see one pod in `Running` status.
+You should see one pod in `Running` status. You can also see your pod in the **OCP Console** at **Workloads -> Pods** (project: `app-management`). Click the pod name to see details, logs, events, and resource usage — all in one view.
 
 == Inspect Your Application
 
-Before moving on, get familiar with the two most important diagnostic commands. These work on any pod in any namespace.
+Before moving on, get familiar with the two most important diagnostic commands. These work on any pod in any namespace. The console's pod detail view (click any pod name) shows the same information across the **Details**, **Events**, and **Logs** tabs — the console log viewer supports real-time streaming, text search, and downloading.
 
 Get detailed information about a pod — events, node placement, container status:
 
@@ -114,7 +114,9 @@ One pod isn't enough for production. Scale to 3 replicas:
 oc scale deployment weathernow --replicas=3
 ----
 
-Watch the new pods appear:
+Now switch to the **OCP Console** tab: **Workloads -> Pods** (project: `app-management`). Watch the new pods appear in real-time with status transitions (Pending → ContainerCreating → Running).
+
+You can also verify via CLI:
 
 [source,bash,role="execute"]
 ----
@@ -141,7 +143,9 @@ Delete one of the running pods:
 oc delete pod $(oc get pods -n app-management -o jsonpath='{.items[0].metadata.name}') -n app-management
 ----
 
-Immediately check the pods:
+Immediately switch to the **OCP Console** tab at **Workloads -> Pods**. Watch the deleted pod turn red (`Terminating`) and a new pod appear green (`Running`). This visual transition is self-healing in action.
+
+You can also verify via CLI:
 
 [source,bash,role="execute"]
 ----

@@ -232,7 +232,7 @@ Check the `Conditions` section for details about why it's degraded.
 * `monitoring` degraded - Storage or resource issues
 * `authentication` degraded - OAuth or LDAP configuration issues
 
-**Console view:** You can also view ClusterOperators in the web console at **Administration → Cluster Settings → ClusterOperators**:
+**Console view:** Switch to the **OCP Console** tab and navigate to **Administration -> Cluster Settings -> ClusterOperators**. The console shows each operator with green/red status icons — degraded operators are immediately visible without scanning a 34-row table. This is faster than CLI for a quick health check.
 
 image::installation-images/clusteroperators-console.png[ClusterOperators in web console]
 
@@ -305,14 +305,16 @@ NOTE: Node names and count vary by platform. This workshop uses a 3-node compact
 * **3 nodes with combined roles** - Each node runs control-plane components (API server, etcd, scheduler) and worker workloads
 * **STATUS = Ready** - Node is healthy and can schedule pods
 
-Check actual resource usage on nodes:
+Check actual resource usage on nodes. In the **OCP Console**, navigate to **Compute -> Nodes** — each node shows CPU and memory utilisation as colour-coded bar graphs. Click any node to see time-series graphs showing usage trends. This is more useful than a point-in-time snapshot for capacity planning.
+
+You can also check via CLI:
 
 [source,bash,role="execute"]
 ----
 oc adm top nodes
 ----
 
-You'll see resource usage for each node — the exact values will vary based on what's deployed:
+The exact values will vary based on what's deployed:
 ----
 NAME                            CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)
 control-plane-cluster-xxxxx-1   5143m        33%      21901Mi         34%

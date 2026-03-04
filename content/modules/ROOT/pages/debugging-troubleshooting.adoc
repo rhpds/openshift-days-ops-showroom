@@ -48,21 +48,22 @@ oc apply -f https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/
 
 == See What's Broken
 
-Five microservices have been deployed with intentional misconfigurations. Let's see the damage:
+Five microservices have been deployed with intentional misconfigurations. Let's triage the damage.
+
+Switch to the **OCP Console** tab and navigate to **Workloads -> Pods** (select project `ops-track-demo` from the dropdown). You'll immediately see colour-coded status indicators:
+
+* **Red/Orange** — `weather-frontend` in `ImagePullBackOff`, `weather-api` in `CrashLoopBackOff`
+* **Yellow** — `weather-backend` in `CreateContainerConfigError`
+* **Green** — `weather-proxy` shows `Running` (but has a hidden issue)
+* **Missing** — `weather-cache` doesn't appear at all
+
+This is how real incident triage works — visual scanning of pod status to quickly identify what needs attention.
+
+You can also verify via CLI:
 
 [source,bash,role="execute"]
 ----
 oc get pods -n ops-track-demo
-----
-
-You should see something like:
-
-----
-NAME                                READY   STATUS                       RESTARTS   AGE
-weather-api-xxxxx                   0/1     CrashLoopBackOff             2          30s
-weather-backend-xxxxx               0/1     CreateContainerConfigError   0          30s
-weather-frontend-xxxxx              0/1     ImagePullBackOff             0          30s
-weather-proxy-xxxxx                 1/1     Running                      0          30s
 ----
 
 NOTE: You might notice `weather-cache` is missing from the pod list — that's one of the problems to investigate. Also, `weather-proxy` shows Running but has its own issue.
@@ -72,6 +73,10 @@ NOTE: You might notice `weather-cache` is missing from the pod list — that's o
 == Problem 1: ImagePullBackOff (weather-frontend)
 
 === Diagnose
+
+In the **OCP Console**, click on the `weather-frontend` pod. The **Events** tab at the bottom shows the error with colour-coded severity — you'll see the image pull failure immediately.
+
+You can also check via CLI:
 
 [source,bash,role="execute"]
 ----
@@ -115,7 +120,9 @@ You should see `1/1 Running`.
 
 === Diagnose
 
-The pod keeps starting and crashing. The first thing to check is **logs** — what did the app say before it died?
+The pod keeps starting and crashing. In the **OCP Console**, click the `weather-api` pod, then the **Logs** tab. The log viewer shows the error message with real-time streaming. If the pod has restarted, use the **Container** dropdown to select the previous container's logs.
+
+You can also check via CLI:
 
 [source,bash,role="execute"]
 ----
@@ -163,7 +170,9 @@ You should see `1/1 Running`.
 
 === Diagnose
 
-You may have noticed `weather-cache` doesn't appear in the pod list at all. Let's check the deployment:
+You may have noticed `weather-cache` doesn't appear in the pod list at all. In the **OCP Console**, navigate to **Workloads -> Deployments** (project: `ops-track-demo`) and click `weather-cache`. The **Events** tab immediately shows the `FailedCreate` error explaining why no pod was created.
+
+Let's also check via CLI:
 
 [source,bash,role="execute"]
 ----
@@ -283,7 +292,9 @@ CACHE_TTL=300
 
 === Diagnose
 
-This pod is `Running` — so what's wrong? The service isn't routing traffic to it. Check the endpoints:
+This pod is `Running` — so what's wrong? In the **OCP Console**, navigate to **Networking -> Services** (project: `ops-track-demo`) and click `weather-proxy`. The **Pods** tab shows **0 Pods** — immediately revealing that the service can't find any matching pods.
+
+Check via CLI as well:
 
 [source,bash,role="execute"]
 ----
@@ -322,6 +333,10 @@ You should now see the pod's IP in the `ENDPOINTS` column. Traffic will flow to 
 **Takeaway:** When a pod is Running but the service isn't working, check if the service selector matches the pod labels. A single character typo can break routing. Use `oc get endpointslice` to verify.
 
 == All Fixed
+
+Switch to the **OCP Console** tab — **Workloads -> Pods** (project: `ops-track-demo`). All five pods should now show green `Running` status. Compare this to the red/orange/yellow view you saw at the start — that visual progression is the troubleshooting workflow in action.
+
+Verify via CLI:
 
 [source,bash,role="execute"]
 ----

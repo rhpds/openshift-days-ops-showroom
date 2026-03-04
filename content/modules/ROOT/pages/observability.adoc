@@ -30,21 +30,23 @@ View the Prometheus pods that are already running:
 oc get pods -n openshift-monitoring -l app.kubernetes.io/name=prometheus
 ----
 
-Query cluster CPU usage directly from Prometheus:
+Query cluster CPU usage using the console metrics viewer:
 
-[source,bash,role="execute"]
-----
-oc exec -n openshift-monitoring -c prometheus prometheus-k8s-0 -- curl -s 'http://localhost:9090/api/v1/query?query=cluster:cpu_usage_cores:sum' | python3 -m json.tool | head -20
-----
+1. Switch to the **OCP Console** tab
+2. Navigate to **Observe -> Metrics**
+3. Enter the query: `cluster:cpu_usage_cores:sum`
+4. Click **Run Queries**
 
-View node-level resource consumption:
+You'll see a time-series graph showing cluster CPU usage over time — far more useful than a point-in-time number.
+
+TIP: Try other queries like `node_memory_MemAvailable_bytes` or `kubelet_running_pods` to explore what metrics are available.
+
+For quick CLI snapshots, you can also use:
 
 [source,bash,role="execute"]
 ----
 oc adm top nodes
 ----
-
-View pod resource usage across the cluster:
 
 [source,bash,role="execute"]
 ----
