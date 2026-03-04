@@ -87,8 +87,12 @@ image::ocp-console-overview.png[OpenShift Administrator Console Overview]
 You can access the console in two ways:
 
 * **OCP Console tab** — Click the **OCP Console** tab at the top of this workshop. The console is embedded directly in the workshop interface so you can follow along without switching windows.
-* **Separate browser tab** — If you prefer a full-screen experience, open the console URL directly: +
-link:{master_url}[{master_url}, window="_blank"]
+* **Separate browser tab** — If you prefer a full-screen experience, run this to get the console URL and open it in a new browser tab:
++
+[source,bash,role="execute"]
+----
+oc whoami --show-console
+----
 
 Login with your credentials:
 
