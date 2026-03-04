@@ -136,27 +136,19 @@ Each pod's IP is listed as an endpoint. When a new pod starts, it's automaticall
 
 One of the core advantages of OpenShift over traditional VMs: when a pod dies, OpenShift automatically replaces it. Let's see this in action.
 
-Delete one of the running pods:
+Start watching pods, then delete one — you'll see every status transition in real-time:
 
 [source,bash,role="execute"]
 ----
-oc delete pod $(oc get pods -n app-management -o jsonpath='{.items[0].metadata.name}') -n app-management
+oc get pods -n app-management -w &
+sleep 2 && oc delete pod $(oc get pods -n app-management -o jsonpath='{.items[0].metadata.name}') -n app-management --wait=false
 ----
 
-Immediately switch to the **OCP Console** tab at **Workloads -> Pods**. Watch the deleted pod turn red (`Terminating`) and a new pod appear green (`Running`). This visual transition is self-healing in action.
+Watch the output — you'll see the deleted pod transition to `Terminating` while a new pod appears as `Pending` → `ContainerCreating` → `Running`. The total stays at 3 replicas throughout.
 
-You can also verify via CLI:
+Press `Ctrl+C` when you see the replacement pod reach `Running`.
 
-[source,bash,role="execute"]
-----
-oc get pods -n app-management
-----
-
-You should see:
-
-* The deleted pod is `Terminating`
-* A new pod is already `ContainerCreating` or `Running`
-* The total stays at 3 replicas
+TIP: You can also watch this in the **OCP Console** at **Workloads -> Pods** (project: `app-management`). The console shows pod status transitions in real-time with colour-coded indicators.
 
 **The Deployment controller** detected that the actual state (2 pods) didn't match the desired state (3 pods) and created a replacement. This happens in seconds, with no manual intervention. This is why OpenShift can maintain SLAs that are difficult with traditional VM-based deployments.
 

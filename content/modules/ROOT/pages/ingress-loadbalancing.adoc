@@ -47,6 +47,10 @@ oc get pods -n openshift-ingress -o wide
 
 Router pods handle incoming HTTP/HTTPS traffic. On this cluster they run on the control-plane nodes using HostNetwork, meaning they bind directly to the node's network interfaces on ports 80 and 443.
 
+You can also view these in the **OCP Console** at **Workloads -> Pods** (project: `openshift-ingress`):
+
+image::ingress-images/ingress-router-pods.png[Router pods in the openshift-ingress namespace]
+
 === View Ingress Service
 
 [source,bash,role="execute"]
@@ -97,7 +101,13 @@ Wait for the pod to be ready:
 oc rollout status deployment/weathernow -n app-management --timeout=60s
 ----
 
-Now let's examine its networking.
+Now let's examine its networking. In the **OCP Console**, navigate to **Networking -> Routes** (project: `app-management`). You'll see the `weathernow` route with its status, clickable URL, and target service:
+
+image::ingress-images/ingress-weathernow-route.png[Weathernow route in the console]
+
+Click the route name to see the full details including TLS settings and router information:
+
+image::ingress-images/ingress-route-details.png[Weathernow route details showing TLS edge termination]
 
 === View the Route Configuration
 
@@ -189,6 +199,10 @@ Verify the annotations were applied:
 oc get route weathernow -n app-management -o jsonpath='{.metadata.annotations}' | python3 -m json.tool | grep rate-limit
 ----
 
+You can also see the annotations in the console. Navigate to **Networking -> Routes** (project: `app-management`), click **weathernow**, then the **YAML** tab:
+
+image::ingress-images/ingress-route-annotations.png[Route YAML showing rate-limit annotations]
+
 === View Existing Routes Across Cluster
 
 [source,bash,role="execute"]
@@ -198,7 +212,11 @@ oc get routes -A | head -20
 
 Notice different termination types: `edge`, `passthrough`, `reencrypt`.
 
-TIP: In the **OCP Console**, navigate to **Networking -> Routes** (select **All Projects**). The console shows each route with its TLS termination type as a badge, the target service, and a clickable URL — you can test routes directly from the console without needing `curl`.
+In the **OCP Console**, navigate to **Networking -> Routes** (select **All Projects**) to see all routes across the cluster:
+
+image::ingress-images/ingress-routes-all.png[All routes across the cluster with TLS termination badges]
+
+The console shows each route with its status, clickable URL, and target service — you can test routes directly from the console without needing `curl`.
 
 == Services: Internal Load Balancing
 
@@ -233,6 +251,10 @@ oc get svc -n openshift-ingress -o wide
 ----
 
 On this cluster, you'll see `router-internal-default` with ClusterIP type because the ingress controller uses HostNetwork — it binds directly to the node's network interfaces rather than going through a separate LoadBalancer service. On cloud platforms, you'd see a `router-default` service with `LoadBalancer` type instead.
+
+In the console, navigate to **Networking -> Services** (project: `app-management`) and click `weathernow`. The **Pods** tab shows all backend pods with their status, memory, and CPU usage:
+
+image::ingress-images/ingress-service-pods.png[Service weathernow showing 3 backend pods]
 
 == Ingress Controller Scaling
 
@@ -288,6 +310,10 @@ Press `Ctrl+C` when you see 3 pods running.
 ----
 oc get ingresscontroller default -n openshift-ingress-operator -o jsonpath='{.status.conditions}' | python3 -m json.tool
 ----
+
+The console provides a cleaner view of these conditions. Navigate to **Administration -> Cluster Settings -> ClusterOperators**, click **ingress**, and view the Conditions table:
+
+image::ingress-images/ingress-operator-conditions.png[Ingress operator conditions showing Available, Progressing, Degraded status]
 
 == Cleanup
 

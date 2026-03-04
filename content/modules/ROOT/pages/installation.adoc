@@ -383,7 +383,7 @@ oc delete route test-app && oc delete svc test-app && oc delete pod test-app
 
 == Step 5: Test Storage Provisioning
 
-Verify dynamic storage works by creating a test PVC:
+Verify dynamic storage works by creating a PVC and a pod that mounts it:
 
 [source,bash,role="execute"]
 ----
@@ -398,23 +398,48 @@ spec:
   resources:
     requests:
       storage: 1Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-storage
+spec:
+  containers:
+  - name: test
+    image: registry.access.redhat.com/ubi9/ubi-minimal
+    command: ["/bin/sh", "-c", "echo 'Storage works!' > /data/test.txt && cat /data/test.txt && sleep 30"]
+    volumeMounts:
+    - name: data
+      mountPath: /data
+  volumes:
+  - name: data
+    persistentVolumeClaim:
+      claimName: test-pvc
+  restartPolicy: Never
 EOF
 ----
 
-Watch it provision:
+Wait a moment, then check that the PVC is `Bound` and the pod is `Running`:
 
 [source,bash,role="execute"]
 ----
-oc get pvc test-pvc
+oc get pvc test-pvc && oc get pod test-storage
 ----
 
-TIP: The PVC may show `Pending` — this is normal. The default storage class uses `WaitForFirstConsumer` volume binding, which means it won't provision the volume until a pod actually mounts it. If it shows `Bound`, that means a volume was immediately available. Either status confirms dynamic storage provisioning is configured correctly.
+The PVC should show `Bound` and the pod should be `Running`. Check the pod wrote to the volume successfully:
+
+[source,bash,role="execute"]
+----
+oc logs test-storage
+----
+
+You should see `Storage works!` — confirming that dynamic provisioning, volume attachment, and read/write all function correctly.
 
 Clean up:
 
 [source,bash,role="execute"]
 ----
-oc delete pvc test-pvc
+oc delete pod test-storage && oc delete pvc test-pvc
 ----
 
 == Step 6: Verify Monitoring Stack
@@ -437,22 +462,26 @@ You should see `prometheus-k8s-0` and `prometheus-k8s-1` pods in Running state.
 
 The best way to verify monitoring is working is to actually use it. In the **OCP Console**, navigate to **Observe -> Dashboards** and select any dashboard (try **etcd** or **Kubernetes / Compute Resources / Cluster**). If the dashboards load with real data and graphs, monitoring is fully operational.
 
+NOTE: If you don't see all the dashboard options, go back to the top of the page and select **All Projects** from the project dropdown.
+
+image::installation-images/etcd-dashboard.png[etcd dashboard showing cluster health metrics]
+
 **Accessing Prometheus:** Prometheus is accessed through the web console at **Observe -> Metrics**, not via direct URL. The prometheus-k8s route only exposes the `/api` endpoint for programmatic access, not the web UI.
 
 **Note:** In production, you'd set up alerts, custom dashboards, and integrate with external monitoring systems
 
 == Step 7: Access the Web Console
 
-The OpenShift web console provides a graphical interface for cluster management.
+The OpenShift web console provides a graphical interface for cluster management. You already have access via the **OCP Console** tab at the top of this workshop — please continue to use it throughout the remaining modules.
 
-Get the console URL:
+If you prefer a full-screen experience in a separate browser tab, get the console URL:
 
 [source,bash,role="execute"]
 ----
 oc whoami --show-console
 ----
 
-Open the URL and explore:
+Explore the console:
 
 * **Home → Overview** - Cluster health summary with all operators
 * **Compute → Nodes** - Visual node status and resource usage
