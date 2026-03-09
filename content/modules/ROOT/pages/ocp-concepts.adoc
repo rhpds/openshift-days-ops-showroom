@@ -309,10 +309,15 @@ NOTE: Node names and count vary by deployment. Production clusters typically hav
 
 1. Navigate to **Compute → Nodes**
 2. Click on any node
-3. Scroll down to the **Conditions** section. Look for `MemoryPressure`, `DiskPressure`, and `PIDPressure` — all should be `False`. If any of these flip to `True`, OpenShift starts evicting pods from that node. This is the first place to check when pods are being mysteriously killed.
-4. Check the **Pods** tab to see every pod running on that node, sorted by resource usage.
+3. The **Overview** tab immediately shows you:
+   - **Active alerts** — you'll likely see alerts like `KubeCPUOvercommit` or `KubeMemoryOvercommit` at the top. These fire when the **total CPU/memory limits** of all pods on the node exceed the node's capacity. This means if every pod tried to burst to its maximum simultaneously, the node couldn't handle it and would throttle pods.
++
+However, look at the **Utilization graphs** below — actual CPU and memory usage is well within capacity. The difference is important: **requests** (what's guaranteed) fit on the node, **limits** (what pods are allowed to burst to) don't. In practice, all pods bursting at once rarely happens, especially in a workshop environment. In production, you'd either right-size your limits, add nodes, or accept the overcommit if your workloads don't burst together.
+   - **Utilization graphs** — CPU, Memory, Filesystem, and Network over time. Compare "available" to actual usage — that tells you the real capacity story, not the theoretical limits.
+   - **Pod count** — how many pods are running on this node.
+4. Click the **Pods** tab to see every pod on that node with its CPU and memory usage.
 
-In vanilla Kubernetes, you'd SSH to the node and run `top`, `df`, and `crictl pods`. In OpenShift, it's all in one console view.
+In vanilla Kubernetes, you'd SSH to the node and run `top`, `df`, and `crictl pods`. In OpenShift, active alerts, utilization graphs, and per-pod resource usage are all in one console view — no SSH required.
 
 image::nodes-console-view.png[Nodes Console View]
 
