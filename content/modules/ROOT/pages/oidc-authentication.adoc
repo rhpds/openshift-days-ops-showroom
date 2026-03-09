@@ -224,7 +224,15 @@ echo "Username: admin"
 echo "Password: $(oc get secret credential-rhsso -n rhsso -o jsonpath='{.data.ADMIN_PASSWORD}' | base64 -d)"
 ----
 
-In the Keycloak admin console, select the **OpenShift** realm from the dropdown (top-left). Click **Users** — you'll see admin1, developer1, viewer1. Click **Groups** — you'll see ocp-admins, ocp-developers, ocp-viewers. Click **Clients** -> **openshift** -> **Mappers** — you'll see the `groups` protocol mapper that puts group membership into the ID token. This mapper is the key to automatic group sync — without it, OpenShift wouldn't know what groups a user belongs to.
+In the Keycloak admin console, select the **OpenShift** realm from the dropdown (top-left). Click **Users**, then **View all users** to see the three accounts:
+
+image::oidc-keycloak-users.png[Keycloak Users showing admin1 developer1 and viewer1]
+
+Click **Groups** to see ocp-admins, ocp-developers, ocp-viewers. Then click **Clients** -> **openshift** -> **Mappers** tab — you'll see the `groups` protocol mapper that puts group membership into the ID token:
+
+image::oidc-keycloak-mapper.png[Keycloak groups protocol mapper configuration]
+
+This mapper is the key to automatic group sync — without it, OpenShift wouldn't know what groups a user belongs to.
 
 == Step 4: Configure OpenShift OAuth with OIDC
 
