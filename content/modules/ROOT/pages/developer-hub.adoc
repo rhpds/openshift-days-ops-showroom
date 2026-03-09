@@ -88,21 +88,41 @@ backstage-developer-hub-xxxxx              1/1     Running
 backstage-psql-developer-hub-0             1/1     Running
 ----
 
-Check the deployment details:
+=== Step 2: Enable External Catalog Sources
+
+By default, RHDH only reads catalog files from within the cluster. To register components from Git repositories (where real teams store their `catalog-info.yaml` files), we need to allow external reads. This is a common ops task when setting up RHDH.
+
+Add the GitHub reading configuration to the existing RHDH app config:
 
 [source,bash,role="execute"]
 ----
-oc get deployment -n backstage
+EXISTING=$(oc get configmap app-config-rhdh -n backstage -o jsonpath='{.data.app-config-rhdh\.yaml}')
+if echo "$EXISTING" | grep -q "reading"; then
+  echo "GitHub reading already configured"
+else
+  UPDATED=$(printf '%s\nbackend:\n  reading:\n    allow:\n      - host: "*.github.com"\n      - host: "*.githubusercontent.com"\n' "$EXISTING")
+  oc create configmap app-config-rhdh -n backstage --from-literal="app-config-rhdh.yaml=$UPDATED" --dry-run=client -o yaml | oc apply -f -
+  echo "GitHub reading configuration added"
+fi
 ----
 
-View the Backstage container resources:
+Restart the deployment to pick up the config change:
 
 [source,bash,role="execute"]
 ----
-oc get deployment backstage-developer-hub -n backstage -o jsonpath='{.spec.template.spec.containers[0].resources}' | python3 -m json.tool
+oc rollout restart deployment/backstage-developer-hub -n backstage
 ----
 
-=== Step 2: Get the Developer Hub URL
+Wait for the new pod to be ready (this takes about a minute):
+
+[source,bash,role="execute"]
+----
+oc rollout status deployment/backstage-developer-hub -n backstage --timeout=120s
+----
+
+NOTE: In production, you'd also configure a GitHub integration with an access token for private repositories. The `backend.reading.allow` approach works for public repos.
+
+=== Step 3: Get the Developer Hub URL
 
 Get the Developer Hub portal URL:
 
@@ -124,7 +144,7 @@ View all routes in the backstage namespace:
 oc get routes -n backstage
 ----
 
-=== Step 3: Access the Portal
+=== Step 4: Access the Portal
 
 1. **Open the Developer Hub URL** in a new browser tab
 2. You'll see the **Red Hat Developer Hub** login page
@@ -191,138 +211,52 @@ Get detailed status:
 oc describe backstage developer-hub -n backstage
 ----
 
-=== View Configuration
+=== Step 5: Register an Application in the Catalog
 
-RHDH configuration is stored in ConfigMaps. List them:
+The catalog is the heart of Developer Hub — a unified view of every service your organization runs. Right now it's empty because nobody has registered anything. Let's fix that.
 
-[source,bash,role="execute"]
-----
-oc get configmaps -n backstage
-----
-
-View the app configuration (if exists):
-
-[source,bash,role="execute"]
-----
-oc get configmap app-config-rhdh -n backstage -o yaml 2>/dev/null || echo "Using default configuration"
-----
-
-=== Check Secrets
-
-RHDH uses secrets for sensitive configuration (database credentials, OAuth, etc.):
-
-[source,bash,role="execute"]
-----
-oc get secrets -n backstage
-----
-
-View the PostgreSQL secret structure:
-
-[source,bash,role="execute"]
-----
-oc get secret backstage-psql-secret-developer-hub -n backstage -o jsonpath='{.data}' | python3 -c "import sys,json; print('\n'.join(json.load(sys.stdin).keys()))"
-----
-
-[NOTE]
-====
-Secret values are base64 encoded. Never expose database credentials in logs or output.
-====
-
-=== View Pod Logs
-
-Check the Backstage application logs:
-
-[source,bash,role="execute"]
-----
-oc logs -n backstage -l rhdh.redhat.com/app=backstage-developer-hub --tail=50
-----
-
-Check PostgreSQL database logs:
-
-[source,bash,role="execute"]
-----
-oc logs -n backstage -l rhdh.redhat.com/app=backstage-psql-developer-hub --tail=20
-----
-
-=== Check Resource Usage
-
-View current resource consumption:
-
-[source,bash,role="execute"]
-----
-oc adm top pods -n backstage
-----
-
-=== View Services and Networking
-
-Check the services exposed:
-
-[source,bash,role="execute"]
-----
-oc get svc -n backstage
-----
-
-Check the route configuration:
-
-[source,bash,role="execute"]
-----
-oc get route backstage-developer-hub -n backstage -o yaml | grep -A 10 "spec:"
-----
-
-=== Persistent Storage
-
-RHDH uses PostgreSQL for persistence. Check the PVC:
-
-[source,bash,role="execute"]
-----
-oc get pvc -n backstage
-----
-
-View storage details:
-
-[source,bash,role="execute"]
-----
-oc describe pvc -n backstage
-----
-
-== Understanding RHDH Concepts
-
-Now that you've verified the deployment, let's understand what RHDH provides.
-
-=== The Software Catalog
-
-The catalog is the heart of Developer Hub - a unified view of all software in your organization:
-
-* **Components** - Applications, microservices
-* **APIs** - REST APIs, GraphQL, gRPC
-* **Resources** - Databases, message queues, storage
-* **Systems** - Logical groupings of components
-* **Domains** - Business domains
-
-Content is added via:
-
-* **Catalog YAML files** - Stored in Git repositories
-* **Discovery** - RHDH scans repos for `catalog-info.yaml` files
-* **Registration** - Ops can manually register systems
-* **Plugins** - Auto-import from Kubernetes, ArgoCD, etc.
-
-Example `catalog-info.yaml`:
+Applications are registered via `catalog-info.yaml` files — simple YAML that describes what the service is, who owns it, and where it runs. Here's what one looks like:
 
 [source,yaml]
 ----
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
-  name: mapit
-  description: Mapping application for city data
+  name: weather-app
+  description: Weather microservices application
   annotations:
-    backstage.io/kubernetes-namespace: ops-track-demo
+    backstage.io/kubernetes-namespace: ops-track-demo   # links to OpenShift namespace
+  tags:
+    - openshift
+    - ops-track
 spec:
   type: service
   lifecycle: production
-  owner: team-operations
-  system: geospatial-services
+  owner: ops-team          # who is responsible for this service
 ----
+
+Register two applications from this workshop into the catalog:
+
+1. In the Developer Hub portal, click **Create** in the left navigation
+2. Click **Register Existing Component**
+3. Paste this URL:
++
+[source,role="copypaste"]
+----
+https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/catalog-info.yaml
+----
++
+4. Click **Analyze** — RHDH fetches the YAML and shows you what will be registered
+5. Click **Import** to add them to the catalog
+
+Now click **Catalog** in the left navigation. You should see two components: `weather-app` and `backup-demo-app`. Click on either one — you'll see the component overview page showing the owner, lifecycle, and the OpenShift namespace annotation.
+
+In production, this catalog would contain hundreds of services across dozens of teams. Developers find services, understand who owns them, read documentation, and check deployment status — all without asking ops. When teams leave or services are deprecated, the catalog makes it visible instead of leaving orphaned workloads running in the cluster.
+
+[NOTE]
+====
+In a full RHDH deployment, you'd configure auto-discovery to scan Git repositories for `catalog-info.yaml` files automatically. You'd also integrate plugins for Kubernetes, ArgoCD, and Tekton so the catalog shows live pod status, deployment sync state, and pipeline runs directly in the portal.
+====
 
 === Software Templates: Golden Paths
 

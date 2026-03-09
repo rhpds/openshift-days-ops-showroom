@@ -80,7 +80,7 @@ EOF
 
 === Create the DataProtectionApplication
 
-Configure OADP to use the NooBaa bucket as its backup target:
+Configure OADP to use the NooBaa bucket as its backup target. The DPA is the central config — it tells Velero where to store backups and which plugins to use:
 
 [source,bash,role="execute"]
 ----
@@ -96,10 +96,10 @@ spec:
   configuration:
     velero:
       defaultPlugins:
-      - openshift
-      - aws
+      - openshift      # handles OpenShift-specific resources (Routes, ImageStreams)
+      - aws            # provides S3-compatible storage access
     nodeAgent:
-      enable: false
+      enable: false    # not needed for namespace-level backups without PV data
       uploaderType: kopia
   backupLocations:
   - velero:
@@ -109,10 +109,10 @@ spec:
         bucket: ${BUCKET_NAME}
         prefix: velero
       config:
-        region: noobaa
-        s3ForcePathStyle: "true"
+        region: noobaa                           # NooBaa doesn't use real AWS regions
+        s3ForcePathStyle: "true"                 # required for non-AWS S3 (MinIO, NooBaa)
         s3Url: https://s3.openshift-storage.svc:443
-        insecureSkipTLSVerify: "true"
+        insecureSkipTLSVerify: "true"            # ok for in-cluster; use certs in production
       credential:
         name: cloud-credentials
         key: cloud
@@ -263,7 +263,7 @@ oc get namespace backup-demo
 Error from server (NotFound): namespaces "backup-demo" not found
 ----
 
-**Everything is gone.** In production, this could be accidental deletion, ransomware, or infrastructure failure.
+**Everything is gone** — the namespace, the deployment, the config, the secrets, the service. In production, this could be an accidental `oc delete namespace` (it happens more than anyone admits), a failed helm upgrade that destroys resources, or ransomware encrypting etcd.
 
 Wait a moment for the namespace to fully terminate before restoring:
 
@@ -325,6 +325,15 @@ This is important configuration data that must survive disasters!
 
 The application, its configuration, and its secrets are all restored exactly as they were.
 
+Also check that the secret survived — this is what people worry about most:
+
+[source,bash,role="execute"]
+----
+oc get secret app-secrets -n backup-demo -o jsonpath='{.data.database-password}' | base64 -d && echo ""
+----
+
+Your database password came back. Without OADP, recovering from an accidental namespace deletion means rebuilding everything from scratch — redeploying apps, recreating secrets, reconfiguring services. With OADP, it's one command and a few seconds.
+
 == Step 7: Schedule Regular Backups
 
 For production, automate backups with a schedule:
@@ -346,7 +355,9 @@ spec:
 EOF
 ----
 
-This runs a backup daily at 2:00 AM with 7-day retention. View the schedule:
+This runs a backup every day at 2:00 AM and keeps each backup for 7 days (`168h`). After 7 days, old backups are automatically deleted. In production, you'd adjust `ttl` based on your RPO (Recovery Point Objective) — how much data can you afford to lose? A 24-hour schedule means you could lose up to 24 hours of changes.
+
+View the schedule:
 
 [source,bash,role="execute"]
 ----

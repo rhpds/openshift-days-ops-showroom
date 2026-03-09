@@ -67,24 +67,24 @@ spec:
     spec:
       domain:
         cpu:
-          cores: 1
+          cores: 1                  # vCPUs allocated to the VM
         devices:
           disks:
           - name: rootdisk
             disk:
-              bus: virtio
+              bus: virtio           # virtio = paravirtualized (fast), sata/scsi for legacy OS
           - name: cloudinitdisk
             disk:
               bus: virtio
         resources:
           requests:
-            memory: 2Gi
+            memory: 2Gi             # guaranteed memory — same as pod resource requests
       volumes:
       - name: rootdisk
         dataVolume:
-          name: rhel9-vm-disk
+          name: rhel9-vm-disk       # boots from the cloned DataVolume above
       - name: cloudinitdisk
-        cloudInitNoCloud:
+        cloudInitNoCloud:           # injects user/password on first boot
           userData: |
             #cloud-config
             user: cloud-user
@@ -278,23 +278,49 @@ Check snapshot status:
 oc get vmsnapshot
 ----
 
-To restore from a snapshot, you would stop the VM and apply a `VirtualMachineRestore` CR:
+Wait for `readyToUse: true` — this means the snapshot has finished and is available for restore. You can also see snapshots in the **Fleet Virtualization** console: click **rhel9-vm** -> **Snapshots** tab.
 
-[source,yaml]
+=== Restore from Snapshot
+
+To restore, stop the VM first, then apply the restore:
+
+[source,bash,role="execute"]
 ----
+virtctl stop rhel9-vm
+oc wait --for=jsonpath='{.status.printableStatus}'=Stopped vm/rhel9-vm --timeout=60s
+----
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
 apiVersion: snapshot.kubevirt.io/v1beta1
 kind: VirtualMachineRestore
 metadata:
   name: rhel9-vm-restore
+  namespace: vm-demo
 spec:
   target:
     apiGroup: kubevirt.io
     kind: VirtualMachine
     name: rhel9-vm
   virtualMachineSnapshotName: rhel9-vm-snap-1
+EOF
 ----
 
-This restores the VM's disks and configuration to the exact state captured in the snapshot.
+[source,bash,role="execute"]
+----
+oc get vmrestore
+----
+
+Start the VM again:
+
+[source,bash,role="execute"]
+----
+virtctl start rhel9-vm
+oc get vms -w
+----
+
+Press `Ctrl+C` when `Running`. The VM's disk and configuration are now back to the exact state they were in when you took the snapshot. This is how you'd roll back a failed OS patch or a broken config change — without rebuilding the VM from scratch.
 
 == Summary
 

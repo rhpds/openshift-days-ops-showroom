@@ -154,17 +154,59 @@ TIP: You can also watch this in the **OCP Console** at **Workloads -> Pods** (pr
 
 == Application Probes
 
-How does OpenShift know if your application is actually healthy and ready to receive traffic? **Probes.**
+How does OpenShift know if your application is actually healthy? Without probes, a pod shows `Running` even if the app inside has hung, crashed its listener, or is returning errors to every request. Probes fix that.
 
-* **Readiness probe** — "Is this pod ready to receive traffic?" If it fails, the pod is removed from the service endpoints (no traffic sent to it).
+* **Readiness probe** — "Can this pod handle traffic?" If it fails, the pod is removed from the service endpoints. No requests get sent to it.
 * **Liveness probe** — "Is this pod still alive?" If it fails, OpenShift restarts the container.
 
-Add both probes to the deployment. We'll use `tcpSocket` probes that check whether the container is listening on port 8080:
+=== Break It On Purpose
+
+Let's see what happens when probes fail. Add a readiness probe pointing at the **wrong port** — port 9999, where nothing is listening:
 
 [source,bash,role="execute"]
 ----
 oc patch deployment weathernow -n app-management --type=json -p='[
   {"op":"add","path":"/spec/template/spec/containers/0/readinessProbe","value":{
+    "tcpSocket":{"port":9999},
+    "initialDelaySeconds":5,
+    "periodSeconds":5
+  }}
+]'
+----
+
+Watch the rollout — it will stall because the new pods never become ready:
+
+[source,bash,role="execute"]
+----
+oc rollout status deployment/weathernow -n app-management --timeout=30s || true
+----
+
+Check the pods:
+
+[source,bash,role="execute"]
+----
+oc get pods -n app-management
+----
+
+You should see pods showing `0/1 Running` — the container is running, but the readiness probe is failing so OpenShift won't send traffic to them. In the **OCP Console**, go to **Workloads -> Pods** (project: `app-management`), click any of the new pods, then the **Events** tab. You'll see repeated `Readiness probe failed: dial tcp ... connect: connection refused` messages.
+
+Check via CLI too:
+
+[source,bash,role="execute"]
+----
+oc describe pod -l deployment=weathernow -n app-management | grep -A2 "Readiness"
+----
+
+The pod is alive but not ready. No traffic reaches it. This is exactly what happens in production when an app's health endpoint goes down — OpenShift protects users from broken pods automatically.
+
+=== Fix the Probe
+
+Now fix it — point the readiness probe at port 8080 where httpd is actually listening, and add a liveness probe too:
+
+[source,bash,role="execute"]
+----
+oc patch deployment weathernow -n app-management --type=json -p='[
+  {"op":"replace","path":"/spec/template/spec/containers/0/readinessProbe","value":{
     "tcpSocket":{"port":8080},
     "initialDelaySeconds":5,
     "periodSeconds":10
@@ -177,36 +219,21 @@ oc patch deployment weathernow -n app-management --type=json -p='[
 ]'
 ----
 
-NOTE: Probes support multiple types: `httpGet` (checks an HTTP endpoint), `tcpSocket` (checks if a port is listening), and `exec` (runs a command inside the container). Use whichever makes sense for your application.
-
-This triggers a rolling update. Watch the new pods replace the old ones:
+NOTE: Probes support multiple types: `httpGet` (checks an HTTP endpoint), `tcpSocket` (checks if a port is listening), and `exec` (runs a command inside the container). Use whichever matches your app — `httpGet` to a `/healthz` endpoint is most common for web services.
 
 [source,bash,role="execute"]
 ----
 oc rollout status deployment/weathernow -n app-management --timeout=60s
 ----
 
-Check the new pods have probes configured:
-
 [source,bash,role="execute"]
 ----
-oc describe deployment weathernow -n app-management | grep -A3 "Liveness:\|Readiness:"
+oc get pods -n app-management
 ----
 
-You should see:
+All pods now show `1/1 Running` — probes pass, traffic flows. You just diagnosed and fixed a readiness probe failure, which is one of the most common issues in production OpenShift clusters.
 
-----
-    Liveness:   tcp-socket :8080 delay=15s timeout=1s period=20s
-    Readiness:  tcp-socket :8080 delay=5s timeout=1s period=10s
-----
-
-TIP: In the **OCP Console**, navigate to **Workloads -> Deployments -> weathernow** and select **Actions -> Edit Health Checks**. The form visually explains the difference between liveness, readiness, and startup probes — and lets you configure them without writing YAML. This is a great way to understand the probe types.
-
-Now if the application becomes unresponsive:
-
-* **Readiness** probe fails → pod removed from service (no traffic)
-* **Liveness** probe fails → pod restarted automatically
-* Combined with **self-healing** → your application maintains availability without ops intervention
+TIP: In the **OCP Console**, navigate to **Workloads -> Deployments -> weathernow** and select **Actions -> Edit Health Checks**. The form visually shows the difference between liveness, readiness, and startup probes — and lets you configure them without writing JSON patches.
 
 == Rollback a Bad Deployment
 

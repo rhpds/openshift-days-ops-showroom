@@ -120,14 +120,14 @@ kind: NetworkPolicy
 metadata:
   name: deny-all
 spec:
-  podSelector: {}
+  podSelector: {}       # empty = applies to ALL pods in this namespace
   policyTypes:
-  - Ingress
-  ingress: []
+  - Ingress             # we're controlling inbound traffic
+  ingress: []           # empty list = no traffic allowed in
 EOF
 ----
 
-This blocks all incoming traffic to pods in `netpol-backend`.
+Three lines do all the work: `podSelector: {}` targets every pod, `policyTypes: Ingress` says we're controlling inbound traffic, and the empty `ingress: []` list means nothing is allowed through. This is the standard "default deny" pattern — start locked down, then punch specific holes.
 
 === Test Connectivity Again (Should Fail)
 
@@ -141,9 +141,11 @@ Expected: Connection times out (no output after 5 seconds). The NetworkPolicy bl
 
 === Allow Traffic from Specific Namespace
 
+Now punch a hole — allow only the frontend namespace to reach the backend, and only on port 8080:
+
 [source,bash,role="execute"]
 ----
-# First, label the frontend namespace
+# First, label the frontend namespace so we can reference it
 oc label namespace netpol-frontend app-tier=frontend
 
 # Create NetworkPolicy allowing traffic from frontend namespace
@@ -155,19 +157,21 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      deployment: backend
+      deployment: backend       # only applies to pods with this label
   policyTypes:
   - Ingress
   ingress:
   - from:
     - namespaceSelector:
         matchLabels:
-          app-tier: frontend
+          app-tier: frontend    # only from namespaces with this label
     ports:
     - protocol: TCP
-      port: 8080
+      port: 8080                # only on this port
 EOF
 ----
+
+This is precise: only pods labelled `deployment: backend`, only from namespaces labelled `app-tier: frontend`, only on TCP 8080. Everything else is still denied by the `deny-all` policy.
 
 === Test Connectivity (Should Work Again)
 
@@ -188,7 +192,7 @@ oc get networkpolicy -n netpol-backend
 
 You should see both `deny-all` and `allow-from-frontend` policies.
 
-TIP: In the **OCP Console**, navigate to **Networking -> NetworkPolicies** (project: `netpol-backend`). Click on any policy to see the ingress/egress rules rendered visually — peer selectors and allowed ports are displayed as readable rules rather than nested YAML. This is useful for auditing security policies across namespaces.
+Now switch to the **OCP Console** tab and navigate to **Networking -> NetworkPolicies** (project: `netpol-backend`). Click on `allow-from-frontend` — the console renders the ingress rules as a visual diagram: which namespaces can reach which pods on which ports. Compare this to the YAML you just wrote. In production, when you're auditing policies across 50 namespaces, this view is dramatically faster than reading raw YAML. Click `deny-all` too — notice how clearly it shows "no ingress allowed."
 
 === NetworkPolicy Best Practices
 
@@ -378,6 +382,7 @@ This allows only Red Hat and Quay traffic, blocking everything else.
 * Maximum of **8000 rules** per EgressFirewall
 * If you use a deny-all rule, pods lose access to the OpenShift API server unless you explicitly allow it
 * NetworkPolicy does **not** apply to pods using host networking — those pods bypass network policies entirely
+* If you add a deny-all **egress** NetworkPolicy, you'll break DNS resolution. Pods need to reach CoreDNS (port 53 UDP/TCP in the `openshift-dns` namespace). Always allow DNS explicitly when restricting egress.
 ====
 
 == EgressIP: Predictable Source IPs

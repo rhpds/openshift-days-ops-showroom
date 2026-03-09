@@ -91,6 +91,8 @@ EOF
 
 This creates Prometheus and Thanos Ruler pods in the `openshift-user-workload-monitoring` namespace dedicated to scraping user application metrics.
 
+You'll use user workload monitoring in the **Performance Tuning** module when HPA needs metrics to make scaling decisions. Any application that exposes a Prometheus `/metrics` endpoint can be scraped — you just create a `ServiceMonitor` pointing at it.
+
 == Alerting with Alertmanager
 
 OpenShift includes Alertmanager for routing alerts to notification channels (email, Slack, PagerDuty, webhooks).
@@ -142,13 +144,25 @@ oc get prometheusrule ops-track-alerts -n openshift-monitoring
 
 Navigate to **Observe -> Alerting -> Alerting Rules** in the console to see your custom rule alongside the built-in ones.
 
+Switch to the **Alerts** tab (not Alerting Rules). Filter by state — you'll see alerts that are currently **Firing**, **Pending**, or **Silenced**. If any pods in the cluster are restart-looping, your new `HighPodRestartRate` rule will appear here. This is the view on-call engineers live in — knowing how to read it matters more than knowing how to create rules.
+
 == Set Up the Logging Stack
 
-While metrics tell you *what* is happening, logs tell you *why*. Let's set up the full logging pipeline.
+While metrics tell you *what* is happening, logs tell you *why*. OpenShift's logging stack has three layers — you need to understand each one because when logging breaks in production, you need to know which layer to troubleshoot.
+
+=== The Architecture
+
+The logging pipeline works like this:
+
+1. **Collectors** (Vector) run on every node and gather logs from containers, the OS, and the Kubernetes API
+2. **Loki** stores and indexes the logs (backed by S3-compatible object storage)
+3. **Console UI plugin** lets you query logs from the OpenShift web console
+
+Each layer is managed by a separate operator, so you can upgrade or troubleshoot them independently.
 
 === Install the Logging Operators
 
-First, create the required namespaces:
+Three operators are needed. Each one manages a different part of the pipeline:
 
 [source,bash,role="execute"]
 ----
@@ -156,11 +170,10 @@ oc create namespace openshift-operators-redhat 2>/dev/null || true
 oc create namespace openshift-logging 2>/dev/null || true
 ----
 
-Install all three logging operators (Loki, Cluster Logging, Cluster Observability):
-
 [source,bash,role="execute"]
 ----
 cat <<EOF | oc apply -f -
+# OperatorGroup scopes where the Loki operator watches for CRs
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
@@ -168,6 +181,7 @@ metadata:
   namespace: openshift-operators-redhat
 spec: {}
 ---
+# Loki Operator — manages the log storage backend
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -180,6 +194,7 @@ spec:
   source: redhat-operators
   sourceNamespace: openshift-marketplace
 ---
+# OperatorGroup scoped to the logging namespace only
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
@@ -189,6 +204,7 @@ spec:
   targetNamespaces:
   - openshift-logging
 ---
+# Cluster Logging Operator — manages log collection (Vector collectors)
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -201,6 +217,7 @@ spec:
   source: redhat-operators
   sourceNamespace: openshift-marketplace
 ---
+# Cluster Observability Operator — provides the console UI plugin for logs
 apiVersion: operators.coreos.com/v1alpha1
 kind: Subscription
 metadata:
@@ -215,9 +232,9 @@ spec:
 EOF
 ----
 
-=== Verify All Operators
+While the operators install (~90 seconds), navigate to **Ecosystem -> Installed Operators** in the **OCP Console** and watch them appear. You'll see the status change from `Installing` to `Succeeded` in real-time — this is how you'd monitor operator installs in production.
 
-Wait about 90 seconds for the operators to install, then verify all three are ready:
+Verify all three are ready via CLI:
 
 [source,bash,role="execute"]
 ----
@@ -228,9 +245,11 @@ oc get csv -n openshift-operators | grep observability
 
 All operators should show `Succeeded`.
 
-=== Configure Storage and Create LokiStack
+=== Configure Log Storage (Loki + S3)
 
-Create an Object Bucket Claim for log storage and the LokiStack secret in one step:
+Loki needs object storage for log data. This cluster has OpenShift Data Foundation (ODF) which provides S3-compatible storage via NooBaa. In production, you'd point this at AWS S3, Azure Blob, or any S3-compatible store.
+
+Create an S3 bucket for log storage:
 
 [source,bash,role="execute"]
 ----
@@ -242,7 +261,7 @@ metadata:
   namespace: openshift-logging
 spec:
   generateBucketName: loki-bucket
-  storageClassName: openshift-storage.noobaa.io
+  storageClassName: openshift-storage.noobaa.io  # ODF's S3 provider
 EOF
 ----
 
@@ -253,7 +272,7 @@ Wait for the bucket to be provisioned:
 oc wait --for=jsonpath='{.status.phase}'=Bound obc/loki-bucket -n openshift-logging --timeout=60s
 ----
 
-Now extract the credentials and create the LokiStack:
+Now extract the auto-generated S3 credentials and create the LokiStack — this is Loki's main configuration:
 
 [source,bash,role="execute"]
 ----
@@ -261,6 +280,7 @@ ACCESS_KEY=$(oc get secret loki-bucket -n openshift-logging -o jsonpath='{.data.
 SECRET_KEY=$(oc get secret loki-bucket -n openshift-logging -o jsonpath='{.data.AWS_SECRET_ACCESS_KEY}' | base64 -d)
 BUCKET_NAME=$(oc get configmap loki-bucket -n openshift-logging -o jsonpath='{.data.BUCKET_NAME}')
 BUCKET_HOST=$(oc get configmap loki-bucket -n openshift-logging -o jsonpath='{.data.BUCKET_HOST}')
+DEFAULT_SC=$(oc get sc -o jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')
 
 cat <<EOF | oc apply -f -
 apiVersion: v1
@@ -282,23 +302,25 @@ metadata:
   namespace: openshift-logging
 spec:
   managementState: Managed
-  size: 1x.extra-small
+  size: 1x.extra-small              # smallest size — scale up for production
   storage:
     schemas:
     - effectiveDate: '2024-10-01'
       version: v13
     secret:
-      name: lokistack-dev-s3
+      name: lokistack-dev-s3        # S3 credentials from the bucket claim
       type: s3
-  storageClassName: ocs-storagecluster-ceph-rbd
+  storageClassName: ${DEFAULT_SC}    # uses the cluster's default storage class
   tenants:
-    mode: openshift-logging
+    mode: openshift-logging          # multi-tenant: separates app, infra, and audit logs
 EOF
 ----
 
 === Set Up Log Collection
 
-Create the collector service account and ClusterLogForwarder:
+The ClusterLogForwarder tells Vector (the collector) what to collect and where to send it. The collector runs as a DaemonSet — one pod per node — so it captures logs from every container on every node.
+
+Create the collector service account with the required permissions:
 
 [source,bash,role="execute"]
 ----
@@ -308,6 +330,8 @@ oc adm policy add-cluster-role-to-user collect-application-logs -z collector -n 
 oc adm policy add-cluster-role-to-user collect-audit-logs -z collector -n openshift-logging
 oc adm policy add-cluster-role-to-user collect-infrastructure-logs -z collector -n openshift-logging
 ----
+
+Create the ClusterLogForwarder — this defines the pipeline:
 
 [source,bash,role="execute"]
 ----
@@ -326,9 +350,9 @@ spec:
     lokiStack:
       authentication:
         token:
-          from: serviceAccount
+          from: serviceAccount       # authenticates to Loki using the SA token
       target:
-        name: logging-loki
+        name: logging-loki           # the LokiStack we created above
         namespace: openshift-logging
     tls:
       ca:
@@ -337,15 +361,17 @@ spec:
   pipelines:
   - name: default-logstore
     inputRefs:
-    - application
-    - infrastructure
-    - audit
+    - application                    # logs from user workloads
+    - infrastructure                 # logs from OpenShift components
+    - audit                          # Kubernetes API audit logs
     outputRefs:
     - default-lokistack
 EOF
 ----
 
 === Enable the Logging UI
+
+The UIPlugin adds the **Observe -> Logs** view to the OpenShift console:
 
 [source,bash,role="execute"]
 ----
@@ -395,7 +421,9 @@ Filter by severity (Critical, Error, Warning, Info, Debug):
 
 image::severity.png[Severity filter]
 
-The histogram at the top shows log volume over time:
+Try it now: select **Infrastructure** logs, then filter by severity **Warning** or **Error**. These are the log entries that matter during an incident — pod evictions, OOM kills, certificate expiry warnings. If you've completed the **Application Management** module, switch to **Application** logs and select the `app-management` namespace to find your application's output.
+
+The histogram at the top shows log volume over time — spikes in the error count correlate with incidents. Click on a spike to zoom into that time window.
 
 image::histogram.png[Log histogram]
 

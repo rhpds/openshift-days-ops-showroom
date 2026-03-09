@@ -52,7 +52,7 @@ The app requested **2Gi memory** and **500m CPU**. That's a lot of cluster capac
 
 === Check What It Actually Uses
 
-Wait for metrics to become available (~60 seconds after pod starts):
+Wait for metrics to become available (~60 seconds after pod starts). While you wait, switch to the **OCP Console** tab and navigate to **Workloads -> Pods** (project: `performance-demo`). Click the pod name and look at the **Metrics** tab — you can watch CPU and memory graphs populate in real-time.
 
 [source,bash,role="execute"]
 ----
@@ -97,6 +97,8 @@ Press `Ctrl+C` when you see `Succeeded`.
 
 === Get VPA Recommendations
 
+Create a VPA resource targeting the memory-hog deployment. We're using `updateMode: "Off"` — this means VPA will **only recommend** values, it won't change your pods. In production, you'd start with `Off` to validate recommendations, then switch to `Auto` to let VPA resize pods automatically during restarts.
+
 [source,bash,role="execute"]
 ----
 oc apply -f https://raw.githubusercontent.com/jnewsome97/openshift-ops-workshops-showroom/main/support/vpa-memory-hog.yaml
@@ -116,7 +118,7 @@ View the detailed recommendation:
 oc get vpa memory-hog-vpa -o jsonpath='{.status.recommendation.containerRecommendations[0]}' | jq .
 ----
 
-VPA recommends **~256Mi memory** instead of the 2Gi requested.
+VPA recommends **~256Mi memory** instead of the 2Gi requested. That's based on actual observed usage — not guesswork.
 
 === Apply the Right-Sized Resources
 
@@ -159,7 +161,7 @@ oc rollout status deployment/demo-app
 
 === Create an HPA
 
-Configure automatic scaling when CPU exceeds 50%:
+Configure automatic scaling when CPU exceeds 50%. Why 50%? Lower targets mean pods scale sooner (more responsive, higher cost). Higher targets pack pods tighter (saves resources, slower reaction). 50% is a common starting point — tune it based on your app's latency requirements.
 
 [source,bash,role="execute"]
 ----
@@ -215,33 +217,18 @@ oc delete pod load-generator
 
 The HPA will scale back down after ~5 minutes of reduced load.
 
-== Part 4: Monitor Performance
+== Part 4: Make a Capacity Decision
 
-=== View Resource Usage
-
-Check node-level resources:
+You've right-sized one app with VPA and auto-scaled another with HPA. Now look at the bigger picture:
 
 [source,bash,role="execute"]
 ----
 oc adm top nodes
 ----
 
-Check pod-level resources in your namespace:
+Look at the memory percentages across your nodes. In the **OCP Console**, navigate to **Observe -> Dashboards** and select **Kubernetes / Compute Resources / Namespace (Pods)**, then choose project `performance-demo`. The graphs show how your HPA scaling event looked over time — you can see CPU spike, pods scale up, then stabilize.
 
-[source,bash,role="execute"]
-----
-oc adm top pods
-----
-
-=== View in the Console
-
-Navigate to **Observe → Dashboards → Kubernetes / Compute Resources / Namespace (Pods)** and select `performance-demo` to see:
-
-* CPU usage over time
-* Memory consumption
-* Network I/O
-
-This helps you understand if your resources are sized correctly.
+This is how you'd answer the question in a capacity review: "Do we need more nodes, or are our apps just over-provisioned?" In many clusters, VPA alone frees enough capacity to avoid buying more infrastructure.
 
 == Clean Up
 

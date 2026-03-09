@@ -86,10 +86,10 @@ oc describe pod -l app=weather-frontend -n ops-track-demo | tail -10
 Look at the **Events** section. You should see:
 
 ----
-Warning  Failed   Back-off pulling image "quay.io/openshifttest/hello-openshift:1.2.1"
+Warning  Failed   Back-off pulling image "registry.access.redhat.com/ubi9/httpd-24:9.9"
 ----
 
-The image tag `1.2.1` doesn't exist. Let's confirm the image reference:
+The image tag `9.9` doesn't exist. Let's confirm the image reference:
 
 [source,bash,role="execute"]
 ----
@@ -98,11 +98,11 @@ oc get deployment weather-frontend -n ops-track-demo -o jsonpath='{.spec.templat
 
 === Fix
 
-Update the image to the correct tag (`1.2.0`):
+Update the image to the correct tag (`latest`):
 
 [source,bash,role="execute"]
 ----
-oc set image deployment/weather-frontend weather-frontend=quay.io/openshifttest/hello-openshift:1.2.0 -n ops-track-demo
+oc set image deployment/weather-frontend weather-frontend=registry.access.redhat.com/ubi9/httpd-24:latest -n ops-track-demo
 ----
 
 === Verify
@@ -383,13 +383,17 @@ weather-proxy-xxxxx                 1/1     Running   0          5m
 |**Running but not working**
 |Service selector mismatch or app bug
 |`oc get endpointslice` + `oc logs <pod>`
+
+|**PVC Pending**
+|Storage can't be provisioned
+|`oc describe pvc` → Events → Check StorageClass name/existence
 |===
 
 == Summary
 
 You diagnosed and fixed five common OpenShift issues:
 
-* **ImagePullBackOff** — wrong image tag → `oc set image`
+* **ImagePullBackOff** — wrong image tag (`9.9` doesn't exist) → `oc set image`
 * **CrashLoopBackOff** — missing config file → create ConfigMap + volume mount
 * **Resource constraint** — memory typo exceeded LimitRange → `oc set resources`
 * **CreateContainerConfigError** — missing ConfigMap → `oc create configmap`

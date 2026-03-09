@@ -149,24 +149,24 @@ spec:
     htpasswd:
       fileData:
         name: htpasswd
-  - name: ldap
-    mappingMethod: claim
+  - name: ldap                    # name shown on console login page
+    mappingMethod: claim           # first identity provider to claim a username wins
     type: LDAP
     ldap:
       attributes:
-        id: [dn]
+        id: [dn]                   # LDAP field used as unique user ID
         email: [mail]
-        name: [cn]
-        preferredUsername: [uid]
+        name: [cn]                 # display name
+        preferredUsername: [uid]    # what they type at the login prompt
       bindDN: "uid=openshiftworkshop,ou=Users,o=5e615ba46b812e7da02e93b5,dc=jumpcloud,dc=com"
       bindPassword:
-        name: ldap-secret
+        name: ldap-secret          # references the Secret created earlier
       ca:
-        name: ca-config-map
-      insecure: false
+        name: ca-config-map        # CA cert to validate LDAP server's TLS
+      insecure: false              # always false in production — validates TLS
       url: "ldaps://ldap.jumpcloud.com/ou=Users,o=5e615ba46b812e7da02e93b5,dc=jumpcloud,dc=com?uid?sub?(memberOf=cn=ose-user,ou=Users,o=5e615ba46b812e7da02e93b5,dc=jumpcloud,dc=com)"
   tokenConfig:
-    accessTokenMaxAgeSeconds: 86400
+    accessTokenMaxAgeSeconds: 86400  # tokens valid for 24 hours
 EOF
 ----
 
@@ -362,14 +362,16 @@ The group includes:
 - LDAP metadata (sync time, LDAP DN, LDAP server)
 - List of users in the group
 
-**Check existing users:**
+**See this in the console too:** Navigate to **User Management -> Groups** in the **OCP Console**. Click on `ose-fancy-dev` — you'll see fancyuser1 and fancyuser2 listed as members. Now click **User Management -> Users** — notice only `normaluser1` appears (and `admin`). The other users exist in LDAP groups but haven't logged in yet, so OpenShift hasn't created their User objects.
+
+This is an important distinction: **group membership is synced immediately**, but **User objects are created on first login**. In production, you might see a group with 50 members but only 10 User objects — that just means 40 people haven't logged in yet.
 
 [source,bash,role="execute"]
 ----
 oc get users
 ----
 
-You'll only see `normaluser1` because **users are created on first login**, not during group sync. The group membership is a placeholder until users authenticate.
+Confirms the same thing via CLI — only users who have authenticated appear here.
 
 == Step 6: Configure RBAC with Groups
 

@@ -4,7 +4,7 @@
 # Deploy with: oc apply -f https://raw.githubusercontent.com/jnewsome97/openshift-days-ops-track-showroom/main/manifests/debugging/broken-apps.yaml
 #
 # Issues to fix:
-# 1. weather-frontend: Wrong image tag (1.2.1 doesn't exist)
+# 1. weather-frontend: Wrong image tag (9.9 doesn't exist)
 # 2. weather-api: Startup check fails (missing config file)
 # 3. weather-cache: Resource typo (512Gi instead of 512Mi)
 # 4. weather-backend: Missing ConfigMap reference
@@ -30,7 +30,7 @@ spec:
     spec:
       containers:
       - name: weather-frontend
-        image: quay.io/openshifttest/hello-openshift:1.2.1
+        image: registry.access.redhat.com/ubi9/httpd-24:9.9
         ports:
         - containerPort: 8080
 ---
@@ -54,7 +54,7 @@ spec:
     spec:
       containers:
       - name: weather-api
-        image: quay.io/openshifttest/hello-openshift:1.2.0
+        image: registry.access.redhat.com/ubi9/httpd-24:latest
         command: ["/bin/sh", "-c", "echo 'Error: Missing required config file /etc/weather/config.yaml' && exit 1"]
         ports:
         - containerPort: 8080
@@ -98,7 +98,7 @@ spec:
     spec:
       containers:
       - name: weather-cache
-        image: quay.io/openshifttest/hello-openshift:1.2.0
+        image: registry.access.redhat.com/ubi9/httpd-24:latest
         resources:
           requests:
             cpu: "100m"
@@ -129,7 +129,7 @@ spec:
     spec:
       containers:
       - name: weather-backend
-        image: quay.io/openshifttest/hello-openshift:1.2.0
+        image: registry.access.redhat.com/ubi9/httpd-24:latest
         resources:
           requests:
             cpu: "100m"
@@ -164,7 +164,7 @@ spec:
     spec:
       containers:
       - name: weather-proxy
-        image: quay.io/openshifttest/hello-openshift:1.2.0
+        image: registry.access.redhat.com/ubi9/httpd-24:latest
         ports:
         - containerPort: 8080
 ---

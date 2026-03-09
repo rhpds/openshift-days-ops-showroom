@@ -2,49 +2,45 @@
 
 == Why This Workshop Exists
 
-Running Kubernetes in production is hard. Running it well — with enterprise authentication, automated backup, fleet management, and security compliance — is where most teams struggle.
+Every ops team hits the same wall with Kubernetes: the cluster is running, but who handles authentication? How do you back up a namespace someone accidentally deleted? What happens when pods crash at 2am and nobody knows where to look?
 
-OpenShift closes that gap. It takes upstream Kubernetes and adds the operational tooling that platform teams actually need: integrated monitoring, automated upgrades, built-in security policies, multi-cluster management, and developer self-service — all supported by Red Hat.
+OpenShift answers those questions with built-in tooling — monitoring, backup, security, identity management, autoscaling, and a web console that makes troubleshooting visual instead of a guessing game with `kubectl describe`. This workshop lets you use all of it on a live cluster.
 
-This workshop puts you in the driver's seat of a live OpenShift cluster so you can see how these capabilities work in practice, not just in slides.
+== What You'll Actually Do
 
-== What You'll Do
-
-Every module is hands-on. You'll deploy real applications, configure real security policies, break things on purpose and fix them, and explore the tools that make Day 2 operations manageable at scale.
+Every module is hands-on. You won't just read about features — you'll break things on purpose and fix them, diagnose real failure modes, configure production security, and see what OpenShift looks like when things go wrong (and how fast you can recover).
 
 [NOTE]
 ====
-**This workshop is modular.** Your session has been customised with a specific set of modules. Only the modules shown in the **navigation on the left** are available in your environment. The full catalog of topics includes:
+**This workshop is modular.** Your session has been customised with a specific set of modules — only the ones shown in the **navigation on the left** are available in your environment. The full catalog includes:
 ====
 
 [cols="1,3"]
 |===
-|Area |What you'll explore
+|Area |What you'll do
 
 |**Platform Fundamentals**
-|What makes OpenShift different from upstream Kubernetes — integrated monitoring, routing, operators, automated upgrades, and why it matters for your operations team
+|Verify cluster health, read etcd dashboards, understand what can and can't be changed after installation, deploy an app and expose it in 30 seconds
 
 |**Application Operations**
-|Deploy, expose, scale, and manage workloads. Configure ingress, TLS termination, load balancing, and network security policies
+|Deploy workloads, break a readiness probe on purpose and diagnose the failure, scale with HPA under real load, configure network policies with deny-all baselines
 
 |**Identity & Access**
-|Plug OpenShift into your existing identity infrastructure — LDAP, OIDC, group sync, RBAC. See how enterprise authentication replaces temporary admin accounts
+|Integrate LDAP and OIDC authentication, sync groups, test RBAC by logging in as different users and seeing what they can and can't do
 
 |**Day 2 Operations**
-|The work that starts after the cluster is running — observability with Prometheus and Loki, backup and restore with OADP, performance tuning with autoscalers
+|Create alerting rules and read the firing alerts view, set up logging and filter by severity during an incident, back up a namespace, delete it, and restore it from backup
 
 |**Advanced Capabilities**
-|Virtualization (run VMs alongside containers), Hosted Control Planes (provision clusters in minutes), multi-cluster fleet management with ACM, security scanning with ACS, and AI-assisted operations with Lightspeed
+|Run a VM alongside containers and live-migrate it between nodes, take and restore snapshots, manage multiple clusters with ACM, scan for vulnerabilities with ACS
 
 |**Developer Productivity**
-|Red Hat Developer Hub — how ops teams enable developer self-service with golden paths, software catalogs, and standardised templates
+|Register applications in the Developer Hub catalog, understand how golden path templates replace ops tickets with developer self-service
 |===
-
-Each module is standalone. Your environment has been configured with a specific set of modules — only the ones shown in the navigation on the left are available in this session.
 
 == Your Environment
 
-You have full cluster admin access to a production-grade OpenShift cluster with all the operational tooling pre-installed and ready to explore.
+You have full cluster admin access to a production-grade OpenShift cluster with operational tooling pre-installed and ready to use.
 
 === Workshop Interface
 
@@ -56,36 +52,36 @@ Your workshop runs in a split-panel interface:
 
 === Tabs
 
-Along the top of the right panel you'll find tabs for each of the tools deployed in your environment:
+Along the top of the right panel you'll find tabs for each tool deployed in your environment:
 
 [cols="1,3"]
 |===
 |Tab |What it is
 
 |**OCP Console**
-|The OpenShift web console — your primary GUI for managing the cluster. Log in with the credentials provided.
+|The OpenShift web console — your primary GUI for cluster management, monitoring dashboards, and troubleshooting.
 
 |**Terminal**
-|A web-based terminal pre-connected to your cluster's bastion host. Run `oc` commands directly — no local setup needed.
+|A web-based terminal pre-connected to your cluster. Run `oc` commands directly — no local setup needed.
 
 |**RHACS**
-|Red Hat Advanced Cluster Security — vulnerability scanning, compliance, policy enforcement, and runtime security.
+|Red Hat Advanced Cluster Security — vulnerability scanning, compliance, and runtime security.
 
 |**Quay**
 |Red Hat Quay — enterprise container registry with image scanning and access control.
 
 |**ArgoCD**
-|OpenShift GitOps — continuous delivery and application lifecycle management using GitOps principles.
+|OpenShift GitOps — continuous delivery using GitOps principles.
 
 |**Developer Hub**
-|Red Hat Developer Hub — a developer portal with software catalogs, golden paths, and self-service templates.
+|Red Hat Developer Hub — developer portal with software catalogs and self-service templates.
 |===
 
-TIP: Switch between tabs as you work through the modules. Some exercises use the terminal, others use the web console or a specific tool's UI.
+TIP: Switch between tabs as you work through modules. Some exercises use the terminal, others use the web console or a specific tool's UI.
 
 === Clickable Commands
 
-Throughout this workshop, you'll see highlighted command blocks like the one below. **Click on them** to automatically switch to the Terminal tab and execute the command.
+Throughout this workshop, you'll see highlighted command blocks. **Click on them** to automatically switch to the Terminal tab and execute the command.
 
 === Verify Access
 
@@ -114,4 +110,4 @@ This confirms your cluster version and update channel.
 
 == Ready?
 
-Select the first module from the navigation on the left and let's get started.
+Select the first module from the navigation on the left to get started.

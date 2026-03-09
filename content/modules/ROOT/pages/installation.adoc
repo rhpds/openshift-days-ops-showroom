@@ -122,21 +122,23 @@ sshKey: 'ssh-rsa AAAA...'
 
 **Key parameters operations teams care about:**
 
-* **controlPlane.replicas** - Always 3 for HA
-* **compute.replicas** - Initial worker count (scale later with MachineSets)
+* **controlPlane.replicas** - Always 3 for HA (etcd needs a quorum of 2, so 3 is the minimum for fault tolerance)
+* **compute.replicas** - Initial worker count (scale later with MachineSets — you'll see this in action)
 * **platform** - Platform-specific settings (instance types, regions, etc.)
-* **networking.clusterNetwork** - Pod IP range (can't change post-install)
-* **networking.serviceNetwork** - Service IP range (can't change post-install)
+* **networking.clusterNetwork** - Pod IP range. **Cannot be changed after installation.** Plan this carefully — if it overlaps with your corporate network, pods can't reach those systems.
+* **networking.serviceNetwork** - Service IP range. **Also cannot be changed after installation.**
+
+IMPORTANT: The network CIDRs are permanent. If someone asks you to change them after the cluster is running, the answer is "rebuild the cluster." Get these right during planning.
 
 === Installation Workflow
 
 The `openshift-install` command automates the entire installation:
 
-**Phase 1: Bootstrap** (0-10 min) - Temporary VM brings up initial control plane
+**Phase 1: Bootstrap** (0-10 min) - Temporary VM brings up initial control plane. If this phase hangs, it's almost always a DNS or DHCP problem.
 
-**Phase 2: Control Plane** (10-20 min) - 3 nodes boot, etcd cluster forms, API available
+**Phase 2: Control Plane** (10-20 min) - 3 nodes boot, etcd cluster forms, API becomes available. This is when you can first run `oc` commands.
 
-**Phase 3: Workers & Operators** (20-45 min) - Workers join, all ~34 ClusterOperators deploy
+**Phase 3: Workers & Operators** (20-45 min) - Workers join, all ~34 ClusterOperators deploy. The cluster isn't healthy until every operator reports `Available`.
 
 **IPI provisions**: Network infrastructure, load balancers (API + ingress), compute instances, storage, DNS (api.*, *.apps)
 
@@ -330,6 +332,8 @@ control-plane-cluster-xxxxx-3   4923m        31%      42917Mi         67%
 * Memory% under 80% - No memory pressure
 * High usage - Consider scaling or adding nodes
 
+Look at your nodes right now. Which one has the highest memory usage? If a developer asked to deploy a database pod requesting 16Gi of memory, could any single node handle it? `oc adm top nodes` gives you enough information to answer that in seconds — and it's the first command you'll run during any capacity planning conversation.
+
 **Check node configuration status:**
 
 [source,bash,role="execute"]
@@ -460,7 +464,9 @@ oc get pods -n openshift-monitoring | grep prometheus
 
 You should see `prometheus-k8s-0` and `prometheus-k8s-1` pods in Running state.
 
-The best way to verify monitoring is working is to actually use it. In the **OCP Console**, navigate to **Observe -> Dashboards** and select any dashboard (try **etcd** or **Kubernetes / Compute Resources / Cluster**). If the dashboards load with real data and graphs, monitoring is fully operational.
+The best way to verify monitoring is working is to actually use it. In the **OCP Console**, navigate to **Observe -> Dashboards** and select the **etcd** dashboard. Find the **Raft proposals** and **leader changes** panels. In a healthy cluster, leader changes should be 0 or very low. Frequent leader elections indicate disk I/O problems or network latency between control plane nodes — the kind of issue that causes cascading API failures at 2am. This dashboard is the first place to look when `oc` commands start timing out.
+
+Now try the **Kubernetes / Compute Resources / Cluster** dashboard to see aggregate CPU, memory, and network across the cluster.
 
 NOTE: If you don't see all the dashboard options, go back to the top of the page and select **All Projects** from the project dropdown.
 

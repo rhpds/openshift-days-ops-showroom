@@ -97,7 +97,7 @@ oc whoami --show-console
 Login with your credentials:
 
 * Username: `{openshift_cluster_admin_username}`
-* Password: `{admin_password}`
+* Password: `{openshift_cluster_admin_password}`
 
 === Step 2: Switch to Administrator Perspective
 
@@ -182,7 +182,7 @@ sum(rate(container_cpu_usage_seconds_total[5m])) by (namespace)
 
 3. Click **Run Queries**
 
-You'll see CPU usage by namespace in real-time.
+You'll see CPU usage broken down by namespace. Look at which namespaces are consuming the most — `openshift-monitoring` and `openshift-etcd` are usually at the top because they run the cluster's own infrastructure. Everything you're seeing here was available the moment the cluster came up — no dashboards to build, no scrape configs to write, no Grafana to install.
 
 image::prometheus-cpu-by-namespace-query.png[Prometheus Query Results - CPU by Namespace]
 
@@ -258,27 +258,32 @@ openshift-console          downloads             downloads-openshift-console.app
 * Automatic TLS certificate management
 * Path-based and hostname-based routing
 
-=== Exposing Applications (Concept)
+=== Try It: Deploy and Expose in 30 Seconds
 
-In OpenShift, exposing a service to external traffic is simple:
+Let's prove the point. Deploy a web server and make it externally accessible — all in three commands:
 
-[source,bash,role="copypaste"]
+[source,bash,role="execute"]
 ----
-# In OpenShift (example - don't run yet)
-oc expose service/my-app
+oc new-project quick-demo
+oc new-app --name=hello --image=registry.access.redhat.com/ubi9/httpd-24
+oc create route edge hello --service=hello
 ----
 
-That's it. The service becomes publicly accessible with automatic DNS.
+Get the URL and test it:
 
-In vanilla Kubernetes:
-```bash
-# Must create Ingress resource manually
-kubectl create ingress my-app --rule="my-app.example.com/*=my-app:8080"
-# Then configure DNS
-# Then configure TLS cert
-```
+[source,bash,role="execute"]
+----
+curl -sk https://$(oc get route hello -n quick-demo -o jsonpath='{.spec.host}') | head -3
+----
 
-NOTE: You'll deploy and expose an actual application in the Application Management module later in this workshop.
+You should see the httpd test page HTML. That's a deployed app, with a service, a TLS-terminated route, and automatic DNS — in three commands. In vanilla Kubernetes, you'd need to install an ingress controller, create an Ingress resource, configure DNS records, and manage TLS certificates.
+
+Clean up:
+
+[source,bash,role="execute"]
+----
+oc delete project quick-demo
+----
 
 == Unified Node Management
 
@@ -303,17 +308,11 @@ NOTE: Node names and count vary by deployment. Production clusters typically hav
 === Check Node Details (Console)
 
 1. Navigate to **Compute → Nodes**
-2. Click on any worker node
-3. You'll see:
-   - Real-time utilization graphs
-   - Running pods
-   - Node conditions
-   - System information
-   - Logs
+2. Click on any node
+3. Scroll down to the **Conditions** section. Look for `MemoryPressure`, `DiskPressure`, and `PIDPressure` — all should be `False`. If any of these flip to `True`, OpenShift starts evicting pods from that node. This is the first place to check when pods are being mysteriously killed.
+4. Check the **Pods** tab to see every pod running on that node, sorted by resource usage.
 
-**In Kubernetes:** You'd need to SSH to nodes or use `kubectl describe`
-
-**In OpenShift:** Full node visibility in the console
+In vanilla Kubernetes, you'd SSH to the node and run `top`, `df`, and `crictl pods`. In OpenShift, it's all in one console view.
 
 image::nodes-console-view.png[Nodes Console View]
 

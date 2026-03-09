@@ -209,6 +209,23 @@ This script creates:
 
 **Production Note:** In production environments, you would integrate Keycloak with your organization's existing LDAP/Active Directory rather than creating users manually.
 
+**See what was created:** Open the Keycloak admin console to verify. Get the URL:
+
+[source,bash,role="execute"]
+----
+echo "https://$(oc get route keycloak -n rhsso -o jsonpath='{.spec.host}')/auth/admin/"
+----
+
+Log in with the Keycloak admin credentials:
+
+[source,bash,role="execute"]
+----
+echo "Username: admin"
+echo "Password: $(oc get secret credential-rhsso -n rhsso -o jsonpath='{.data.ADMIN_PASSWORD}' | base64 -d)"
+----
+
+In the Keycloak admin console, select the **OpenShift** realm from the dropdown (top-left). Click **Users** — you'll see admin1, developer1, viewer1. Click **Groups** — you'll see ocp-admins, ocp-developers, ocp-viewers. Click **Clients** -> **openshift** -> **Mappers** — you'll see the `groups` protocol mapper that puts group membership into the ID token. This mapper is the key to automatic group sync — without it, OpenShift wouldn't know what groups a user belongs to.
+
 == Step 4: Configure OpenShift OAuth with OIDC
 
 **Create secret with OIDC client credentials:**
@@ -353,7 +370,7 @@ Notice the identity provider is `rhsso`.
 
 == Step 6: Verify Automatic Group Synchronization
 
-This is where OIDC shines - groups automatically sync from token claims without manual commands!
+This is where OIDC shines — groups automatically sync from token claims without manual commands. No `oc adm groups sync`, no CronJob, no sync config file. Let's see why.
 
 **View automatically created groups:**
 
@@ -399,6 +416,8 @@ Notice:
 - No LDAP metadata (this came from OIDC)
 - Users automatically added based on token claims
 - Group was created automatically
+
+The reason this works is the `groups` claim in the ID token. When developer1 logged in, the token contained `"groups": ["ocp-developers"]`. OpenShift read that claim (because we configured `claims.groups: ["groups"]` in the OAuth spec) and created the group automatically. Every login refreshes group membership from the token — if you remove a user from a group in Keycloak, they lose access on their next login. No sync lag, no CronJob.
 
 == Step 7: Configure RBAC with OIDC Groups
 
