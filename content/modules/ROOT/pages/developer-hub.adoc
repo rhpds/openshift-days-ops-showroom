@@ -237,19 +237,22 @@ spec:
 
 Register two applications from this workshop into the catalog:
 
-1. In the Developer Hub portal, click **Create** in the left navigation
-2. Click **Register Existing Component**
-3. Paste this URL:
+1. In the Developer Hub portal, scroll down to **Explore Your Software Catalog** and click **Register a component** (or click the **+** icon in the top navigation bar)
+2. Paste this URL:
 +
 [source,role="copypaste"]
 ----
 https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/catalog-info.yaml
 ----
 +
-4. Click **Analyze** — RHDH fetches the YAML and shows you what will be registered
-5. Click **Import** to add them to the catalog
+3. Click **Analyze** — RHDH fetches the YAML and shows you what will be registered
+4. Click **Import** to add them to the catalog
 
-Now click **Catalog** in the left navigation. You should see two components: `weather-app` and `backup-demo-app`. Click on either one — you'll see the component overview page showing the owner, lifecycle, and the OpenShift namespace annotation.
+Now click **Catalog** in the left navigation. You should see two components registered:
+
+image::rhdh-catalog-registered.png[Developer Hub catalog showing weather-app and backup-demo-app components]
+
+Click on either one to see the component overview page showing the owner, lifecycle, tags, and the OpenShift namespace annotation.
 
 In production, this catalog would contain hundreds of services across dozens of teams. Developers find services, understand who owns them, read documentation, and check deployment status — all without asking ops. When teams leave or services are deprecated, the catalog makes it visible instead of leaving orphaned workloads running in the cluster.
 

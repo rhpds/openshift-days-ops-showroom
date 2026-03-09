@@ -278,7 +278,9 @@ Check snapshot status:
 oc get vmsnapshot
 ----
 
-Wait for `readyToUse: true` — this means the snapshot has finished and is available for restore. You can also see snapshots in the **Fleet Virtualization** console: click **rhel9-vm** -> **Snapshots** tab.
+Wait for `readyToUse: true` — this means the snapshot has finished and is available for restore. You can also see snapshots in the **Fleet Virtualization** console: click **rhel9-vm** -> **Snapshots** tab:
+
+image::vm-snapshot-ready.png[VM Snapshots tab showing rhel9-vm-snap-1 with Ready status]
 
 === Restore from Snapshot
 

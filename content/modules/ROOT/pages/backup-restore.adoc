@@ -303,7 +303,11 @@ Press `Ctrl+C` when `Completed`.
 
 == Step 6: Verify the Restore
 
-Switch to the **OCP Console** tab and navigate to **Workloads -> Pods**. Select project `backup-demo` from the dropdown — the namespace has reappeared after being completely deleted. Both pods should show green `Running` status. This visual confirmation of a full namespace restore is the core value of OADP.
+Switch to the **OCP Console** tab and navigate to **Workloads -> Pods**. Select project `backup-demo` from the dropdown — the namespace has reappeared after being completely deleted. Both pods should show green `Running` status:
+
+image::backup-restored-pods.png[Restored backup-demo namespace showing both pods Running]
+
+This visual confirmation of a full namespace restore is the core value of OADP.
 
 Also verify via CLI:
 

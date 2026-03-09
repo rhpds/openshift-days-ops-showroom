@@ -226,7 +226,11 @@ You've right-sized one app with VPA and auto-scaled another with HPA. Now look a
 oc adm top nodes
 ----
 
-Look at the memory percentages across your nodes. In the **OCP Console**, navigate to **Observe -> Dashboards** and select **Kubernetes / Compute Resources / Namespace (Pods)**, then choose project `performance-demo`. The graphs show how your HPA scaling event looked over time — you can see CPU spike, pods scale up, then stabilize.
+Look at the memory percentages across your nodes. In the **OCP Console**, navigate to **Observe -> Dashboards** and select **Kubernetes / Compute Resources / Namespace (Pods)**, then choose project `performance-demo`:
+
+image::hpa-scaling-dashboard.png[Dashboard showing CPU usage and pod count during HPA scaling event]
+
+The graphs show how your HPA scaling event looked over time — CPU utilisation from requests climbed above 200% as the load generator pushed each pod past the 50% target, and the HPA responded by scaling up to 4 pods. The CPU Quota table below shows each pod's actual usage vs its requests and limits.
 
 This is how you'd answer the question in a capacity review: "Do we need more nodes, or are our apps just over-provisioned?" In many clusters, VPA alone frees enough capacity to avoid buying more infrastructure.
 
