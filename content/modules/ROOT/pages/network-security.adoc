@@ -192,7 +192,15 @@ oc get networkpolicy -n netpol-backend
 
 You should see both `deny-all` and `allow-from-frontend` policies.
 
-Now switch to the **OCP Console** tab and navigate to **Networking -> NetworkPolicies** (project: `netpol-backend`). Click on `allow-from-frontend` — the console renders the ingress rules as a visual diagram: which namespaces can reach which pods on which ports. Compare this to the YAML you just wrote. In production, when you're auditing policies across 50 namespaces, this view is dramatically faster than reading raw YAML. Click `deny-all` too — notice how clearly it shows "no ingress allowed."
+Now switch to the **OCP Console** tab and navigate to **Networking -> NetworkPolicies** (project: `netpol-backend`). Click on `deny-all` — the console clearly states "All incoming traffic is denied":
+
+image::netpol-deny-all.png[deny-all NetworkPolicy showing all incoming traffic denied]
+
+Click back and open `allow-from-frontend` — the console renders the ingress rule as a readable table showing the pod selector, namespace selector, and allowed port:
+
+image::netpol-allow-frontend.png[allow-from-frontend NetworkPolicy showing selectors and port rule]
+
+Compare this to the YAML you just wrote. In production, when you're auditing policies across 50 namespaces, this view is dramatically faster than reading raw YAML.
 
 === NetworkPolicy Best Practices
 

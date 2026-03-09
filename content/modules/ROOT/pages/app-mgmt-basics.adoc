@@ -188,7 +188,13 @@ Check the pods:
 oc get pods -n app-management
 ----
 
-You should see pods showing `0/1 Running` — the container is running, but the readiness probe is failing so OpenShift won't send traffic to them. In the **OCP Console**, go to **Workloads -> Pods** (project: `app-management`), click any of the new pods, then the **Events** tab. You'll see repeated `Readiness probe failed: dial tcp ... connect: connection refused` messages.
+You should see pods showing `0/1 Running` — the container is running, but the readiness probe is failing so OpenShift won't send traffic to them. In the **OCP Console**, go to **Workloads -> Pods** (project: `app-management`):
+
+image::broken-probe-pods.png[Pod list showing 0/1 Running pod with failed readiness probe]
+
+Click the `0/1` pod, then the **Events** tab. You'll see repeated `Readiness probe failed: dial tcp ... connect: connection refused` messages:
+
+image::broken-probe-events.png[Events tab showing readiness probe failure messages]
 
 Check via CLI too:
 
@@ -233,7 +239,13 @@ oc get pods -n app-management
 
 All pods now show `1/1 Running` — probes pass, traffic flows. You just diagnosed and fixed a readiness probe failure, which is one of the most common issues in production OpenShift clusters.
 
-TIP: In the **OCP Console**, navigate to **Workloads -> Deployments -> weathernow** and select **Actions -> Edit Health Checks**. The form visually shows the difference between liveness, readiness, and startup probes — and lets you configure them without writing JSON patches.
+TIP: In the **OCP Console**, navigate to **Workloads -> Deployments**, click the three-dot menu on the `weathernow` deployment, and select **Edit Health Checks**:
+
+image::deployment-actions-menu.png[Deployment actions menu showing Edit Health Checks option]
+
+The form visually shows the difference between liveness, readiness, and startup probes — and lets you configure them without writing JSON patches:
+
+image::edit-health-checks.png[Edit Health Checks form showing configured readiness and liveness probes]
 
 == Rollback a Bad Deployment
 

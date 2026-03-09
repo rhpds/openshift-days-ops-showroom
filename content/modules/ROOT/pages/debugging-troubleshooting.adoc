@@ -52,7 +52,9 @@ Five microservices have been deployed with intentional misconfigurations. Let's 
 
 Switch to the **OCP Console** tab and navigate to **Workloads -> Pods** (select project `ops-track-demo` from the dropdown). You'll immediately see colour-coded status indicators:
 
-* **Red/Orange** — `weather-frontend` in `ImagePullBackOff`, `weather-api` in `CrashLoopBackOff`
+image::broken-pods-triage.png[Pod list showing multiple failure states - ImagePullBackOff CrashLoopBackOff and CreateContainerConfigError]
+
+* **Red** — `weather-frontend` in `ImagePullBackOff`, `weather-api` in `CrashLoopBackOff`
 * **Yellow** — `weather-backend` in `CreateContainerConfigError`
 * **Green** — `weather-proxy` shows `Running` (but has a hidden issue)
 * **Missing** — `weather-cache` doesn't appear at all
