@@ -362,7 +362,15 @@ The group includes:
 - LDAP metadata (sync time, LDAP DN, LDAP server)
 - List of users in the group
 
-**See this in the console too:** Navigate to **User Management -> Groups** in the **OCP Console**. Click on `ose-fancy-dev` — you'll see fancyuser1 and fancyuser2 listed as members. Now click **User Management -> Users** — notice only `normaluser1` appears (and `admin`). The other users exist in LDAP groups but haven't logged in yet, so OpenShift hasn't created their User objects.
+**See this in the console too:** Navigate to **User Management -> Groups** in the **OCP Console**:
+
+image::ldap-groups-console.png[User Management Groups showing synced LDAP groups with member counts]
+
+Click on `ose-fancy-dev` — you'll see fancyuser1 and fancyuser2 listed as members. Now click **User Management -> Users**:
+
+image::ldap-users-console.png[User Management Users showing only users who have logged in]
+
+Notice only `normaluser1` appears (and `admin`). The other users exist in LDAP groups but haven't logged in yet, so OpenShift hasn't created their User objects.
 
 This is an important distinction: **group membership is synced immediately**, but **User objects are created on first login**. In production, you might see a group with 50 members but only 10 User objects — that just means 40 people haven't logged in yet.
 

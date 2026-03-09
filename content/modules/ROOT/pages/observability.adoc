@@ -142,9 +142,21 @@ Verify the rule was created:
 oc get prometheusrule ops-track-alerts -n openshift-monitoring
 ----
 
-Navigate to **Observe -> Alerting -> Alerting Rules** in the console to see your custom rule alongside the built-in ones.
+Navigate to **Observe -> Alerting -> Alerting Rules** in the console. Search for `HighPodRestartRate` to find your custom rule:
 
-Switch to the **Alerts** tab (not Alerting Rules). Filter by state — you'll see alerts that are currently **Firing**, **Pending**, or **Silenced**. If any pods in the cluster are restart-looping, your new `HighPodRestartRate` rule will appear here. This is the view on-call engineers live in — knowing how to read it matters more than knowing how to create rules.
+NOTE: You may need to clear the **Source** filter to see all rules, or just search by name.
+
+image::alerting-rules-search.png[Alerting Rules showing custom HighPodRestartRate rule]
+
+Click on the rule to see its details — the expression, severity, and any active alerts. If pods are restart-looping in the cluster, you'll see them here with a graph showing the trend:
+
+image::alerting-rule-detail.png[HighPodRestartRate rule detail showing expression and active alerts]
+
+Now switch to the **Alerts** tab (not Alerting Rules). Filter by **Alert State: Firing** to see what's currently active in the cluster:
+
+image::alerts-firing.png[Alerts tab showing currently firing alerts with severity and state]
+
+This is the view on-call engineers live in — knowing how to read it matters more than knowing how to create rules.
 
 == Set Up the Logging Stack
 
