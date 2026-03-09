@@ -471,15 +471,3 @@ Install enterprise-grade software with **one click**.
 ✅ **Automated Infrastructure** - MachineSets handle scaling, MachineConfigs handle OS +
 ✅ **Single Support Contract** - One vendor for the entire stack
 
-== Next Steps
-
-In the following modules, you'll dive deeper into:
-
-* **Installation & Verification** - Checking cluster health
-* **Application Management** - Deploying and scaling applications
-* **Networking** - Ingress, load balancing, and network security
-* **Day 2 Operations** - Debugging, observability, and backup/restore
-
----
-
-**Questions?** Ask your instructor before moving to the next module.
