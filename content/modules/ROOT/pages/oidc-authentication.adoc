@@ -495,6 +495,10 @@ First returns: `no`, second returns: `yes` (view role)
 
 **Restore cluster admin access:**
 
+Log out of the OpenShift console (click your username top-right -> **Log out**), then log back in via **htpasswd** with your admin credentials.
+
+Also restore admin access in the terminal:
+
 [source,bash,role="execute"]
 ----
 oc login -u admin -p {openshift_cluster_admin_password} {openshift_api_server_url} --insecure-skip-tls-verify
