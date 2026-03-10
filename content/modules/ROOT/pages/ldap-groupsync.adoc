@@ -635,66 +635,6 @@ For complete implementation details, see the link:https://docs.redhat.com/en/doc
 
 **For this lab, manual group sync is sufficient** for learning purposes.
 
-== Troubleshooting Common Issues
-
-**Issue: LDAP users can't log in**
-
-Check OAuth pods are running:
-
-[source,bash,role="copypaste"]
-----
-oc get pods -n openshift-authentication
-oc logs -n openshift-authentication -l app=oauth-openshift
-----
-
-Common causes:
-
-- LDAP server unreachable
-- Incorrect bind credentials
-- Certificate validation failure
-- User not in required LDAP group (ose-user)
-
-**Issue: Group sync fails**
-
-[source,bash,role="copypaste"]
-----
-oc adm groups sync --sync-config=$HOME/support/groupsync.yaml
-----
-
-Look for errors about:
-
-- LDAP search base incorrect
-- Bind DN doesn't have permission to search groups
-- LDAP filter syntax errors
-
-**Issue: User has wrong permissions**
-
-Check group membership (replace `<username>` with actual username):
-
-[source,bash,role="copypaste"]
-----
-oc get groups | grep <username>
-oc describe user <username>
-----
-
-Check role bindings (replace `<projectname>` and `<bindingname>`):
-
-[source,bash,role="copypaste"]
-----
-oc get rolebindings -n <projectname>
-oc describe rolebinding <bindingname> -n <projectname>
-----
-
-**Issue: OAuth operator not rolling out**
-
-[source,bash,role="copypaste"]
-----
-oc get clusteroperator authentication
-oc describe clusteroperator authentication
-----
-
-Check for degraded conditions and follow remediation steps.
-
 == Summary
 
 **What you configured:**
