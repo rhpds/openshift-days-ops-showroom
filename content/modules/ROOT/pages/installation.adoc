@@ -364,25 +364,32 @@ Verify networking works by creating a test application and route:
 
 [source,bash,role="execute"]
 ----
-oc run test-app --image=nginxinc/nginx-unprivileged:latest
-oc expose pod test-app --port=8080
-oc create route edge --service=test-app
+oc new-project install-test 2>/dev/null || oc project install-test
+oc new-app --name=test-app --image=registry.access.redhat.com/ubi9/httpd-24 -n install-test
 ----
 
-Get the route URL:
+Wait for the pod to be running, then create a route:
 
 [source,bash,role="execute"]
 ----
-oc get route test-app -o jsonpath='{.spec.host}'
+oc rollout status deployment/test-app -n install-test --timeout=60s
+oc create route edge test-app --service=test-app -n install-test
 ----
 
-**What this proves:** DNS works, router is functional, TLS certificates auto-generated.
+Test the route:
+
+[source,bash,role="execute"]
+----
+curl -sk https://$(oc get route test-app -n install-test -o jsonpath='{.spec.host}') | head -3
+----
+
+**What this proves:** DNS works, router is functional, TLS certificates auto-generated, and the application is reachable from outside the cluster.
 
 Clean up:
 
 [source,bash,role="execute"]
 ----
-oc delete route test-app && oc delete svc test-app && oc delete pod test-app
+oc delete project install-test
 ----
 
 == Step 5: Test Storage Provisioning
@@ -391,7 +398,8 @@ Verify dynamic storage works by creating a PVC and a pod that mounts it:
 
 [source,bash,role="execute"]
 ----
-cat <<EOF | oc apply -f -
+oc new-project storage-test 2>/dev/null || oc project storage-test
+cat <<EOF | oc apply -n storage-test -f -
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -427,14 +435,14 @@ Wait a moment, then check that the PVC is `Bound` and the pod is `Running`:
 
 [source,bash,role="execute"]
 ----
-oc get pvc test-pvc && oc get pod test-storage
+sleep 15 && oc get pvc test-pvc -n storage-test && oc get pod test-storage -n storage-test
 ----
 
-The PVC should show `Bound` and the pod should be `Running`. Check the pod wrote to the volume successfully:
+The PVC should show `Bound` and the pod should be `Running` or `Completed`. Check the pod wrote to the volume successfully:
 
 [source,bash,role="execute"]
 ----
-oc logs test-storage
+oc logs test-storage -n storage-test
 ----
 
 You should see `Storage works!` — confirming that dynamic provisioning, volume attachment, and read/write all function correctly.
@@ -443,7 +451,7 @@ Clean up:
 
 [source,bash,role="execute"]
 ----
-oc delete pod test-storage && oc delete pvc test-pvc
+oc delete project storage-test
 ----
 
 == Step 6: Verify Monitoring Stack
