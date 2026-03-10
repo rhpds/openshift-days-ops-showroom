@@ -322,11 +322,18 @@ oc whoami --show-console
 ----
 
 2. Open the URL in a web browser
-3. If you're already logged in, click on your username in the top-right corner and select **Log out**
+3. If you're already logged in, click on your username in the top-right corner and select **Log out**:
++
+image::oidc-logout-menu.png[OpenShift console logout menu]
++
 4. You'll see the login options — click **rhbk**
-5. You'll be redirected to the Keycloak login page
-6. Log in with: `developer1` / `OpenShift123!`
-7. You'll be redirected back to the OpenShift console
+5. You'll be redirected to the Keycloak login page. Log in with: `developer1` / `OpenShift123!`
++
+image::oidc-keycloak-login.png[Keycloak login page]
++
+6. You'll be redirected back to the OpenShift console, logged in as Developer User:
++
+image::oidc-logged-in-developer.png[OpenShift console logged in as Developer User via OIDC]
 
 [NOTE]
 ====
