@@ -229,7 +229,7 @@ View the available ANP API:
 
 [source,bash,role="execute"]
 ----
-oc api-resources | grep adminnetworkpolicy
+oc api-resources | grep policy.networking
 ----
 
 Create a cluster-wide policy that blocks external DNS to a specific provider:
