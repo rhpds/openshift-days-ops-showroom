@@ -509,7 +509,7 @@ Log back in as cluster admin:
 
 [source,bash,role="execute"]
 ----
-oc login -u admin -p $ADMIN_PASSWORD $API_URL --insecure-skip-tls-verify
+oc login -u admin -p {openshift_cluster_admin_password} {openshift_api_server_url} --insecure-skip-tls-verify
 ----
 
 This restores cluster-admin permissions via the terminal's service account.

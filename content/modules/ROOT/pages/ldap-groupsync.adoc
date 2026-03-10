@@ -261,7 +261,7 @@ Notice the user was **automatically created** on first login. Log back in as adm
 
 [source,bash,role="execute"]
 ----
-oc login -u admin -p $ADMIN_PASSWORD $API_URL --insecure-skip-tls-verify
+oc login -u admin -p {openshift_cluster_admin_password} {openshift_api_server_url} --insecure-skip-tls-verify
 ----
 
 **View the auto-created user:**
@@ -439,7 +439,7 @@ Log back in as cluster admin:
 
 [source,bash,role="execute"]
 ----
-oc login -u admin -p $ADMIN_PASSWORD $API_URL --insecure-skip-tls-verify
+oc login -u admin -p {openshift_cluster_admin_password} {openshift_api_server_url} --insecure-skip-tls-verify
 ----
 
 Create a typical SDLC project structure:
@@ -597,7 +597,7 @@ Filter by project to see who has access to what.
 
 [source,bash,role="execute"]
 ----
-oc login -u admin -p $ADMIN_PASSWORD $API_URL --insecure-skip-tls-verify
+oc login -u admin -p {openshift_cluster_admin_password} {openshift_api_server_url} --insecure-skip-tls-verify
 ----
 
 First, grant cluster-admin to a real user:
@@ -671,5 +671,5 @@ For complete implementation details, see the link:https://docs.redhat.com/en/doc
 
 [source,bash,role="execute"]
 ----
-oc login -u admin -p $ADMIN_PASSWORD $API_URL --insecure-skip-tls-verify
+oc login -u admin -p {openshift_cluster_admin_password} {openshift_api_server_url} --insecure-skip-tls-verify
 ----
