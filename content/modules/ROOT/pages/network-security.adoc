@@ -337,7 +337,7 @@ oc get egressfirewall -n netpol-frontend -o yaml
 
 === DNS-Based EgressFirewall
 
-You can also use DNS names (OVN resolves them). Wildcard DNS name resolution in EgressFirewall rules is a Technology Preview feature in OpenShift 4.20:
+You can also use DNS names instead of IP addresses (OVN resolves them):
 
 [source,bash,role="execute"]
 ----
@@ -350,7 +350,7 @@ spec:
   egress:
   - type: Allow
     to:
-      dnsName: "*.redhat.com"
+      dnsName: "www.redhat.com"
   - type: Allow
     to:
       dnsName: "quay.io"
@@ -360,7 +360,9 @@ spec:
 EOF
 ----
 
-This allows only Red Hat and Quay traffic, blocking everything else.
+This allows only traffic to `www.redhat.com` and `quay.io`, blocking everything else.
+
+NOTE: Wildcard DNS names (e.g., `*.redhat.com`) are a Technology Preview feature in OpenShift 4.20 and may not be enabled on all clusters. Use specific hostnames for production configurations.
 
 === EgressFirewall Use Cases
 
