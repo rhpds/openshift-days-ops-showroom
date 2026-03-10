@@ -635,22 +635,7 @@ For complete implementation details, see the link:https://docs.redhat.com/en/doc
 
 **For this lab, manual group sync is sufficient** for learning purposes.
 
-.Troubleshooting Common Issues (click to expand)
-[%collapsible]
-====
-**Issue: Kubeadmin login no longer works (401 Unauthorized)**
-
-If you're locked out, log in with your LDAP admin account:
-
-[source,bash,role="copypaste"]
-----
-export OCP_SERVER=$(oc whoami --show-server)
-oc login -u fancyuser1 -p 'Op#nSh1ft' $OCP_SERVER --insecure-skip-tls-verify
-----
-
-Since you granted cluster-admin to `fancyuser1` in Step 11, this account has full administrative privileges and can be used for all cluster administration tasks.
-
-**Production best practice:** Always remove the kubeadmin bootstrap account after configuring enterprise authentication.
+== Troubleshooting Common Issues
 
 **Issue: LDAP users can't log in**
 
@@ -663,6 +648,7 @@ oc logs -n openshift-authentication -l app=oauth-openshift
 ----
 
 Common causes:
+
 - LDAP server unreachable
 - Incorrect bind credentials
 - Certificate validation failure
@@ -676,6 +662,7 @@ oc adm groups sync --sync-config=$HOME/support/groupsync.yaml
 ----
 
 Look for errors about:
+
 - LDAP search base incorrect
 - Bind DN doesn't have permission to search groups
 - LDAP filter syntax errors
@@ -707,7 +694,6 @@ oc describe clusteroperator authentication
 ----
 
 Check for degraded conditions and follow remediation steps.
-====
 
 == Summary
 
