@@ -73,23 +73,7 @@ oc get pods -n openshift-user-workload-monitoring
 
 If pods are running, any application that exposes a `/metrics` endpoint can be scraped by creating a `ServiceMonitor` or `PodMonitor` resource.
 
-To enable user workload monitoring on a new cluster, you would apply:
-
-[source,bash,role="copypaste"]
-----
-oc apply -f - <<EOF
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cluster-monitoring-config
-  namespace: openshift-monitoring
-data:
-  config.yaml: |
-    enableUserWorkload: true
-EOF
-----
-
-This creates Prometheus and Thanos Ruler pods in the `openshift-user-workload-monitoring` namespace dedicated to scraping user application metrics.
+NOTE: This is already enabled on your workshop cluster — you don't need to do anything. On a new cluster, you would enable it by setting `enableUserWorkload: true` in the `cluster-monitoring-config` ConfigMap in the `openshift-monitoring` namespace.
 
 You'll use user workload monitoring in the **Performance Tuning** module when HPA needs metrics to make scaling decisions. Any application that exposes a Prometheus `/metrics` endpoint can be scraped — you just create a `ServiceMonitor` pointing at it.
 
