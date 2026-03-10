@@ -564,7 +564,7 @@ The web console provides a graphical interface for user and group management.
 
 [IMPORTANT]
 ====
-Make sure you're logged into the OpenShift console as **kubeadmin** (not an LDAP user) to access User Management. Regular users don't have permission to view cluster-wide user and group information.
+Make sure you're logged into the OpenShift console as **admin** (not an LDAP user) to access User Management. Regular users don't have permission to view cluster-wide user and group information.
 ====
 
 **View users in console:**
