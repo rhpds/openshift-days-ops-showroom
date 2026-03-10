@@ -472,7 +472,7 @@ oc get pods -n openshift-monitoring | grep prometheus
 
 You should see `prometheus-k8s-0` and `prometheus-k8s-1` pods in Running state.
 
-The best way to verify monitoring is working is to actually use it. In the **OCP Console**, navigate to **Observe -> Dashboards** and select the **etcd** dashboard. Find the **Raft proposals** and **leader changes** panels. In a healthy cluster, leader changes should be 0 or very low. Frequent leader elections indicate disk I/O problems or network latency between control plane nodes — the kind of issue that causes cascading API failures at 2am. This dashboard is the first place to look when `oc` commands start timing out.
+The best way to verify monitoring is working is to actually use it. In the **OCP Console**, navigate to **Observe -> Dashboards** and select the **etcd** dashboard. Find the **Total Leader Elections Per Day** panel — in a healthy cluster this should be 0 or very low. Frequent leader elections indicate disk I/O problems or network latency between control plane nodes — the kind of issue that causes cascading API failures at 2am. Also check **Disk Sync Duration** — if fsync times are consistently above 10ms, etcd performance will suffer. This dashboard is the first place to look when `oc` commands start timing out.
 
 Now try the **Kubernetes / Compute Resources / Cluster** dashboard to see aggregate CPU, memory, and network across the cluster.
 
