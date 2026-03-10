@@ -161,6 +161,13 @@ curl -sk -X POST "${KEYCLOAK_URL}/admin/realms/OpenShift/clients/$CLIENT_UUID/pr
     }
   }' || echo "(mapper may already exist)"
 
+# Set short session timeouts so logout works cleanly in the workshop
+echo "Configuring session timeouts..."
+curl -sk -X PUT "${KEYCLOAK_URL}/admin/realms/OpenShift" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"ssoSessionIdleTimeout":60,"ssoSessionMaxLifespan":300}'
+
 echo ""
 echo "=== Setup Complete ==="
 echo ""

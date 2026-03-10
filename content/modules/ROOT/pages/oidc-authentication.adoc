@@ -240,8 +240,6 @@ oc create secret generic rhbk-client-secret \
 
 **Configure OAuth to use Keycloak:**
 
-IMPORTANT: This `oc apply` replaces the entire OAuth spec, including any previously configured identity providers (e.g., HTPasswd from the LDAP module). Only the OIDC provider defined below will be active after applying.
-
 [source,bash,role="execute"]
 ----
 KEYCLOAK_URL=$(oc get route keycloak -n rhbk -o jsonpath='{.spec.host}')
@@ -253,6 +251,12 @@ metadata:
   name: cluster
 spec:
   identityProviders:
+  - name: htpasswd
+    mappingMethod: claim
+    type: HTPasswd
+    htpasswd:
+      fileData:
+        name: htpasswd
   - name: rhbk
     mappingMethod: claim
     type: OpenID
@@ -275,6 +279,8 @@ spec:
       - profile
 EOF
 ----
+
+This configures **both** identity providers — HTPasswd (for the `admin` account) and RHBK (for OIDC users). Users will see both options on the login page and can switch between them.
 
 **Key configuration:**
 - `claims.groups: [groups]` — Maps the `groups` claim from Keycloak to OpenShift groups
@@ -531,8 +537,21 @@ To reset the cluster to its original state (recommended before proceeding to oth
 
 [source,bash,role="execute"]
 ----
-# Remove OIDC identity provider from OAuth
-oc patch oauth cluster --type=json -p='[{"op": "remove", "path": "/spec/identityProviders"}]'
+# Restore OAuth to htpasswd only (remove OIDC provider)
+cat <<'CLEANUP' | oc apply -f -
+apiVersion: config.openshift.io/v1
+kind: OAuth
+metadata:
+  name: cluster
+spec:
+  identityProviders:
+  - name: htpasswd
+    mappingMethod: claim
+    type: HTPasswd
+    htpasswd:
+      fileData:
+        name: htpasswd
+CLEANUP
 
 # Delete RHBK namespace (removes operator and Keycloak)
 oc delete namespace rhbk --ignore-not-found
@@ -552,11 +571,11 @@ oc rollout status deployment/oauth-openshift -n openshift-authentication
 oc get oauth cluster -o jsonpath='{.spec}' && echo
 ----
 
-You should see an empty spec: `{}`
+The OAuth spec should show only the `htpasswd` identity provider.
 
 [NOTE]
 ====
-This cleanup ensures the cluster is ready for other authentication modules. The LDAP module expects no identity providers to be configured.
+This cleanup restores the cluster to HTPasswd-only authentication, ready for other modules.
 ====
 
 == Summary
