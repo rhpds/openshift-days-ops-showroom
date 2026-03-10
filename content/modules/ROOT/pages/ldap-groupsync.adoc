@@ -8,7 +8,7 @@
 
 **Narrative Context:**
 
-You've verified the cluster is healthy. Now let's replace the temporary `kubeadmin` account with **enterprise user authentication**.
+You've verified the cluster is healthy. Now let's configure **enterprise user authentication** by integrating with an LDAP directory.
 
 As an operations team, you need to:
 - Integrate with existing identity management systems
@@ -74,18 +74,18 @@ Look at the `spec.identityProviders` section. You'll see that an `htpasswd` iden
 In a fresh cluster, `spec` would be empty (`spec: {}`). This workshop cluster has HTPasswd pre-configured. The OAuth configuration below includes both the existing HTPasswd provider and the new LDAP provider so both work simultaneously.
 ====
 
-**How does `kubeadmin` work then?**
+**What about `kubeadmin`?**
 
-OpenShift looks for a special Secret in `kube-system`. If present, you can view it with:
+Fresh OpenShift clusters come with a `kubeadmin` bootstrap account stored as a Secret in `kube-system`. This account bypasses identity providers entirely — it's meant for initial setup only. On this workshop cluster, `kubeadmin` has already been removed and replaced with the `admin` HTPasswd account you're using now. That's the correct production posture.
+
+You can verify it's gone:
 
 [source,bash,role="execute"]
 ----
 oc get secret -n kube-system kubeadmin -o yaml
 ----
 
-This Secret contains the hashed `kubeadmin` password. **Security note:** This account bypasses identity providers and should be removed after configuring real authentication.
-
-NOTE: On this workshop cluster, the kubeadmin secret has already been removed (you'll see "not found"). This is correct — the cluster uses HTPasswd authentication instead. In production, you'd remove kubeadmin after configuring LDAP or OIDC.
+Expected: `not found` — confirming the bootstrap account has been removed.
 
 == Step 2: Understand LDAP Structure
 
@@ -593,7 +593,7 @@ Filter by project to see who has access to what.
 
 == Step 11: Security Best Practices
 
-**Remove kubeadmin after configuring identity provider:**
+**Ensure kubeadmin is removed after configuring identity provider:**
 
 [source,bash,role="execute"]
 ----
@@ -617,11 +617,9 @@ oc auth can-i '*' '*'
 
 Output: `yes`
 
-**In production, you would remove kubeadmin:**
+**In production, always remove kubeadmin:**
 
-After verifying your identity provider works and granting cluster-admin to at least one LDAP/OIDC user, you would delete the kubeadmin secret from the `kube-system` namespace. This removes the default administrative account and ensures all cluster access goes through your enterprise identity provider.
-
-**For this lab, we will NOT delete kubeadmin** to ensure you maintain access to the cluster throughout the workshop.
+After verifying your identity provider works and granting cluster-admin to at least one LDAP/OIDC user, delete the kubeadmin secret from the `kube-system` namespace. This removes the bootstrap account and ensures all cluster access goes through your enterprise identity provider. On this workshop cluster, kubeadmin has already been removed — you're using the `admin` HTPasswd account instead.
 
 **Automate LDAP group sync with CronJob:**
 
@@ -642,7 +640,7 @@ For complete implementation details, see the link:https://docs.redhat.com/en/doc
 ====
 **Issue: Kubeadmin login no longer works (401 Unauthorized)**
 
-In production environments where kubeadmin has been removed, you would log in with your LDAP admin account instead:
+If you're locked out, log in with your LDAP admin account:
 
 [source,bash,role="copypaste"]
 ----
@@ -652,7 +650,7 @@ oc login -u fancyuser1 -p 'Op#nSh1ft' $OCP_SERVER --insecure-skip-tls-verify
 
 Since you granted cluster-admin to `fancyuser1` in Step 11, this account has full administrative privileges and can be used for all cluster administration tasks.
 
-**Production best practice:** Remove kubeadmin after verifying enterprise authentication works and granting cluster-admin to appropriate LDAP/OIDC users.
+**Production best practice:** Always remove the kubeadmin bootstrap account after configuring enterprise authentication.
 
 **Issue: LDAP users can't log in**
 
@@ -720,14 +718,14 @@ Check for degraded conditions and follow remediation steps.
 ✅ **RBAC with Groups** - Granted cluster-reader and project-specific roles +
 ✅ **Project Collaboration** - Created dev/test/prod projects with team access +
 ✅ **Permission Testing** - Verified users have correct access levels +
-✅ **Security Hardening** - Learned to remove kubeadmin and automate group sync
+✅ **Security Hardening** - Understood kubeadmin removal and group sync automation
 
 **Key takeaway:** OpenShift authentication integrates with existing identity management (LDAP, OIDC, HTPasswd, GitHub, and others) and uses group-based RBAC for scalable permission management.
 
 **Production recommendations:**
 
 1. Use LDAP/OIDC, never HTPasswd
-2. Remove kubeadmin after configuring real identity provider
+2. Remove kubeadmin bootstrap account after configuring real identity provider
 3. Automate group sync with CronJob
 4. Use groups for RBAC, not individual users
 5. Follow least-privilege principle (view over edit, edit over admin)
