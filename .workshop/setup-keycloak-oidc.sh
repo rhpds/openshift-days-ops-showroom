@@ -1,41 +1,41 @@
 #!/bin/bash
-# Setup Keycloak for OpenShift OIDC Authentication
+# Setup Red Hat build of Keycloak (RHBK) for OpenShift OIDC Authentication
 # Creates realm, users, groups, and OIDC client configuration
 
 set -e
 
-echo "=== Keycloak OIDC Setup Script ==="
+echo "=== Keycloak OIDC Setup Script (RHBK) ==="
 
-# Get Keycloak credentials
-KEYCLOAK_URL="https://$(oc get route keycloak -n rhsso -o jsonpath='{.spec.host}')"
-ADMIN_USER=$(oc get secret credential-rhsso -n rhsso -o jsonpath='{.data.ADMIN_USERNAME}' | base64 -d)
-ADMIN_PASS=$(oc get secret credential-rhsso -n rhsso -o jsonpath='{.data.ADMIN_PASSWORD}' | base64 -d)
+# Get Keycloak credentials - RHBK uses keycloak-initial-admin secret
+KEYCLOAK_URL="https://$(oc get route keycloak -n rhbk -o jsonpath='{.spec.host}')"
+ADMIN_USER=$(oc get secret keycloak-initial-admin -n rhbk -o jsonpath='{.data.username}' | base64 -d)
+ADMIN_PASS=$(oc get secret keycloak-initial-admin -n rhbk -o jsonpath='{.data.password}' | base64 -d)
 
 echo "Keycloak URL: $KEYCLOAK_URL"
 echo "Admin User: $ADMIN_USER"
 
-# Get admin token
+# Get admin token - RHBK v26 has no /auth prefix
 echo "Getting admin token..."
-TOKEN=$(curl -sk -X POST "${KEYCLOAK_URL}/auth/realms/master/protocol/openid-connect/token" \
+TOKEN=$(curl -sk -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   --data-urlencode "username=${ADMIN_USER}" \
   --data-urlencode "password=${ADMIN_PASS}" \
   --data-urlencode "grant_type=password" \
-  --data-urlencode "client_id=admin-cli" | jq -r '.access_token')
+  --data-urlencode "client_id=admin-cli" | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))")
 
-if [ -z "$TOKEN" ] || [ "$TOKEN" = "null" ]; then
+if [ -z "$TOKEN" ]; then
   echo "ERROR: Failed to get admin token"
   exit 1
 fi
 echo "Got admin token"
 
 # Create OpenShift realm
-echo "Creating openshift realm..."
-curl -sk -X POST "${KEYCLOAK_URL}/auth/admin/realms" \
+echo "Creating OpenShift realm..."
+curl -sk -X POST "${KEYCLOAK_URL}/admin/realms" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "realm": "openshift",
+    "realm": "OpenShift",
     "enabled": true,
     "registrationAllowed": false,
     "loginWithEmailAllowed": false,
@@ -45,19 +45,19 @@ curl -sk -X POST "${KEYCLOAK_URL}/auth/admin/realms" \
     "bruteForceProtected": true
   }' || echo "(realm may already exist)"
 
-# Refresh token for new realm operations
+# Refresh token
 sleep 2
-TOKEN=$(curl -sk -X POST "${KEYCLOAK_URL}/auth/realms/master/protocol/openid-connect/token" \
+TOKEN=$(curl -sk -X POST "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   --data-urlencode "username=${ADMIN_USER}" \
   --data-urlencode "password=${ADMIN_PASS}" \
   --data-urlencode "grant_type=password" \
-  --data-urlencode "client_id=admin-cli" | jq -r '.access_token')
+  --data-urlencode "client_id=admin-cli" | python3 -c "import sys,json; print(json.load(sys.stdin).get('access_token',''))")
 
 # Create groups
 echo "Creating groups..."
 for GROUP in ocp-admins ocp-developers ocp-viewers; do
-  curl -sk -X POST "${KEYCLOAK_URL}/auth/admin/realms/openshift/groups" \
+  curl -sk -X POST "${KEYCLOAK_URL}/admin/realms/OpenShift/groups" \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
     -d "{\"name\": \"$GROUP\"}" || echo "(group $GROUP may already exist)"
@@ -65,64 +65,69 @@ done
 
 # Get group IDs
 echo "Getting group IDs..."
-ADMIN_GROUP_ID=$(curl -sk "${KEYCLOAK_URL}/auth/admin/realms/openshift/groups?search=ocp-admins" \
-  -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
-DEV_GROUP_ID=$(curl -sk "${KEYCLOAK_URL}/auth/admin/realms/openshift/groups?search=ocp-developers" \
-  -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
-VIEWER_GROUP_ID=$(curl -sk "${KEYCLOAK_URL}/auth/admin/realms/openshift/groups?search=ocp-viewers" \
-  -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
+ADMIN_GROUP_ID=$(curl -sk "${KEYCLOAK_URL}/admin/realms/OpenShift/groups?search=ocp-admins" \
+  -H "Authorization: Bearer $TOKEN" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
+DEV_GROUP_ID=$(curl -sk "${KEYCLOAK_URL}/admin/realms/OpenShift/groups?search=ocp-developers" \
+  -H "Authorization: Bearer $TOKEN" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
+VIEWER_GROUP_ID=$(curl -sk "${KEYCLOAK_URL}/admin/realms/OpenShift/groups?search=ocp-viewers" \
+  -H "Authorization: Bearer $TOKEN" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
 
 echo "Group IDs: admins=$ADMIN_GROUP_ID, devs=$DEV_GROUP_ID, viewers=$VIEWER_GROUP_ID"
 
-# Create users
+# Create users and assign to groups
 echo "Creating users..."
 PASSWORD="OpenShift123!"
 
 create_user() {
   local USERNAME=$1
-  local GROUP_ID=$2
+  local FIRSTNAME=$2
+  local GROUP_ID=$3
 
-  # Create user
-  curl -sk -X POST "${KEYCLOAK_URL}/auth/admin/realms/openshift/users" \
+  # Create user without credentials (RHBK v26 requires separate password reset)
+  curl -sk -X POST "${KEYCLOAK_URL}/admin/realms/OpenShift/users" \
     -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
     -d "{
       \"username\": \"$USERNAME\",
       \"enabled\": true,
-      \"emailVerified\": true,
-      \"credentials\": [{
-        \"type\": \"password\",
-        \"value\": \"$PASSWORD\",
-        \"temporary\": false
-      }]
+      \"firstName\": \"$FIRSTNAME\",
+      \"lastName\": \"User\",
+      \"emailVerified\": true
     }" || echo "(user $USERNAME may already exist)"
 
   # Get user ID
-  USER_ID=$(curl -sk "${KEYCLOAK_URL}/auth/admin/realms/openshift/users?username=$USERNAME" \
-    -H "Authorization: Bearer $TOKEN" | jq -r '.[0].id')
+  local USER_ID=$(curl -sk "${KEYCLOAK_URL}/admin/realms/OpenShift/users?username=$USERNAME" \
+    -H "Authorization: Bearer $TOKEN" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
 
-  if [ -n "$USER_ID" ] && [ "$USER_ID" != "null" ]; then
+  if [ -n "$USER_ID" ]; then
+    # Set password
+    curl -sk -X PUT "${KEYCLOAK_URL}/admin/realms/OpenShift/users/$USER_ID/reset-password" \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "Content-Type: application/json" \
+      -d "{\"type\":\"password\",\"value\":\"$PASSWORD\",\"temporary\":false}"
+
     # Add user to group
-    curl -sk -X PUT "${KEYCLOAK_URL}/auth/admin/realms/openshift/users/$USER_ID/groups/$GROUP_ID" \
-      -H "Authorization: Bearer $TOKEN"
+    curl -sk -X PUT "${KEYCLOAK_URL}/admin/realms/OpenShift/users/$USER_ID/groups/$GROUP_ID" \
+      -H "Authorization: Bearer $TOKEN" \
+      -H "Content-Type: application/json" -d '{}'
     echo "Created user $USERNAME and added to group"
   fi
 }
 
-create_user "admin1" "$ADMIN_GROUP_ID"
-create_user "developer1" "$DEV_GROUP_ID"
-create_user "viewer1" "$VIEWER_GROUP_ID"
+create_user "admin1" "Admin" "$ADMIN_GROUP_ID"
+create_user "developer1" "Developer" "$DEV_GROUP_ID"
+create_user "viewer1" "Viewer" "$VIEWER_GROUP_ID"
 
 # Get OpenShift OAuth callback URL
-OAUTH_CALLBACK="https://$(oc get route oauth-openshift -n openshift-authentication -o jsonpath='{.spec.host}')/oauth2callback/rhsso"
+OAUTH_CALLBACK="https://$(oc get route oauth-openshift -n openshift-authentication -o jsonpath='{.spec.host}')/oauth2callback/rhbk"
 
 # Create OIDC client
 echo "Creating OIDC client..."
-curl -sk -X POST "${KEYCLOAK_URL}/auth/admin/realms/openshift/clients" \
+curl -sk -X POST "${KEYCLOAK_URL}/admin/realms/OpenShift/clients" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "{
-    \"clientId\": \"openshift-cluster\",
+    \"clientId\": \"openshift\",
     \"enabled\": true,
     \"protocol\": \"openid-connect\",
     \"publicClient\": false,
@@ -130,31 +135,40 @@ curl -sk -X POST "${KEYCLOAK_URL}/auth/admin/realms/openshift/clients" \
     \"redirectUris\": [\"$OAUTH_CALLBACK\"],
     \"webOrigins\": [\"+\"],
     \"standardFlowEnabled\": true,
-    \"directAccessGrantsEnabled\": true,
-    \"protocolMappers\": [{
-      \"name\": \"groups\",
-      \"protocol\": \"openid-connect\",
-      \"protocolMapper\": \"oidc-group-membership-mapper\",
-      \"consentRequired\": false,
-      \"config\": {
-        \"full.path\": \"false\",
-        \"id.token.claim\": \"true\",
-        \"access.token.claim\": \"true\",
-        \"claim.name\": \"groups\",
-        \"userinfo.token.claim\": \"true\"
-      }
-    }]
+    \"directAccessGrantsEnabled\": true
   }" || echo "(client may already exist)"
+
+# Add groups protocol mapper
+echo "Adding groups protocol mapper..."
+CLIENT_UUID=$(curl -sk "${KEYCLOAK_URL}/admin/realms/OpenShift/clients?clientId=openshift" \
+  -H "Authorization: Bearer $TOKEN" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
+
+curl -sk -X POST "${KEYCLOAK_URL}/admin/realms/OpenShift/clients/$CLIENT_UUID/protocol-mappers/models" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "groups",
+    "protocol": "openid-connect",
+    "protocolMapper": "oidc-group-membership-mapper",
+    "consentRequired": false,
+    "config": {
+      "full.path": "false",
+      "id.token.claim": "true",
+      "access.token.claim": "true",
+      "claim.name": "groups",
+      "userinfo.token.claim": "true"
+    }
+  }' || echo "(mapper may already exist)"
 
 echo ""
 echo "=== Setup Complete ==="
 echo ""
 echo "Created in Keycloak:"
-echo "  - Realm: openshift"
+echo "  - Realm: OpenShift"
 echo "  - Users: admin1, developer1, viewer1"
 echo "  - Password: $PASSWORD"
 echo "  - Groups: ocp-admins, ocp-developers, ocp-viewers"
-echo "  - OIDC Client: openshift-cluster"
+echo "  - OIDC Client: openshift"
 echo "  - Client Secret: openshift-client-secret"
 echo ""
 echo "OAuth Callback URL: $OAUTH_CALLBACK"
