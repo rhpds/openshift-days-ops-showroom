@@ -92,6 +92,7 @@ create_user() {
       \"enabled\": true,
       \"firstName\": \"$FIRSTNAME\",
       \"lastName\": \"User\",
+      \"email\": \"${USERNAME}@example.com\",
       \"emailVerified\": true
     }" || echo "(user $USERNAME may already exist)"
 
