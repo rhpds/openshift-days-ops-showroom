@@ -47,7 +47,7 @@ oc get pods -n openshift-ingress -o wide
 
 Router pods handle incoming HTTP/HTTPS traffic. On this cluster they run on the control-plane nodes using HostNetwork, meaning they bind directly to the node's network interfaces on ports 80 and 443.
 
-You can also view these in the **OCP Console** at **Workloads -> Pods** (project: `openshift-ingress`):
+You can also view these in the **OCP Console** at **Workloads -> Pods**. Toggle **Show default projects** in the project dropdown, then select `openshift-ingress`:
 
 image::ingress-images/ingress-router-pods.png[Router pods in the openshift-ingress namespace]
 
