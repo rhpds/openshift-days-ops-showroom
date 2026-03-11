@@ -251,7 +251,7 @@ Notice the user was **automatically created** on first login. Log back in as adm
 
 **Log back in as cluster admin:**
 
-[source,bash,role="execute"]
+[source,bash,role="execute",subs="attributes"]
 ----
 oc login -u admin -p {openshift_cluster_admin_password} {openshift_api_server_url} --insecure-skip-tls-verify
 ----
@@ -429,7 +429,7 @@ oc whoami --show-context
 
 Log back in as cluster admin:
 
-[source,bash,role="execute"]
+[source,bash,role="execute",subs="attributes"]
 ----
 oc login -u admin -p {openshift_cluster_admin_password} {openshift_api_server_url} --insecure-skip-tls-verify
 ----
@@ -587,7 +587,7 @@ Filter by project to see who has access to what.
 
 **Ensure kubeadmin is removed after configuring identity provider:**
 
-[source,bash,role="execute"]
+[source,bash,role="execute",subs="attributes"]
 ----
 oc login -u admin -p {openshift_cluster_admin_password} {openshift_api_server_url} --insecure-skip-tls-verify
 ----
@@ -661,7 +661,7 @@ For complete implementation details, see the link:https://docs.redhat.com/en/doc
 
 **Log back in as cluster admin to continue:**
 
-[source,bash,role="execute"]
+[source,bash,role="execute",subs="attributes"]
 ----
 oc login -u admin -p {openshift_cluster_admin_password} {openshift_api_server_url} --insecure-skip-tls-verify
 ----
