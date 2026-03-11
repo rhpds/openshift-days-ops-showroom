@@ -242,9 +242,22 @@ spec:
 EOF
 ----
 
-While the operators install (~90 seconds), navigate to **Ecosystem -> Installed Operators** in the **OCP Console** and watch them appear. You'll see the status change from `Installing` to `Succeeded` in real-time — this is how you'd monitor operator installs in production.
+While the operators install, navigate to **Ecosystem -> Installed Operators** in the **OCP Console** (select **All Projects**) and watch them appear. You'll see the status change from `Installing` to `Succeeded` in real-time — this is how you'd monitor operator installs in production.
 
-Verify all three are ready via CLI:
+Wait for all three operators to be ready (this can take 2-3 minutes):
+
+[source,bash,role="execute"]
+----
+echo "Waiting for Loki operator..."
+until oc get csv -n openshift-operators-redhat 2>/dev/null | grep -q Succeeded; do sleep 10; done
+echo "Waiting for Cluster Logging operator..."
+until oc get csv -n openshift-logging 2>/dev/null | grep -q Succeeded; do sleep 10; done
+echo "Waiting for Cluster Observability operator..."
+until oc get csv -n openshift-operators 2>/dev/null | grep -q observability.*Succeeded; do sleep 10; done
+echo "All operators ready"
+----
+
+Verify:
 
 [source,bash,role="execute"]
 ----
@@ -253,7 +266,7 @@ oc get csv -n openshift-logging | grep logging
 oc get csv -n openshift-operators | grep observability
 ----
 
-All operators should show `Succeeded`.
+All operators should show `Succeeded`. **Do not proceed to the next step until all three show Succeeded** — the LokiStack and UIPlugin resources require the operator CRDs to be installed first.
 
 === Configure Log Storage (Loki + S3)
 
