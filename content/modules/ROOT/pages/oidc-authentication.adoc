@@ -504,7 +504,7 @@ Also restore admin access in the terminal:
 
 [source,bash,role="execute",subs="attributes"]
 ----
-oc login -u admin -p {openshift_cluster_admin_password} --insecure-skip-tls-verify
+oc login -u {openshift_cluster_admin_username} -p {openshift_cluster_admin_password} --insecure-skip-tls-verify
 ----
 
 == Production Considerations
