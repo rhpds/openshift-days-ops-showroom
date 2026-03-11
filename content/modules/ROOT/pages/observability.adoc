@@ -295,7 +295,7 @@ Wait for the bucket to be provisioned:
 oc wait --for=jsonpath='{.status.phase}'=Bound obc/loki-bucket -n openshift-logging --timeout=60s
 ----
 
-Now extract the auto-generated S3 credentials and create the LokiStack — this is Loki's main configuration:
+Now extract the auto-generated S3 credentials and create a CA certificate ConfigMap so Loki can trust the NooBaa S3 endpoint's TLS certificate:
 
 [source,bash,role="execute"]
 ----
@@ -305,6 +305,18 @@ BUCKET_NAME=$(oc get configmap loki-bucket -n openshift-logging -o jsonpath='{.d
 BUCKET_HOST=$(oc get configmap loki-bucket -n openshift-logging -o jsonpath='{.data.BUCKET_HOST}')
 DEFAULT_SC=$(oc get sc -o jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubernetes\.io/is-default-class=="true")].metadata.name}')
 
+oc get secret noobaa-s3-serving-cert -n openshift-storage \
+  -o jsonpath='{.data.tls\.crt}' | base64 -d > /tmp/noobaa-ca.crt
+oc create configmap loki-s3-ca -n openshift-logging \
+  --from-file=service-ca.crt=/tmp/noobaa-ca.crt
+----
+
+NOTE: The NooBaa S3 endpoint uses a cluster-internal service CA certificate. Without providing this CA to the LokiStack, the ingester would fail to write log chunks to S3 with a TLS verification error.
+
+Create the S3 credentials secret and the LokiStack:
+
+[source,bash,role="execute"]
+----
 cat <<EOF | oc apply -f -
 apiVersion: v1
 kind: Secret
@@ -326,6 +338,8 @@ metadata:
 spec:
   managementState: Managed
   size: 1x.extra-small              # smallest size — scale up for production
+  replication:
+    factor: 1                        # single replica — matches compact cluster sizing
   storage:
     schemas:
     - effectiveDate: '2024-10-01'
@@ -333,6 +347,8 @@ spec:
     secret:
       name: lokistack-dev-s3        # S3 credentials from the bucket claim
       type: s3
+    tls:
+      caName: loki-s3-ca            # CA cert for NooBaa's S3 endpoint
   storageClassName: ${DEFAULT_SC}    # uses the cluster's default storage class
   tenants:
     mode: openshift-logging          # multi-tenant: separates app, infra, and audit logs
