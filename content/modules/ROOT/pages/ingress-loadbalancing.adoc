@@ -274,25 +274,11 @@ oc get pods -n openshift-ingress
 
 === Scale Ingress Controller
 
-Scale to a different replica count to see the behaviour. Let's scale down to 2 and then back:
+Let's scale the ingress controller up to see how OpenShift adds router capacity:
 
 [source,bash,role="execute"]
 ----
-oc patch ingresscontroller default -n openshift-ingress-operator --type=merge -p '{"spec":{"replicas":2}}'
-----
-
-Watch a router pod terminate:
-
-[source,bash,role="execute"]
-----
-oc get pods -n openshift-ingress -w
-----
-
-Press `Ctrl+C` when you see 2 pods running. Now scale back:
-
-[source,bash,role="execute"]
-----
-oc patch ingresscontroller default -n openshift-ingress-operator --type=merge -p '{"spec":{"replicas":3}}'
+oc patch ingresscontroller default -n openshift-ingress-operator --type=merge -p '{"spec":{"replicas":4}}'
 ----
 
 Watch the new router pod come up:
@@ -319,6 +305,9 @@ image::ingress-images/ingress-operator-conditions.png[Ingress operator condition
 
 [source,bash,role="execute"]
 ----
+# Scale ingress controller back to 3 replicas
+oc patch ingresscontroller default -n openshift-ingress-operator --type=merge -p '{"spec":{"replicas":3}}'
+
 # Remove rate limiting annotations
 oc annotate route weathernow -n app-management \
   haproxy.router.openshift.io/rate-limit-connections- \
