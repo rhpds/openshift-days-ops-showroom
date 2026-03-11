@@ -227,15 +227,7 @@ Try logging in as a regular user:
 oc login -u normaluser1 -p 'Op#nSh1ft' $OCP_SERVER --insecure-skip-tls-verify
 ----
 
-You should see:
-
-----
-Login successful.
-
-You don't have any projects. You can try to create a new project, by running
-
-    oc new-project <projectname>
-----
+You should see `Login successful.` — the user was authenticated against the LDAP server.
 
 **Check your identity:**
 
