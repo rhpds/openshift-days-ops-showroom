@@ -31,14 +31,12 @@ echo "Module settings (core operations):"
 echo "  MODULE_ENABLE_APPMGMT=${MODULE_ENABLE_APPMGMT:-true}"
 echo "  MODULE_ENABLE_INGRESS=${MODULE_ENABLE_INGRESS:-true}"
 echo "  MODULE_ENABLE_NETSEC=${MODULE_ENABLE_NETSEC:-true}"
-echo "  MODULE_ENABLE_WAF=${MODULE_ENABLE_WAF:-true}"
 echo "  MODULE_ENABLE_DEBUGGING=${MODULE_ENABLE_DEBUGGING:-true}"
 echo "Module settings (identity & access):"
 echo "  MODULE_ENABLE_LDAP=${MODULE_ENABLE_LDAP:-true}"
 echo "  MODULE_ENABLE_OIDC=${MODULE_ENABLE_OIDC:-true}"
 echo "Module settings (day 2 operations):"
 echo "  MODULE_ENABLE_OBSERVABILITY=${MODULE_ENABLE_OBSERVABILITY:-true}"
-echo "  MODULE_ENABLE_BACKUP=${MODULE_ENABLE_BACKUP:-true}"
 echo "  MODULE_ENABLE_PERFORMANCE=${MODULE_ENABLE_PERFORMANCE:-true}"
 echo "Module settings (advanced topics):"
 echo "  MODULE_ENABLE_VIRT=${MODULE_ENABLE_VIRT:-true}"
@@ -60,14 +58,12 @@ ATTRS="${ATTRS}    module_enable_install: '${MODULE_ENABLE_INSTALL:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_appmgmt: '${MODULE_ENABLE_APPMGMT:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_ingress: '${MODULE_ENABLE_INGRESS:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_netsec: '${MODULE_ENABLE_NETSEC:-true}'"$'\n'
-ATTRS="${ATTRS}    module_enable_waf: '${MODULE_ENABLE_WAF:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_debugging: '${MODULE_ENABLE_DEBUGGING:-true}'"$'\n'
 # Identity & Access
 ATTRS="${ATTRS}    module_enable_ldap: '${MODULE_ENABLE_LDAP:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_oidc: '${MODULE_ENABLE_OIDC:-true}'"$'\n'
 # Day 2 Operations
 ATTRS="${ATTRS}    module_enable_observability: '${MODULE_ENABLE_OBSERVABILITY:-true}'"$'\n'
-ATTRS="${ATTRS}    module_enable_backup: '${MODULE_ENABLE_BACKUP:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_performance: '${MODULE_ENABLE_PERFORMANCE:-true}'"$'\n'
 # Advanced Topics
 ATTRS="${ATTRS}    module_enable_virt: '${MODULE_ENABLE_VIRT:-true}'"$'\n'
@@ -102,9 +98,6 @@ ATTRS="${ATTRS}    console_url: 'https://console-openshift-console.${ROUTE_SUBDO
 ATTRS="${ATTRS}    rhacs_url: 'https://central-stackrox.${ROUTE_SUBDOMAIN:-}'"$'\n'
 ATTRS="${ATTRS}    rhacs_admin_username: 'admin'"$'\n'
 ATTRS="${ATTRS}    rhacs_admin_password: '${ADMIN_PASSWORD:-}'"$'\n'
-ATTRS="${ATTRS}    quay_url: 'https://quay.${ROUTE_SUBDOMAIN:-}'"$'\n'
-ATTRS="${ATTRS}    quay_admin_username: 'quayadmin'"$'\n'
-ATTRS="${ATTRS}    quay_admin_password: '${ADMIN_PASSWORD:-}'"$'\n'
 ATTRS="${ATTRS}    argocd_url: 'https://openshift-gitops-server-openshift-gitops.${ROUTE_SUBDOMAIN:-}'"$'\n'
 ATTRS="${ATTRS}    devhub_url: 'https://backstage-developer-hub-backstage.${ROUTE_SUBDOMAIN:-}'"$'\n'
 
@@ -135,7 +128,7 @@ echo "=== Antora injection complete ==="
 
 # ==============================================================================
 # Generate ui-config.yml with conditional tabs based on enabled modules
-# OCP Console, Terminal, and Quay are always shown (base workloads)
+# OCP Console and Terminal are always shown (base workloads)
 # RHACS, ArgoCD, Developer Hub are conditional on their module flags
 # ==============================================================================
 echo "=== Generating ui-config.yml with conditional tabs ==="
@@ -161,9 +154,6 @@ tabs:
   - name: Terminal
     path: /wetty
     port: 443
-
-  - name: Quay
-    url: 'https://quay.${DOMAIN}'
 UIEOF
 
 # Add RHACS tab if security module is enabled
