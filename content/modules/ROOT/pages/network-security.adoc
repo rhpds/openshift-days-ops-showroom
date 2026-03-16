@@ -505,57 +505,6 @@ oc get pods -n openshift-dns
 
 CoreDNS provides DNS resolution for all pods in the cluster.
 
-'''
-
-.Network Troubleshooting (click to expand)
-[%collapsible]
-====
-**Check Pod Connectivity:**
-
-[source,bash,role="execute"]
-----
-# Get pod IPs
-oc get pods -A -o wide | grep Running | head -5
-----
-
-**Check Network Operator Logs:**
-
-[source,bash,role="copypaste"]
-----
-oc logs -n openshift-network-operator deployment/network-operator --tail=50
-----
-
-**Check OVN Controller Logs:**
-
-[source,bash,role="copypaste"]
-----
-oc logs -n openshift-ovn-kubernetes ds/ovnkube-node -c ovnkube-controller --tail=30
-----
-
-**Verify NetworkPolicy is Applied:**
-
-[source,bash,role="copypaste"]
-----
-oc describe networkpolicy <policy-name> -n <namespace>
-----
-
-**Test connectivity between pods:**
-
-[source,bash,role="copypaste"]
-----
-# From source pod, curl target pod IP
-oc exec -n <source-ns> <source-pod> -- curl -s --connect-timeout 3 http://<target-pod-ip>:8080
-----
-
-**Check EgressFirewall status:**
-
-[source,bash,role="copypaste"]
-----
-oc get egressfirewall -A
-oc describe egressfirewall default -n <namespace>
-----
-====
-
 == Cleanup
 
 [source,bash,role="execute"]

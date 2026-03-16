@@ -210,6 +210,11 @@ oc get pods -n openshift-authentication
 
 All oauth-openshift pods should be `Running` and `Ready 1/1`.
 
+[NOTE]
+====
+The OAuth operator rollout can take 2-3 minutes to complete. If you get an error like `error: invalid credentials` or `unexpected response status 500` when trying to log in, wait a few minutes and try again.
+====
+
 == Step 4: Test LDAP Authentication
 
 First, capture the API server URL for login commands:
@@ -498,7 +503,7 @@ oc login -u normaluser1 -p 'Op#nSh1ft' $OCP_SERVER --insecure-skip-tls-verify
 oc get projects
 ----
 
-Result: You may see some system namespaces (like `openshift-virtualization-os-images`) but **no application projects** (app-dev, app-test, app-prod). This user is not in any project-specific groups.
+Result: You may see some system namespaces but **no application projects** (app-dev, app-test, app-prod). This user is not in any project-specific groups.
 
 **Test as teamuser1 (ose-teamed-app member):**
 

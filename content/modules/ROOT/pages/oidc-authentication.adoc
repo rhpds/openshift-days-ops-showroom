@@ -320,30 +320,22 @@ OIDC uses the **authorization code flow** which requires a web browser. Unlike L
 
 **Test OIDC authentication via web console:**
 
-1. Get the console URL:
-+
-[source,bash,role="execute"]
-----
-oc whoami --show-console
-----
-
-2. Open the URL in a web browser
-3. If you're already logged in, click on your username in the top-right corner and select **Log out**:
+1. In the **OCP Console** tab, click on your username in the top-right corner and select **Log out**:
 +
 image::oidc-logout-menu.png[OpenShift console logout menu]
 +
-4. You'll see the login options — click **rhbk**
-5. You'll be redirected to the Keycloak login page. Log in with: `developer1` / `OpenShift123!`
+2. You'll see the login options — click **rhbk**
+3. You'll be redirected to the Keycloak login page. Log in with: `developer1` / `OpenShift123!`
 +
 image::oidc-keycloak-login.png[Keycloak login page]
 +
-6. You'll be redirected back to the OpenShift console, logged in as Developer User:
+4. You'll be redirected back to the OpenShift console, logged in as Developer User:
 +
 image::oidc-logged-in-developer.png[OpenShift console logged in as Developer User via OIDC]
 
 [NOTE]
 ====
-You may see an error message about permissions. This is **expected** — `developer1` is a regular user without cluster-admin. You'll configure RBAC in Step 7.
+You may see an error message about permissions. This is **expected** — `developer1` is a regular user without cluster-admin. You'll configure RBAC in Step 7. To fix the console view, click the **reload button** (circular arrow) next to the OCP Console tab to refresh the session, then click the **rhbk** tab again if needed.
 ====
 
 TIP: To use the CLI with your OIDC login, click your username in the top-right corner and select "Copy login command" to get a token.
