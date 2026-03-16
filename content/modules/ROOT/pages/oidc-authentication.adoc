@@ -217,15 +217,17 @@ This script creates:
 echo "https://$(oc get route keycloak -n rhbk -o jsonpath='{.spec.host}')"
 ----
 
-Log in with the Keycloak admin credentials from Step 2. In the admin console, select the **OpenShift** realm from the dropdown (top-left). Click **Users**, then **View all users** to see the three accounts:
+Log in with the Keycloak admin credentials from Step 2. You'll see the Red Hat build of Keycloak admin console:
 
-image::oidc-keycloak-users.png[Keycloak Users showing admin1 developer1 and viewer1]
+image::oidc-rhbk-users.png[RHBK admin console showing Users list]
 
-Click **Groups** to see ocp-admins, ocp-developers, ocp-viewers. Then click **Clients** -> **openshift** -> **Mappers** tab — you'll see the `groups` protocol mapper that puts group membership into the ID token:
+Select the **OpenShift** realm from the realm dropdown (top-left, where it says "Red Hat build of Keycloak"). Click **Users** to see the three accounts (admin1, developer1, viewer1). Click **Groups** to see ocp-admins, ocp-developers, ocp-viewers.
 
-image::oidc-keycloak-mapper.png[Keycloak groups protocol mapper configuration]
+Then click **Clients** -> **openshift** to see the OIDC client configuration:
 
-This mapper is the key to automatic group sync — without it, OpenShift wouldn't know what groups a user belongs to.
+image::oidc-rhbk-client.png[RHBK Clients page showing OpenShift OIDC client]
+
+Click the **Client scopes** tab, then **openshift-dedicated** -> **Mappers** — you'll see the `groups` protocol mapper that puts group membership into the ID token. This mapper is the key to automatic group sync — without it, OpenShift wouldn't know what groups a user belongs to.
 
 == Step 4: Configure OpenShift OAuth with OIDC
 
@@ -320,22 +322,21 @@ OIDC uses the **authorization code flow** which requires a web browser. Unlike L
 
 **Test OIDC authentication via web console:**
 
-1. In the **OCP Console** tab, click on your username in the top-right corner and select **Log out**:
+1. In the **OCP Console** tab, click the **reload button** (circular arrow) next to the tab name to refresh the console session. You'll see the login page with both identity providers:
 +
-image::oidc-logout-menu.png[OpenShift console logout menu]
+image::oidc-login-selector.png[OpenShift login page showing htpasswd and rhbk options]
 +
-2. You'll see the login options — click **rhbk**
-3. You'll be redirected to the Keycloak login page. Log in with: `developer1` / `OpenShift123!`
-+
-image::oidc-keycloak-login.png[Keycloak login page]
-+
-4. You'll be redirected back to the OpenShift console, logged in as Developer User:
-+
-image::oidc-logged-in-developer.png[OpenShift console logged in as Developer User via OIDC]
+2. Click **rhbk** — you'll be redirected to the Keycloak login page
+3. Log in with: `developer1` / `OpenShift123!`
+4. You'll be redirected back to the OpenShift console
 
 [NOTE]
 ====
-You may see an error message about permissions. This is **expected** — `developer1` is a regular user without cluster-admin. You'll configure RBAC in Step 7. To fix the console view, click the **reload button** (circular arrow) next to the OCP Console tab to refresh the session, then click the **rhbk** tab again if needed.
+You will likely see an **Authentication error** page:
+
+image::oidc-auth-error.png[Authentication error page after OIDC login]
+
+This is **expected** — `developer1` is a regular user without cluster-admin privileges. Click **Try again**, then click the **reload button** next to the OCP Console tab. You'll configure RBAC permissions in Step 7.
 ====
 
 TIP: To use the CLI with your OIDC login, click your username in the top-right corner and select "Copy login command" to get a token.
