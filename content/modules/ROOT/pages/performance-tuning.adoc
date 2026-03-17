@@ -118,6 +118,8 @@ View the detailed recommendation:
 oc get vpa memory-hog-vpa -o jsonpath='{.status.recommendation.containerRecommendations[0]}' | jq .
 ----
 
+NOTE: If you see no output, the VPA recommender hasn't collected enough metrics yet. Wait 30-60 seconds and run the command again.
+
 VPA recommends **~256Mi memory** instead of the 2Gi requested. That's based on actual observed usage — not guesswork.
 
 === Apply the Right-Sized Resources

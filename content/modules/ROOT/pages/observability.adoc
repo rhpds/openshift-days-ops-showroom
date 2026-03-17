@@ -375,6 +375,15 @@ oc adm policy add-cluster-role-to-user collect-audit-logs -z collector -n opensh
 oc adm policy add-cluster-role-to-user collect-infrastructure-logs -z collector -n openshift-logging
 ----
 
+Wait for the LokiStack gateway CA bundle to be created (the ClusterLogForwarder needs it):
+
+[source,bash,role="execute"]
+----
+echo "Waiting for LokiStack gateway CA bundle..."
+until oc get configmap logging-loki-gateway-ca-bundle -n openshift-logging 2>/dev/null; do sleep 5; done
+echo "CA bundle ready"
+----
+
 Create the ClusterLogForwarder — this defines the pipeline:
 
 [source,bash,role="execute"]
@@ -482,6 +491,29 @@ image::histogram.png[Log histogram]
 ====
 It may take 1-2 minutes for logs to start appearing after the collector pods are running. If you see "No datapoints found", wait a moment and refresh.
 ====
+
+== Cleanup
+
+Remove the logging stack you deployed. The Prometheus monitoring stack is built-in and doesn't need cleanup.
+
+[source,bash,role="execute"]
+----
+# Remove the logging pipeline and UI
+oc delete clusterlogforwarder collector -n openshift-logging --ignore-not-found
+oc delete uiplugin logging --ignore-not-found
+
+# Remove LokiStack and storage
+oc delete lokistack logging-loki -n openshift-logging --ignore-not-found
+oc delete obc loki-bucket -n openshift-logging --ignore-not-found
+oc delete secret lokistack-dev-s3 -n openshift-logging --ignore-not-found
+oc delete configmap loki-s3-ca -n openshift-logging --ignore-not-found
+oc delete sa collector -n openshift-logging --ignore-not-found
+
+# Remove the custom alerting rule
+oc delete prometheusrule ops-track-alerts -n openshift-monitoring --ignore-not-found
+
+echo "Cleanup complete"
+----
 
 == Summary
 

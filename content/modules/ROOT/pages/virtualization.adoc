@@ -2,17 +2,24 @@
 
 == Module Overview
 
-**Duration:** 25 minutes +
+**Duration:** 30 minutes +
 **Audience:** Infrastructure Architects, IT Operations
 
-Your organization has workloads running on VMs that can't be containerized yet. OpenShift Virtualization lets you run VMs alongside containers on the same platform — same tools, same networking, same monitoring. No separate hypervisor infrastructure needed.
+Your organization has workloads running on VMs that can't be containerized yet — databases, middleware, Windows services. OpenShift Virtualization lets you run those VMs alongside containers on the same platform using KubeVirt — a CNCF project built on RHEL KVM. Same scheduler, same networking, same monitoring, same RBAC, same `oc` commands.
+
+**What this means for your organization:**
+
+* **One platform** — VMs and containers managed with the same tools and skills
+* **Migrate at your pace** — run VMs today, containerize when ready. The Migration Toolkit for Virtualization (MTV) handles VM migration with network and storage mapping
+* **Production-ready** — live migration, snapshots, SVVP-certified Windows support, bare-metal performance
 
 == Learning Objectives
 
-* Create and access a virtual machine
+* Create VMs from YAML and from InstanceTypes
 * See how VMs are just pods under the hood
-* Expose a VM using the same networking as containers
+* Expose a VM with Services and Routes — same networking as containers
 * Live migrate a running VM between nodes
+* Clone a VM for rapid provisioning
 * Take snapshots for backup/rollback
 
 == Prerequisites Check
@@ -103,6 +110,30 @@ oc get vms -w
 
 Press `Ctrl+C` when STATUS shows `Running`.
 
+=== InstanceTypes: Cloud-Style Provisioning
+
+The YAML above gives you full control, but in practice most teams don't want to write VM specs from scratch. OpenShift Virtualization provides **InstanceTypes** — predefined compute profiles similar to cloud instance families:
+
+[cols="1,2"]
+|===
+|Series |Use case
+
+|**U** (Universal) |General-purpose workloads
+|**O** (Overcommitted) |Dev/test with CPU overcommit
+|**CX** (Compute) |CPU-intensive workloads
+|**M** (Memory) |Memory-intensive (databases, caching)
+|**N** (Network) |Network-intensive workloads
+|===
+
+View available InstanceTypes:
+
+[source,bash,role="execute"]
+----
+oc get virtualmachineclusterinstancetype | head -10
+----
+
+This is the same experience your teams get in AWS/Azure — pick a size, pick a boot image, deploy. No YAML needed. In the OpenShift console, you can create VMs by selecting an InstanceType and a boot source from `openshift-virtualization-os-images` with a few clicks.
+
 == Access the VM
 
 === Web Console
@@ -138,11 +169,11 @@ Now connect to the VM's serial console:
 virtctl console rhel9-vm
 ----
 
-Login with `cloud-user` / `redhat`. Press `Ctrl+]` to disconnect.
+Login with `cloud-user` / `redhat`. Type `exit` to disconnect.
 
 == It's Just a Pod
 
-This is the key insight. Your VM runs inside a `virt-launcher` pod — managed by the same scheduler, same networking, same storage as containers:
+This is the key insight for operations teams. Your VM runs inside a `virt-launcher` pod — which means everything you already know about managing pods applies to VMs. Same scheduler, same RBAC, same resource quotas, same `oc` commands. You don't need separate tools, separate teams, or separate runbooks for VMs vs containers:
 
 [source,bash,role="execute"]
 ----
@@ -165,7 +196,7 @@ oc describe pod -l kubevirt.io/vm=rhel9-vm -n vm-demo | tail -10
 
 == Unified Monitoring
 
-Your VM's metrics appear in the same Prometheus dashboards as your containers. No separate monitoring stack needed.
+VM metrics flow into the same Prometheus stack as your containers — one dashboard for everything. No need for a separate monitoring tool for your VMs:
 
 In the Fleet Virtualization perspective, click **rhel9-vm** → **Metrics** tab to see:
 
@@ -182,7 +213,7 @@ oc adm top pods -n vm-demo
 
 == Expose the VM (Same Networking as Containers)
 
-VMs get pod IPs on the same SDN as containers. You can create Services and Routes for VMs exactly like you do for container workloads:
+VMs get pod IPs on the same SDN as containers — same Services, same Routes, same NetworkPolicies. One networking model for VMs and containers:
 
 [source,bash,role="execute"]
 ----
@@ -215,9 +246,18 @@ oc get svc rhel9-vm-ssh -n vm-demo
 
 The VM is now reachable via the service — the same way you'd expose a container. Same label selectors, same service types, same networking model.
 
+You can also create a Route to expose VM-hosted applications externally — exactly like you would for a container:
+
+[source,bash,role="execute"]
+----
+oc expose svc rhel9-vm-ssh --port=22 --name=rhel9-vm-route -n vm-demo 2>/dev/null || echo "Route creation skipped (SSH is not HTTP-routable, but the pattern is the same for HTTP services)"
+----
+
+For VMs running web applications (Apache, IIS, Tomcat), you'd create a Service on port 80/443 and a Route with TLS edge termination — the same workflow you use for containers. When migrating multi-tier applications, move the VMs with MTV, wire them up with Services and Routes, and they're live on OpenShift without changing the application.
+
 == Live Migration
 
-Move a running VM to a different node with zero downtime. This is the killer feature for maintenance windows — drain a node without stopping VMs.
+This is the feature that makes OpenShift Virtualization production-ready. When you need to patch a node, upgrade the OS, or replace hardware, you drain the node. Containers reschedule automatically, and VMs live migrate automatically too. `oc adm drain` handles both. Zero downtime during maintenance windows.
 
 Check which node the VM is currently on:
 
@@ -251,9 +291,27 @@ oc get vmi rhel9-vm -o jsonpath='{.status.nodeName}' && echo ""
 
 The VM moved to a different node while still running. No downtime, no reconnection needed.
 
+== Clone a VM
+
+Need another copy of a VM — for testing, dev environments, or scaling out? Clone it. This creates a full copy of the VM's disk and configuration:
+
+[source,bash,role="execute"]
+----
+virtctl clone rhel9-vm --name=rhel9-vm-clone -n vm-demo
+----
+
+[source,bash,role="execute"]
+----
+oc get vms -n vm-demo
+----
+
+You'll see both `rhel9-vm` and `rhel9-vm-clone`. The clone has its own independent disk — changes to one don't affect the other. This is how you'd create golden images: configure a VM exactly how you want it, then clone it for each environment.
+
 == Snapshots
 
-Capture VM state before risky changes (patches, upgrades):
+Every operations team has been burned by a patch that broke something. Snapshots give you a safety net — capture the VM's disk and configuration before a change, and roll back in seconds if it goes wrong. These are Kubernetes-native resources that you can manage with `oc`, automate with pipelines, and back up with OADP.
+
+Create a snapshot of your running VM:
 
 [source,bash,role="execute"]
 ----
@@ -284,7 +342,11 @@ image::vm-snapshot-ready.png[VM Snapshots tab showing rhel9-vm-snap-1 with Ready
 
 === Restore from Snapshot
 
-To restore, stop the VM first, then apply the restore:
+**The scenario:** Imagine you've just applied an OS patch or a configuration change to this VM and something broke — the application won't start, the network config is wrong, or a package update caused a regression. Instead of spending hours troubleshooting or rebuilding from scratch, you restore to the snapshot you took before the change. The VM comes back exactly as it was — disk, configuration, everything.
+
+This is the same workflow you'd use in production: snapshot before maintenance, verify the change works, delete the snapshot if it's good, or restore if it's not.
+
+Stop the VM first, then apply the restore:
 
 [source,bash,role="execute"]
 ----
@@ -326,12 +388,49 @@ Press `Ctrl+C` when `Running`. The VM's disk and configuration are now back to t
 
 == Summary
 
-| Feature | What it means for ops |
-|---------|----------------------|
-| **VMs are pods** | Same `oc` commands, same scheduler, same RBAC |
-| **Same networking** | Services and Routes work for VMs and containers |
-| **Same monitoring** | Prometheus dashboards show VM and container metrics together |
-| **Live migration** | Drain nodes for maintenance without VM downtime |
-| **Snapshots** | Point-in-time recovery before patches or upgrades |
+[cols="1,2"]
+|===
+|Feature |What it means for ops
 
-**The value:** Run legacy VMs and modern containers side-by-side. One platform, one set of tools, gradual migration path. No separate hypervisor infrastructure to manage.
+|**VMs are pods**
+|Same `oc` commands, same scheduler, same RBAC
+
+|**InstanceTypes**
+|Cloud-style provisioning — pick a size, pick an image, deploy
+
+|**Same networking**
+|Services and Routes work for VMs and containers
+
+|**Same monitoring**
+|Prometheus dashboards show VM and container metrics together
+
+|**Live migration**
+|Drain nodes for maintenance without VM downtime
+
+|**Cloning**
+|Rapid provisioning from golden images for dev/test/staging
+
+|**Snapshots**
+|Point-in-time rollback before patches or upgrades
+|===
+
+**The value:** Run VMs and containers side-by-side on one platform. One set of tools, one set of skills. Migrate existing VMs with MTV when ready, or run them indefinitely — OpenShift supports both. Windows Server is SVVP-certified, and RHEL/Fedora/CentOS boot from pre-cached images in seconds.
+
+== Cleanup
+
+[source,bash,role="execute"]
+----
+# Stop VMs, then delete the namespace (removes all VMs, snapshots, clones, services)
+virtctl stop rhel9-vm -n vm-demo 2>/dev/null || true
+virtctl stop rhel9-vm-clone -n vm-demo 2>/dev/null || true
+oc delete namespace vm-demo --ignore-not-found
+
+echo "Cleanup complete"
+----
+
+== Additional Resources
+
+* **OpenShift Virtualization:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/index[Virtualization documentation]
+* **virtctl Reference:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/virt-using-the-cli-tools#virt-virtctl-commands_virt-using-the-cli-tools[virtctl commands]
+* **Live Migration:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/live-migration[Live migration documentation]
+* **VM Snapshots:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/backup-restore[Backup and restore documentation]

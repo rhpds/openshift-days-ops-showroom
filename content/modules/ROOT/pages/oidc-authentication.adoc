@@ -128,7 +128,14 @@ Keycloak uses **realms** to isolate sets of users, credentials, and clients. The
 1. In the left sidebar, click **Manage realms**
 2. Click **Create realm**
 3. Set **Realm name** to: `OpenShift`
++
+image::oidc-rhbk-create-realm.png[Create realm dialog with OpenShift as realm name]
++
 4. Click **Create**
+
+You'll see both realms listed, with **OpenShift** as the current realm:
+
+image::oidc-rhbk-realm-created.png[Manage realms showing master and OpenShift realms]
 
 You're now working inside the OpenShift realm. Everything you create from here — users, groups, clients — belongs to this realm.
 
@@ -140,18 +147,26 @@ Create three users representing different roles in your organization.
 
 1. Click **Users** in the left sidebar
 2. Click **Add user**
-3. Set **Username** to: `admin1`
-4. Set **First name** to: `Admin`
-5. Set **Last name** to: `User`
-6. Set **Email** to: `admin1@example.com`
-7. Click **Create**
-8. Click the **Credentials** tab
-9. Click **Set password**
-10. Enter password: `OpenShift123!`
-11. Turn **Temporary** to **Off** (so the user isn't forced to change password on first login)
-12. Click **Save** and confirm
-
-image::oidc-rhbk-user-details.png[RHBK user details page]
+3. Fill in the user details:
+   - **Username**: `admin1`
+   - **Email**: `admin1@example.com`
+   - **First name**: `Admin`
+   - **Last name**: `User`
++
+image::oidc-rhbk-create-user.png[Create user form with admin1 details filled in]
++
+4. Click **Create**
+5. Click the **Credentials** tab — you'll see "No credentials":
++
+image::oidc-rhbk-credentials-tab.png[Credentials tab showing No credentials with Set password button]
++
+6. Click **Set password**
+7. Enter password: `OpenShift123!` in both fields
+8. Turn **Temporary** to **Off** (so the user isn't forced to change password on first login)
++
+image::oidc-rhbk-set-password.png[Set password dialog with Temporary set to Off]
++
+9. Click **Save** and confirm
 
 **Create two more users the same way:**
 
@@ -178,13 +193,20 @@ Groups in Keycloak map to OpenShift groups. When a user logs into OpenShift, the
 5. Create group: `ocp-developers`
 6. Create group: `ocp-viewers`
 
+You should see all three groups listed:
+
+image::oidc-rhbk-groups-created.png[Groups page showing ocp-admins ocp-developers and ocp-viewers]
+
 **Assign users to groups:**
 
 1. Click **Users** → click **admin1**
-2. Click the **Groups** tab
-3. Click **Join group** → select **ocp-admins** → click **Join**
-4. Go back to **Users** → click **developer1** → **Groups** → **Join group** → **ocp-developers** → **Join**
-5. Go back to **Users** → click **viewer1** → **Groups** → **Join group** → **ocp-viewers** → **Join**
+2. Click the **Groups** tab — you'll see "No groups":
++
+image::oidc-rhbk-user-join-group.png[User Groups tab showing Join Group button]
++
+3. Click **Join Group** → select **ocp-admins** → click **Join**
+4. Go back to **Users** → click **developer1** → **Groups** → **Join Group** → **ocp-developers** → **Join**
+5. Go back to **Users** → click **viewer1** → **Groups** → **Join Group** → **ocp-viewers** → **Join**
 
 == Step 6: Create the OIDC Client
 
@@ -207,53 +229,50 @@ echo "https://oauth-openshift.$(oc get ingresses.config cluster -o jsonpath='{.s
 ----
 +
 8. Set **Valid redirect URIs** to the URL from the command above
++
+image::oidc-rhbk-client-redirect-uri.png[Login settings page with Valid redirect URIs set to the OAuth callback URL]
++
 9. Click **Save**
-
-image::oidc-rhbk-client.png[RHBK client configuration page]
 
 **Get the client secret** — OpenShift needs this to authenticate with Keycloak:
 
-1. Click the **Credentials** tab
-2. Copy the **Client secret** value — you'll need it in the next step
-
-Or get it from the CLI:
-
-[source,bash,role="execute"]
-----
-oc get secret keycloak-client-secret-openshift -n rhbk -o jsonpath='{.data.clientSecret}' | base64 -d && echo
-----
-
-NOTE: If the secret doesn't exist yet (the operator may not have created it), copy it from the Keycloak Credentials tab instead.
+1. After saving, you'll be on the client details page
+2. Click the **Credentials** tab
+3. Copy the **Client secret** value — you'll need it in the next step (click the copy icon next to the secret)
 
 **Configure the groups claim mapper:**
 
 This is the critical step that enables automatic group sync. Without this mapper, OpenShift won't know what groups a user belongs to.
 
-1. Click **Client scopes** in the left sidebar
-2. Click **openshift-dedicated** (this scope was auto-created with the client)
-3. Click the **Mappers** tab
-4. Click **Configure a new mapper**
-5. Select **Group Membership** from the list
-6. Set:
+1. Click **Clients** in the left sidebar
+2. Click **openshift** (the client you just created)
+3. Click the **Client scopes** tab (on the client details page, not the sidebar)
+4. Click **openshift-dedicated** (this scope was auto-created with the client)
+5. Click the **Mappers** tab — you'll see "No mappers":
++
+image::oidc-rhbk-dedicated-mappers.png[openshift-dedicated Mappers tab showing No mappers]
++
+6. Click **Configure a new mapper**
+7. Select **Group Membership** from the list
+8. Set:
    - **Name**: `groups`
    - **Token Claim Name**: `groups`
-   - **Full group path**: **Off** (OpenShift expects just the group name, not the full path)
-7. Click **Save**
+   - **Full group path**: toggle to **Off** (OpenShift expects just the group name, not the full path)
++
+image::oidc-rhbk-group-mapper.png[Group Membership mapper configuration form]
++
+9. Leave the other toggles as defaults and click **Save**
 
 This mapper injects a `groups` array into every ID token — for example, when developer1 logs in, the token will contain `"groups": ["ocp-developers"]`. OpenShift reads this claim and creates the group automatically.
 
 == Step 7: Configure OpenShift OAuth
 
-Back in the terminal, create the client secret and configure OAuth:
+Back in the terminal, create the client secret using the value you copied from the Keycloak Credentials tab:
 
 [source,bash,role="execute"]
 ----
-# If the operator created the secret, extract it. Otherwise use the value you copied.
-CLIENT_SECRET=$(oc get secret keycloak-client-secret-openshift -n rhbk -o jsonpath='{.data.clientSecret}' 2>/dev/null | base64 -d)
-if [ -z "$CLIENT_SECRET" ]; then
-  echo "Enter the client secret from the Keycloak Credentials tab:"
-  read CLIENT_SECRET
-fi
+# Paste the client secret value you copied from the Keycloak Credentials tab
+read -p "Enter the client secret: " CLIENT_SECRET
 
 oc create secret generic rhbk-client-secret \
   --from-literal=clientSecret="$CLIENT_SECRET" \
@@ -316,12 +335,13 @@ The OAuth rollout can take 2-3 minutes. If you get errors when trying to log in,
 
 == Step 8: Test OIDC Login and Automatic Group Sync
 
-1. In the **OCP Console** tab, click the **reload button** (circular arrow) next to the tab name. You'll see both identity providers:
+1. In the **OCP Console** tab, click your username (top-right) and select **Log out**
+2. Click the **reload button** (circular arrow) next to the OCP Console tab name. You'll see both identity providers:
 +
 image::oidc-login-selector.png[OpenShift login page showing htpasswd and rhbk]
 +
-2. Click **rhbk**
-3. Log in as `developer1` / `OpenShift123!`
+3. Click **rhbk**
+4. Log in as `developer1` / `OpenShift123!`
 
 [NOTE]
 ====
