@@ -320,8 +320,32 @@ Need another copy of a VM — for testing, dev environments, or scaling out? Clo
 
 [source,bash,role="execute"]
 ----
-virtctl clone rhel9-vm --name=rhel9-vm-clone -n vm-demo
+cat <<EOF | oc apply -f -
+apiVersion: clone.kubevirt.io/v1alpha1
+kind: VirtualMachineClone
+metadata:
+  name: rhel9-vm-clone
+  namespace: vm-demo
+spec:
+  source:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: rhel9-vm
+  target:
+    apiGroup: kubevirt.io
+    kind: VirtualMachine
+    name: rhel9-vm-clone
+EOF
 ----
+
+Wait for the clone to complete:
+
+[source,bash,role="execute"]
+----
+oc get vmclone rhel9-vm-clone -n vm-demo -w
+----
+
+Press `Ctrl+C` when the PHASE shows `Succeeded`, then check your VMs:
 
 [source,bash,role="execute"]
 ----
