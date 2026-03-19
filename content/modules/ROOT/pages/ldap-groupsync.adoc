@@ -662,11 +662,48 @@ For complete implementation details, see the link:https://docs.redhat.com/en/doc
 * **RBAC Documentation:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/using-rbac[Using RBAC]
 * **Group Sync:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/ldap-syncing[Syncing LDAP groups]
 
----
+== Cleanup
 
-**Log back in as cluster admin to continue:**
+Restore the cluster to its original authentication state before proceeding to other modules:
 
 [source,bash,role="execute",subs="attributes"]
 ----
+# Log back in as admin
 oc login -u {openshift_cluster_admin_username} -p {openshift_cluster_admin_password} --insecure-skip-tls-verify
+
+# Restore OAuth to htpasswd only (remove LDAP provider)
+cat <<'CLEANUP' | oc apply -f -
+apiVersion: config.openshift.io/v1
+kind: OAuth
+metadata:
+  name: cluster
+spec:
+  identityProviders:
+  - name: htpasswd
+    mappingMethod: claim
+    type: HTPasswd
+    htpasswd:
+      fileData:
+        name: htpasswd
+CLEANUP
+
+# Remove LDAP secrets and config
+oc delete secret ldap-secret -n openshift-config --ignore-not-found
+oc delete configmap ca-config-map -n openshift-config --ignore-not-found
+
+# Remove LDAP users, identities, and groups
+oc delete user normaluser1 fancyuser1 fancyuser2 teamuser1 teamuser2 --ignore-not-found
+oc delete identity --all --ignore-not-found
+oc delete group ose-fancy-dev ose-normal-dev ose-teamed-app ose-user --ignore-not-found
+
+# Remove cluster-admin from fancyuser1
+oc adm policy remove-cluster-role-from-user cluster-admin fancyuser1 --ignore-not-found
+oc adm policy remove-cluster-role-from-group cluster-reader ose-fancy-dev --ignore-not-found
+
+# Remove test projects
+oc delete project app-dev app-test app-prod --ignore-not-found
+
+# Wait for OAuth rollout
+oc rollout status deployment/oauth-openshift -n openshift-authentication
+echo "Cleanup complete — OAuth restored to htpasswd only"
 ----
