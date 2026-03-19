@@ -43,6 +43,28 @@ kubevirt-hyperconverged-operator.v4.20.x   OpenShift Virtualization   4.20.x   S
 oc new-project vm-demo
 ----
 
+First, detect the best CPU model that works across all nodes. This ensures live migration works later — nodes may have different CPU generations, and the VM needs a model supported everywhere:
+
+[source,bash,role="execute"]
+----
+CPU_MODEL=$(oc get nodes -o json | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+node_models = []
+for n in d['items']:
+    labels = n['metadata'].get('labels', {})
+    models = set(l.replace('cpu-model.node.kubevirt.io/', '') for l in labels if l.startswith('cpu-model.node.kubevirt.io/'))
+    node_models.append(models)
+common = node_models[0]
+for nm in node_models[1:]:
+    common = common & nm
+epyc = sorted([m for m in common if 'EPYC' in m], reverse=True)
+intel = sorted([m for m in common if m.startswith(('Skylake','Broadwell','Haswell','IvyBridge','SandyBridge'))], reverse=True)
+print(epyc[0] if epyc else (intel[0] if intel else sorted(common)[-1]))
+")
+echo "Common CPU model for live migration: $CPU_MODEL"
+----
+
 Deploy a RHEL 9 VM from a pre-cached boot image:
 
 [source,bash,role="execute"]
@@ -75,6 +97,7 @@ spec:
       domain:
         cpu:
           cores: 1                  # vCPUs allocated to the VM
+          model: ${CPU_MODEL}       # common model across all nodes — enables live migration
         devices:
           disks:
           - name: rootdisk
