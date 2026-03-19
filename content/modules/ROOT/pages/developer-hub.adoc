@@ -279,58 +279,6 @@ RHDH uses plugins to integrate with your infrastructure:
 
 Plugins are configured via the app-config and require appropriate RBAC permissions.
 
-'''
-
-.**Troubleshooting RHDH** (click to expand)
-[%collapsible]
-====
-Common issues and how to diagnose them:
-
-**Check Pod Status**
-
-[source,bash,role="execute"]
-----
-oc get pods -n backstage
-----
-
-If pods are not running, check events:
-
-[source,bash,role="execute"]
-----
-oc get events -n backstage --sort-by='.lastTimestamp' | tail -20
-----
-
-**Check Application Health**
-
-[source,bash,role="execute"]
-----
-curl -sk $(oc get route backstage-developer-hub -n backstage -o jsonpath='https://{.spec.host}')/.backstage/health/v1/readiness
-----
-
-You should see `{"status":"ok"}` if RHDH is healthy.
-
-**Database Connectivity**
-
-[source,bash,role="execute"]
-----
-oc exec -n backstage backstage-psql-developer-hub-0 -- psql -U postgres -c "SELECT 1"
-----
-
-**Restart the Deployment**
-
-[source,bash,role="copypaste"]
-----
-oc rollout restart deployment/backstage-developer-hub -n backstage
-----
-
-**View Operator Logs**
-
-[source,bash,role="execute"]
-----
-oc logs -n rhdh-operator -l app=rhdh-operator --tail=50
-----
-====
-
 == Summary: How RHDH Fits into Ops Workflow
 
 [cols="1,2"]
