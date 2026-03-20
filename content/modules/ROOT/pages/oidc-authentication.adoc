@@ -273,7 +273,10 @@ Back in the terminal, create the client secret using the value you copied from t
 ----
 # Paste the client secret value you copied from the Keycloak Credentials tab
 read -p "Enter the client secret: " CLIENT_SECRET
+----
 
+[source,bash,role="execute"]
+----
 oc create secret generic rhbk-client-secret \
   --from-literal=clientSecret="$CLIENT_SECRET" \
   -n openshift-config

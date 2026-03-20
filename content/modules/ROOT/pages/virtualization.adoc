@@ -192,7 +192,7 @@ Now connect to the VM's serial console:
 virtctl console rhel9-vm
 ----
 
-Login with `cloud-user` / `redhat`. Type `exit` to disconnect.
+Login with `cloud-user` / `redhat`. Type `exit` to disconnect. After exiting, click the **reload button** (circular arrow) at the top next to the terminal tab to reconnect as the admin user.
 
 == It's Just a Pod
 

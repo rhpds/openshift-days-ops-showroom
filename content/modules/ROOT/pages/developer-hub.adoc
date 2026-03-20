@@ -100,7 +100,7 @@ EXISTING=$(oc get configmap app-config-rhdh -n backstage -o jsonpath='{.data.app
 if echo "$EXISTING" | grep -q "reading"; then
   echo "GitHub reading already configured"
 else
-  UPDATED=$(printf '%s\nbackend:\n  reading:\n    allow:\n      - host: "*.github.com"\n      - host: "*.githubusercontent.com"\n' "$EXISTING")
+  UPDATED=$(printf '%s\nbackend:\n  reading:\n    allow:\n      - host: github.com\n      - host: raw.githubusercontent.com\n' "$EXISTING")
   oc create configmap app-config-rhdh -n backstage --from-literal="app-config-rhdh.yaml=$UPDATED" --dry-run=client -o yaml | oc apply -f -
   echo "GitHub reading configuration added"
 fi
