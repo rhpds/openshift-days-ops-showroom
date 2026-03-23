@@ -22,11 +22,10 @@ By the end of this module, you will be able to:
 
 * Understand OpenShift installation methods (IPI, UPI, Agent-based, Assisted)
 * Verify cluster health using ClusterOperators
-* Check control plane and worker node status
-* Validate storage and networking functionality
-* Access the monitoring stack
 * Understand upgrade channels and available updates
-* Use the web console for health monitoring
+* Verify node configuration with MachineConfigPools
+* Validate networking and storage functionality
+* Check etcd health for control plane stability
 
 == Understanding OpenShift Architecture
 
@@ -148,37 +147,6 @@ The `openshift-install` command automates the entire installation:
 
 **More details:** See link:https://docs.openshift.com/container-platform/4.20/installing/index.html[OpenShift Installation Documentation].
 
-== Accessing the Cluster
-
-This workshop provides a pre-installed OpenShift cluster. The terminal is connected to a bastion host with **cluster-admin** privileges already configured.
-
-Verify you can access the cluster:
-
-[source,bash,role="execute"]
-----
-oc whoami
-----
-
-Expected output:
-
-----
-system:admin
-----
-
-Check your permissions:
-
-[source,bash,role="execute"]
-----
-oc auth can-i '*' '*'
-----
-
-Expected output:
-----
-yes
-----
-
-You have cluster-admin privileges, allowing full cluster management.
-
 == Step 1: Verify Cluster Operators (Primary Health Check)
 
 **ClusterOperators** are the single source of truth for cluster health. Each operator manages a specific cluster component and reports its status.
@@ -287,56 +255,9 @@ image::installation-images/cluster-settings-update.png[Cluster Settings Details 
 
 **Key takeaway:** Operators manage cluster updates. When updates are available, you can upgrade with a single command: `oc adm upgrade --to=<version>`
 
-== Step 3: Verify Node Health and Resources
+== Step 3: Verify Node Configuration
 
-List all nodes in the cluster:
-
-[source,bash,role="execute"]
-----
-oc get nodes
-----
-
-Your output will look similar to:
-----
-NAME                            STATUS   ROLES                         AGE   VERSION
-control-plane-cluster-xxxxx-1   Ready    control-plane,master,worker   20h   v1.33.x
-control-plane-cluster-xxxxx-2   Ready    control-plane,master,worker   21h   v1.33.x
-control-plane-cluster-xxxxx-3   Ready    control-plane,master,worker   21h   v1.33.x
-----
-
-NOTE: Node names and count vary by platform. This workshop uses a 3-node compact cluster where each node serves as both control-plane and worker.
-
-**What you see:**
-
-* **3 nodes with combined roles** - Each node runs control-plane components (API server, etcd, scheduler) and worker workloads
-* **STATUS = Ready** - Node is healthy and can schedule pods
-
-Check actual resource usage on nodes. In the **OCP Console**, navigate to **Compute -> Nodes** — each node shows CPU and memory utilisation as colour-coded bar graphs. Click any node to see time-series graphs showing usage trends. This is more useful than a point-in-time snapshot for capacity planning.
-
-image::installation-images/compute-nodes.png[Compute Nodes view showing CPU and memory bar graphs per node]
-
-You can also check via CLI:
-
-[source,bash,role="execute"]
-----
-oc adm top nodes
-----
-
-The exact values will vary based on what's deployed:
-----
-NAME                            CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)
-control-plane-cluster-xxxxx-1   5143m        33%      21901Mi         34%
-control-plane-cluster-xxxxx-2   4114m        26%      34972Mi         55%
-control-plane-cluster-xxxxx-3   4923m        31%      42917Mi         67%
-----
-
-**What to monitor:**
-
-* CPU% under 80% - Healthy headroom
-* Memory% under 80% - No memory pressure
-* High usage - Consider scaling or adding nodes
-
-Look at your nodes right now. Which one has the highest memory usage? If a developer asked to deploy a database pod requesting 16Gi of memory, could any single node handle it? `oc adm top nodes` gives you enough information to answer that in seconds — and it's the first command you'll run during any capacity planning conversation.
+Beyond the node health you explored in the Platform Overview, there's an important verification step specific to post-installation: **MachineConfigPools**.
 
 **Check node configuration status:**
 
@@ -465,64 +386,29 @@ Clean up:
 oc delete project storage-test
 ----
 
-== Step 6: Verify Monitoring Stack
+== Step 6: Verify etcd Health
 
-Check monitoring is operational:
+You've already seen the Prometheus monitoring stack in the Platform Overview. For post-installation verification, the most important dashboard is **etcd** — the distributed key-value store that holds all cluster state.
+
+In the **OCP Console**, navigate to **Observe -> Dashboards** and select the **etcd** dashboard. Key panels to check:
+
+* **Total Leader Elections Per Day** — should be 0 or very low. Frequent leader elections indicate disk I/O problems or network latency between control plane nodes — the kind of issue that causes cascading API failures at 2am.
+* **Disk Sync Duration** — if fsync times are consistently above 10ms, etcd performance will suffer and `oc` commands will start timing out.
+
+image::installation-images/etcd-dashboard.png[etcd dashboard showing cluster health metrics]
+
+Also verify the monitoring operator is healthy:
 
 [source,bash,role="execute"]
 ----
 oc get clusteroperator monitoring
 ----
 
-Verify Prometheus pods are running:
-
-[source,bash,role="execute"]
-----
-oc get pods -n openshift-monitoring | grep prometheus
-----
-
-You should see `prometheus-k8s-0` and `prometheus-k8s-1` pods in Running state.
-
-The best way to verify monitoring is working is to actually use it. In the **OCP Console**, navigate to **Observe -> Dashboards** and select the **etcd** dashboard. Find the **Total Leader Elections Per Day** panel — in a healthy cluster this should be 0 or very low. Frequent leader elections indicate disk I/O problems or network latency between control plane nodes — the kind of issue that causes cascading API failures at 2am. Also check **Disk Sync Duration** — if fsync times are consistently above 10ms, etcd performance will suffer. This dashboard is the first place to look when `oc` commands start timing out.
-
-Now try the **Kubernetes / Compute Resources / Cluster** dashboard to see aggregate CPU, memory, and network across the cluster.
-
-NOTE: If you don't see all the dashboard options, go back to the top of the page and select **All Projects** from the project dropdown.
-
-image::installation-images/etcd-dashboard.png[etcd dashboard showing cluster health metrics]
-
-**Accessing Prometheus:** Prometheus is accessed through the web console at **Observe -> Metrics**, not via direct URL. The prometheus-k8s route only exposes the `/api` endpoint for programmatic access, not the web UI.
-
-**Note:** In production, you'd set up alerts, custom dashboards, and integrate with external monitoring systems
-
-== Step 7: Access the Web Console
-
-The OpenShift web console provides a graphical interface for cluster management. You already have access via the **OCP Console** tab at the top of this workshop — please continue to use it throughout the remaining modules.
-
-If you prefer a full-screen experience in a separate browser tab, get the console URL:
-
-[source,bash,role="execute"]
-----
-oc whoami --show-console
-----
-
-Explore the console:
-
-* **Home → Overview** - Cluster health summary with all operators
-* **Compute → Nodes** - Visual node status and resource usage
-* **Administration → Cluster Settings** - Current version and available updates
-
-image::installation-images/overview-dashboard.png[OpenShift web console Overview page showing cluster health]
-
-The console is the fastest way to get a visual health overview of your cluster.
-
-**Note:** In production environments, you would configure enterprise authentication (LDAP, OIDC, or HTPasswd) to replace the default `kubeadmin` account.
-
 == Summary
 
 **Installation:** You learned how OpenShift can be installed using full stack automation (IPI, Agent-based, Assisted Installer) or pre-existing infrastructure (UPI) across public cloud, private cloud, bare metal, and specialized platforms.
 
-**Verification:** You verified this cluster is production-ready by checking ClusterOperators (all Available), cluster version and update channel, node health and resources, and core subsystems (network, ingress, storage, monitoring).
+**Verification:** You verified this cluster is production-ready by checking ClusterOperators, update channels, MachineConfigPools, networking, storage provisioning, and etcd health.
 
 **Key takeaway:** `oc get clusteroperators` is your primary health check. All operators showing `True False False` means a healthy cluster ready for workloads.
 
