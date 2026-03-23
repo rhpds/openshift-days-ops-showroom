@@ -2,7 +2,7 @@
 
 == Module Overview
 
-**Duration:** 30 minutes +
+**Duration:** 55 minutes +
 **Format:** Hands-on OIDC identity provider configuration +
 **Audience:** Platform Engineers, Operations Teams, Security Administrators
 

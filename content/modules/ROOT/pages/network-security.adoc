@@ -2,7 +2,7 @@
 
 == Module Overview
 
-**Duration:** 25 minutes +
+**Duration:** 30 minutes +
 **Format:** Hands-on network security configuration +
 **Audience:** Platform Engineers, Network Administrators, Security Teams
 

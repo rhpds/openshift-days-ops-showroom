@@ -2,7 +2,7 @@
 
 == Module Overview
 
-**Duration:** 30-35 minutes +
+**Duration:** 40 minutes +
 **Format:** Hands-on observability configuration +
 **Audience:** Platform Engineers, Operations Teams
 
