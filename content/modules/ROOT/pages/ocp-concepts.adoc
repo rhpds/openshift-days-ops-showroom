@@ -13,7 +13,7 @@ By the end of this module, you will understand:
 * Key differences between OpenShift and upstream Kubernetes
 * OpenShift's integrated platform approach
 * How the Administrator Console provides operational advantages
-* Built-in capabilities that require manual assembly in vanilla Kubernetes
+* Built-in capabilities that come ready to use out of the box
 
 == Accessing the Cluster
 
@@ -38,41 +38,24 @@ OpenShift Container Platform is an **enterprise Kubernetes platform** that inclu
 
 Think of it as: **Kubernetes + Everything Ops Teams Need**
 
-== OpenShift vs Vanilla Kubernetes
+== What OpenShift Adds to Kubernetes
 
-=== 1. Integrated vs. Assembled
+=== 1. Integrated Platform
 
-[cols="1,1"]
-|===
-|Vanilla Kubernetes |OpenShift
+OpenShift builds on Kubernetes and adds the operational tooling that production environments need — pre-integrated and ready to use:
 
-|**You assemble** the stack
-|**Integrated** platform
-
-|Install K8s, then add: +
-- Container registry (Harbor, Artifactory) +
-- Monitoring (Prometheus) +
-- Logging (ELK stack) +
-- Ingress (NGINX, Traefik) +
-- CI/CD tools (Jenkins, GitLab) +
-- Security scanning
-|**All included:** +
-- Integrated image registry +
-- Prometheus monitoring stack with built-in dashboards +
-- Loki logging +
-- Ingress routing +
-- Tekton Pipelines +
-- RHACS security
-
-|Manage 10+ separate products
-|Single platform, single support
+* Integrated image registry
+* Prometheus monitoring stack with built-in dashboards
+* Loki logging
+* HAProxy-based ingress routing
+* Tekton Pipelines
+* RHACS security scanning
+* Single vendor support for the entire stack
 |===
 
-=== 2. CLI-Heavy vs. Web Console
+=== 2. Full-Featured Web Console
 
-**Kubernetes:** Almost entirely CLI-based management
-
-**OpenShift:** Full-featured Administrator Console
+OpenShift provides a rich Administrator Console alongside the CLI — giving ops teams a visual interface for cluster management, monitoring, and troubleshooting.
 
 Let's explore the console now.
 
@@ -122,21 +105,11 @@ image::ocp-dashboard-overview.png[OpenShift Administrator Dashboard Overview]
 3. **Cluster Inventory** - Node count, Pod count, etc.
 4. **Activity** - Recent events and alerts
 
-This single dashboard shows you information that in vanilla Kubernetes would require:
-- Multiple `kubectl` commands
-- Third-party monitoring tools
-- Custom scripts
+This single dashboard gives you cluster health, utilisation, inventory, and recent events — all in one view, with no setup required.
 
 == Built-in Monitoring
 
-In vanilla Kubernetes, you must:
-
-1. Install Prometheus manually
-2. Configure scraping
-3. Install Grafana
-4. Build custom dashboards
-
-**In OpenShift: It's already running.**
+OpenShift ships with a fully managed Prometheus monitoring stack — Prometheus, Alertmanager, and pre-built dashboards are all running from the moment the cluster is installed.
 
 === Explore Prometheus (CLI)
 
@@ -182,7 +155,7 @@ sum(rate(container_cpu_usage_seconds_total[5m])) by (namespace)
 
 3. Click **Run Queries**
 
-You'll see CPU usage broken down by namespace. Look at which namespaces are consuming the most — `openshift-monitoring` and `openshift-etcd` are usually at the top because they run the cluster's own infrastructure. Everything you're seeing here was available the moment the cluster came up — no dashboards to build, no scrape configs to write, no Grafana to install.
+You'll see CPU usage broken down by namespace. Look at which namespaces are consuming the most — `openshift-monitoring` and `openshift-etcd` are usually at the top because they run the cluster's own infrastructure. All of this was available the moment the cluster came up.
 
 image::prometheus-cpu-by-namespace-query.png[Prometheus Query Results - CPU by Namespace]
 
@@ -207,11 +180,7 @@ node-ca-5lh4f                                      1/1     Running   0          
 ...
 ----
 
-**OpenShift includes** an enterprise container registry. In vanilla Kubernetes, you'd need to:
-- Install Harbor, Quay, or use external registry
-- Configure authentication
-- Set up storage backend
-- Configure image security scanning
+OpenShift includes an integrated enterprise container registry — pre-configured with authentication, storage, and ready to use.
 
 === View Image Streams
 
@@ -251,16 +220,11 @@ openshift-console          console               console-openshift-console.apps.
 openshift-console          downloads             downloads-openshift-console.apps.cluster...
 ----
 
-**Routes vs. Ingress:**
-
-* Kubernetes `Ingress` requires installing an ingress controller (NGINX, Traefik)
-* OpenShift `Route` is built-in with HAProxy-based routing
-* Automatic TLS certificate management
-* Path-based and hostname-based routing
+**OpenShift Routes** provide built-in HAProxy-based ingress routing with automatic TLS certificate management and support for path-based and hostname-based routing. OpenShift also supports standard Kubernetes `Ingress` resources.
 
 === Try It: Deploy and Expose in 30 Seconds
 
-Let's prove the point. Deploy a web server and make it externally accessible — all in three commands:
+Deploy a web server and make it externally accessible — all in three commands:
 
 [source,bash,role="execute"]
 ----
@@ -276,7 +240,7 @@ Get the URL and test it:
 curl -sk https://$(oc get route hello -n quick-demo -o jsonpath='{.spec.host}') | head -3
 ----
 
-You should see the httpd test page HTML. That's a deployed app, with a service, a TLS-terminated route, and automatic DNS — in three commands. In vanilla Kubernetes, you'd need to install an ingress controller, create an Ingress resource, configure DNS records, and manage TLS certificates.
+You should see the httpd test page HTML. That's a deployed app, with a service, a TLS-terminated route, and automatic DNS — in three commands.
 
 Clean up:
 
@@ -317,7 +281,7 @@ However, look at the **Utilization graphs** below — actual CPU and memory usag
    - **Pod count** — how many pods are running on this node.
 4. Click the **Pods** tab to see every pod on that node with its CPU and memory usage.
 
-In vanilla Kubernetes, you'd SSH to the node and run `top`, `df`, and `crictl pods`. In OpenShift, active alerts, utilization graphs, and per-pod resource usage are all in one console view — no SSH required.
+Active alerts, utilization graphs, and per-pod resource usage are all in one console view — no SSH to nodes required.
 
 image::nodes-console-view.png[Nodes Console View]
 
@@ -362,11 +326,7 @@ To add another worker node, simply scale the MachineSet:
 oc scale machineset.machine.openshift.io <machineset-name> --replicas=1 -n openshift-machine-api
 ----
 
-**What happens:** OpenShift automatically provisions a compute instance, configures it, and joins it to the cluster.
-
-**Kubernetes equivalent:** Manually provision VM, install OS, configure networking, install kubelet, generate certificates, join to cluster
-
-**OpenShift:** One command, fully automated
+OpenShift automatically provisions a compute instance, configures it, and joins it to the cluster — one command to scale your infrastructure.
 
 == Over-the-Air Upgrades
 
@@ -397,18 +357,12 @@ NOTE: If your cluster shows **Update status: Up to date**, the **Select a versio
 
 image::cluster-upgrade-versions.png[Available Upgrade Versions,width=600]
 
-**This is completely automated:**
+OpenShift handles upgrades automatically:
+
 - Rolling upgrades of control plane
 - Automated worker node updates
 - Rollback capability
 - Zero-downtime upgrades
-
-**In vanilla Kubernetes:** Manual process involving:
-- Upgrade control plane components one-by-one
-- Drain nodes
-- Upgrade kubelet on each node
-- Uncordon nodes
-- High risk of downtime
 
 == Operator Ecosystem
 
@@ -438,9 +392,7 @@ You'll see **hundreds of operators** available out of the box.
 
 image::software-catalog-operators.png[Software Catalog filtered to Operators showing available operator tiles]
 
-Install enterprise-grade software with **one click**.
-
-**In Kubernetes:** Each requires manual Helm charts, custom manifests, and configuration.
+Install enterprise-grade, Red Hat certified software with **one click**.
 
 == Summary: Why OpenShift for Operations
 
