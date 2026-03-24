@@ -176,18 +176,13 @@ Each layer is managed by a separate operator, so you can upgrade or troubleshoot
 
 === Install the Logging Operators
 
-Three operators are needed. Each one manages a different part of the pipeline:
+Three operators are needed. Each one manages a different part of the pipeline. First, create the required namespaces and operator groups:
 
 [source,bash,role="execute"]
 ----
 oc create namespace openshift-operators-redhat 2>/dev/null || true
 oc create namespace openshift-logging 2>/dev/null || true
-----
-
-[source,bash,role="execute"]
-----
 cat <<EOF | oc apply -f -
-# OperatorGroup scopes where the Loki operator watches for CRs
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
@@ -195,20 +190,6 @@ metadata:
   namespace: openshift-operators-redhat
 spec: {}
 ---
-# Loki Operator — manages the log storage backend
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: loki-operator
-  namespace: openshift-operators-redhat
-spec:
-  channel: stable-6.2
-  installPlanApproval: Automatic
-  name: loki-operator
-  source: redhat-operators
-  sourceNamespace: openshift-marketplace
----
-# OperatorGroup scoped to the logging namespace only
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
@@ -217,40 +198,59 @@ metadata:
 spec:
   targetNamespaces:
   - openshift-logging
----
-# Cluster Logging Operator — manages log collection (Vector collectors)
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: cluster-logging
-  namespace: openshift-logging
-spec:
-  channel: stable-6.2
-  installPlanApproval: Automatic
-  name: cluster-logging
-  source: redhat-operators
-  sourceNamespace: openshift-marketplace
----
-# Cluster Observability Operator — provides the console UI plugin for logs
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: cluster-observability-operator
-  namespace: openshift-operators
-spec:
-  channel: stable
-  installPlanApproval: Automatic
-  name: cluster-observability-operator
-  source: redhat-operators
-  sourceNamespace: openshift-marketplace
 EOF
 ----
 
-While the operators install, navigate to **Ecosystem -> Installed Operators** in the **OCP Console** (select **All Projects**) and watch them appear. You'll see the status change from `Installing` to `Succeeded` in real-time — this is how you'd monitor operator installs in production.
+Now install the operators from the Software Catalog.
 
-image::observe-operator-install.png[Installed Operators showing Loki Cluster Logging and Cluster Observability operators with Succeeded status]
+==== Operator 1: Loki Operator (log storage)
 
-Wait for all three operators to be ready (this can take 2-3 minutes):
+1. Navigate to **Ecosystem -> Software Catalog**
+2. Search for **Loki Operator**
+3. Click the **Loki Operator** tile (select the one labeled **Red Hat**, not snapshot-lightspeed)
+
+image::obs-loki-operator-details.png[Loki Operator details with Install button highlighted]
+
+4. Click **Install**
+5. On the install configuration page, leave all defaults (channel, namespace, approval) and click **Install**
+
+image::obs-loki-install-config.png[Loki Operator install configuration page]
+
+You'll see the "Installing Operator" confirmation:
+
+image::obs-loki-installing.png[Loki Operator installing confirmation]
+
+==== Operator 2: Red Hat OpenShift Logging (log collection)
+
+1. Go back to **Ecosystem -> Software Catalog**
+2. Search for **OpenShift Logging**
+3. Click the **Red Hat OpenShift Logging** tile
+
+image::obs-logging-operator-details.png[Red Hat OpenShift Logging details with Install button highlighted]
+
+4. Click **Install**
+5. On the install configuration page, select **A specific namespace on the cluster** and verify the namespace is set to **openshift-logging**
+
+image::obs-logging-install-config.png[Logging install configuration with openshift-logging namespace selected]
+
+6. Click **Install**
+
+image::obs-logging-installing.png[Red Hat OpenShift Logging installing confirmation]
+
+==== Operator 3: Cluster Observability Operator (console UI)
+
+1. Go back to **Ecosystem -> Software Catalog**
+2. Search for **Cluster Observability Operator**
+3. Click the tile, then click **Install**
+4. Leave all defaults and click **Install**
+
+==== Verify All Operators
+
+Wait 2-3 minutes, then navigate to **Ecosystem -> Installed Operators** and select the **openshift-logging** project. You should see all operators showing **Succeeded**:
+
+image::obs-installed-operators.png[Installed Operators showing all logging operators with Succeeded status]
+
+You can also verify from CLI:
 
 [source,bash,role="execute"]
 ----
@@ -263,16 +263,7 @@ until oc get csv -n openshift-operators 2>/dev/null | grep -q observability.*Suc
 echo "All operators ready"
 ----
 
-Verify:
-
-[source,bash,role="execute"]
-----
-oc get csv -n openshift-operators-redhat | grep loki
-oc get csv -n openshift-logging | grep logging
-oc get csv -n openshift-operators | grep observability
-----
-
-All operators should show `Succeeded`. **Do not proceed to the next step until all three show Succeeded** — the LokiStack and UIPlugin resources require the operator CRDs to be installed first.
+**Do not proceed to the next step until all three show Succeeded** — the LokiStack and UIPlugin resources require the operator CRDs to be installed first.
 
 === Configure Log Storage (Loki + S3)
 
