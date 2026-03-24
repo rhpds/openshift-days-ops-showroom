@@ -15,9 +15,8 @@ Your organization has workloads running on VMs that can't be containerized yet �
 
 == Learning Objectives
 
-* Create VMs from YAML and from InstanceTypes
+* Create a VM from the console using InstanceTypes
 * See how VMs are just pods under the hood
-* Expose a VM with Services and Routes — same networking as containers
 * Live migrate a running VM between nodes
 * Clone a VM for rapid provisioning
 * Take snapshots for backup/rollback
@@ -38,104 +37,25 @@ kubevirt-hyperconverged-operator.v4.20.x   OpenShift Virtualization   4.20.x   S
 
 == Create a VM
 
+First, create a project for this module:
+
 [source,bash,role="execute"]
 ----
 oc new-project vm-demo
 ----
 
-First, detect the best CPU model that works across all nodes. This ensures live migration works later — nodes may have different CPU generations, and the VM needs a model supported everywhere:
+Now create a VM using the console — the same cloud-style experience your teams get in AWS or Azure.
 
-[source,bash,role="execute"]
-----
-CPU_MODEL=$(oc get nodes -o json | python3 -c "
-import json, sys
-d = json.load(sys.stdin)
-node_models = []
-for n in d['items']:
-    labels = n['metadata'].get('labels', {})
-    models = set(l.replace('cpu-model.node.kubevirt.io/', '') for l in labels if l.startswith('cpu-model.node.kubevirt.io/'))
-    node_models.append(models)
-common = node_models[0]
-for nm in node_models[1:]:
-    common = common & nm
-epyc = sorted([m for m in common if 'EPYC' in m], reverse=True)
-intel = sorted([m for m in common if m.startswith(('Skylake','Broadwell','Haswell','IvyBridge','SandyBridge'))], reverse=True)
-print(epyc[0] if epyc else (intel[0] if intel else sorted(common)[-1]))
-")
-echo "Common CPU model for live migration: $CPU_MODEL"
-----
+=== Step 1: Open the Create Wizard
 
-Deploy a RHEL 9 VM from a pre-cached boot image:
+1. In the OpenShift console, switch to the **Fleet Virtualization** perspective from the top-left dropdown
+2. Click the **Create** dropdown and select **From InstanceType**
 
-[source,bash,role="execute"]
-----
-cat <<EOF | oc apply -f -
-apiVersion: kubevirt.io/v1
-kind: VirtualMachine
-metadata:
-  name: rhel9-vm
-  namespace: vm-demo
-spec:
-  runStrategy: Always
-  dataVolumeTemplates:
-  - metadata:
-      name: rhel9-vm-disk
-    spec:
-      sourceRef:
-        kind: DataSource
-        name: rhel9
-        namespace: openshift-virtualization-os-images
-      storage:
-        resources:
-          requests:
-            storage: 30Gi
-  template:
-    metadata:
-      labels:
-        kubevirt.io/vm: rhel9-vm
-    spec:
-      domain:
-        cpu:
-          cores: 1                  # vCPUs allocated to the VM
-          model: ${CPU_MODEL}       # common model across all nodes — enables live migration
-        devices:
-          disks:
-          - name: rootdisk
-            disk:
-              bus: virtio           # virtio = paravirtualized (fast), sata/scsi for legacy OS
-          - name: cloudinitdisk
-            disk:
-              bus: virtio
-        resources:
-          requests:
-            memory: 2Gi             # guaranteed memory — same as pod resource requests
-      volumes:
-      - name: rootdisk
-        dataVolume:
-          name: rhel9-vm-disk       # boots from the cloned DataVolume above
-      - name: cloudinitdisk
-        cloudInitNoCloud:           # injects user/password on first boot
-          userData: |
-            #cloud-config
-            user: cloud-user
-            password: redhat
-            chpasswd:
-              expire: false
-EOF
-----
+image::virt-create-dropdown.png[Create VirtualMachine dropdown showing From InstanceType option]
 
-Wait for the VM to start (1-2 minutes):
+=== Step 2: Select InstanceType and Boot Source
 
-[source,bash,role="execute"]
-----
-oc get vms -w
-----
-
-Press `Ctrl+C` when STATUS shows `Running`.
-
-=== InstanceTypes: Cloud-Style Provisioning
-
-The YAML above gives you full control, but in practice most teams don't want to write VM specs from scratch. OpenShift Virtualization provides **InstanceTypes** — predefined compute profiles similar to cloud instance families:
+OpenShift Virtualization provides **InstanceTypes** — predefined compute profiles similar to cloud instance families:
 
 [cols="1,2"]
 |===
@@ -148,51 +68,40 @@ The YAML above gives you full control, but in practice most teams don't want to 
 |**N** (Network) |Network-intensive workloads
 |===
 
-View available InstanceTypes:
+1. Under **Select InstanceType**, choose **Red Hat provided** -> **General Purpose** -> **medium: 1 CPUs, 4 GiB Memory**
+2. Select the **Red Hat Enterprise Linux 9** boot source from the volume list above
 
-[source,bash,role="execute"]
-----
-oc get virtualmachineclusterinstancetype | head -10
-----
+image::virt-create-wizard.png[VM creation wizard showing InstanceType selection and VM details]
 
-This is the same experience your teams get in AWS/Azure — pick a size, pick a boot image, deploy. No YAML needed. In the OpenShift console, you can create VMs by selecting an InstanceType and a boot source from `openshift-virtualization-os-images` with a few clicks.
+=== Step 3: Configure and Create
 
-== Access the VM
+In the **VirtualMachine details** section:
 
-=== Web Console
+1. Change the **Name** to `rhel9-vm`
+2. Verify **Project** shows `vm-demo` (if not, go back and select the `vm-demo` project before entering the wizard)
+3. Leave defaults: **30 GiB** disk, default storage class
+4. Leave **Start this VirtualMachine after creation** checked
+5. Click **Create VirtualMachine**
 
-1. In the OpenShift console, select the **Fleet Virtualization** perspective from the top-left dropdown
+The VM details page opens. You'll see the status change from **Provisioning** to **Running** as the VM boots:
 
-image::virt-fleet-dropdown.png[Fleet Virtualization dropdown]
+image::virt-provisioning.png[VM details page showing Provisioning status]
 
-2. Click on **rhel9-vm** in the VM list
+=== Step 4: Access the VM Console
 
-image::virt-rhel9-vm-details.png[rhel9-vm details page]
+Once the VM is running, click the **Console** tab. You'll see the VNC console with the VM's boot output:
 
-3. Click **Open Web Console**
-4. Login with: `cloud-user` / `redhat`
+image::virt-vnc-boot.png[VNC console showing RHEL 9 boot output]
 
-image::virt-rhel9-vm-console.png[rhel9-vm web console]
+Click **Open web console** to open the VM console in a new window:
 
-=== Serial Console (CLI)
+image::virt-open-web-console.png[Open web console link]
 
-First, install the `virtctl` CLI tool (downloaded directly from the cluster):
+The **Guest login credentials** are displayed at the top of the console — use these to log in:
 
-[source,bash,role="execute"]
-----
-VIRTCTL_URL=$(oc get consoleclidownload virtctl-clidownloads-kubevirt-hyperconverged -o jsonpath='{.spec.links[?(@.text=="Download virtctl for Linux for x86_64")].href}')
-curl -sL "$VIRTCTL_URL" | tar xz -C /tmp && sudo mv /tmp/virtctl /usr/local/bin/
-virtctl version --client
-----
+image::virt-console-creds.png[VNC console with guest credentials shown at top]
 
-Now connect to the VM's serial console:
-
-[source,bash,role="execute"]
-----
-virtctl console rhel9-vm
-----
-
-Login with `cloud-user` / `redhat`. Type `exit` to disconnect. After exiting, click the **reload button** (circular arrow) at the top next to the terminal tab to reconnect as the admin user.
+Pick a size, pick a boot image, deploy. No YAML needed.
 
 == It's Just a Pod
 
@@ -219,15 +128,17 @@ oc describe pod -l kubevirt.io/vm=rhel9-vm -n vm-demo | tail -10
 
 == Unified Monitoring
 
-VM metrics flow into the same Prometheus stack as your containers — one dashboard for everything. No need for a separate monitoring tool for your VMs:
+VM metrics flow into the same Prometheus stack as your containers — one dashboard for everything. No need for a separate monitoring tool for your VMs.
 
-In the Fleet Virtualization perspective, click **rhel9-vm** → **Metrics** tab to see:
+On the VM details page, click the **Metrics** tab to see:
 
-image::virt-metrics-tab.png[VM Metrics tab showing CPU memory and network I/O graphs]
-
+* Memory usage over time
 * CPU usage over time
-* Memory consumption
-* Network I/O
+* Storage total read/write
+* Storage IOPS
+* Storage latency
+
+image::virt-metrics-tab.png[VM Metrics tab showing Memory CPU and Storage graphs]
 
 Or query from CLI — the VM uses resources just like any pod:
 
@@ -271,169 +182,103 @@ oc get svc rhel9-vm-ssh -n vm-demo
 
 The VM is now reachable via the service — the same way you'd expose a container. Same label selectors, same service types, same networking model.
 
-You can also create a Route to expose VM-hosted applications externally — exactly like you would for a container:
-
-[source,bash,role="execute"]
-----
-oc expose svc rhel9-vm-ssh --port=22 --name=rhel9-vm-route -n vm-demo 2>/dev/null || echo "Route creation skipped (SSH is not HTTP-routable, but the pattern is the same for HTTP services)"
-----
-
 For VMs running web applications (Apache, IIS, Tomcat), you'd create a Service on port 80/443 and a Route with TLS edge termination — the same workflow you use for containers. When migrating multi-tier applications, move the VMs with MTV, wire them up with Services and Routes, and they're live on OpenShift without changing the application.
 
 == Live Migration
 
 This is the feature that makes OpenShift Virtualization production-ready. When you need to patch a node, upgrade the OS, or replace hardware, you drain the node. Containers reschedule automatically, and VMs live migrate automatically too. `oc adm drain` handles both. Zero downtime during maintenance windows.
 
-Check which node the VM is currently on:
+=== Step 1: Note the Current Node
 
-[source,bash,role="execute"]
-----
-oc get vmi rhel9-vm -o jsonpath='{.status.nodeName}' && echo ""
-----
+On the VM details page (**Overview** tab), look at the **Node** field in the General section and note which node the VM is running on.
 
-Trigger a live migration:
+=== Step 2: Trigger the Migration
 
-[source,bash,role="execute"]
-----
-virtctl migrate rhel9-vm
-----
+1. Click the **Actions** dropdown in the top-right corner
+2. Hover over **Migration** to expand the submenu
+3. Select **Compute** — this migrates the VM's running state (CPU/memory) to a different node
 
-The migration completes quickly — typically within a few seconds. The **Overview** tab updates the node name when it finishes.
+image::virt-actions-migrate.png[Actions dropdown showing Migration submenu with Compute and Storage options]
 
-You can also watch via CLI:
+4. In the migration dialog, leave **Automatically selected Node** selected and click **Migrate VirtualMachine**
 
-[source,bash,role="execute"]
-----
-oc get vmim -w
-----
+image::virt-migrate-auto-node.png[Migration dialog with Automatically selected Node option]
 
-Press `Ctrl+C` when the migration completes. Verify the VM moved to a different node:
+=== Step 3: Watch the Migration
 
-[source,bash,role="execute"]
-----
-oc get vmi rhel9-vm -o jsonpath='{.status.nodeName}' && echo ""
-----
+The VM status changes to **Migrating** while the live migration is in progress:
 
-The VM moved to a different node while still running. No downtime, no reconnection needed.
+image::virt-migrating-status.png[VM details showing Migrating status]
+
+The migration completes quickly — typically within a few seconds. Once the status returns to **Running**, check the **Node** field — it now shows a different node. The VM moved while still running. No downtime, no reconnection needed.
 
 == Clone a VM
 
-Need another copy of a VM — for testing, dev environments, or scaling out? Clone it. This creates a full copy of the VM's disk and configuration:
+Need another copy of a VM — for testing, dev environments, or scaling out? Clone it. This creates a full copy of the VM's disk and configuration.
 
-[source,bash,role="execute"]
-----
-cat <<EOF | oc apply -f -
-apiVersion: clone.kubevirt.io/v1alpha1
-kind: VirtualMachineClone
-metadata:
-  name: rhel9-vm-clone
-  namespace: vm-demo
-spec:
-  source:
-    apiGroup: kubevirt.io
-    kind: VirtualMachine
-    name: rhel9-vm
-  target:
-    apiGroup: kubevirt.io
-    kind: VirtualMachine
-    name: rhel9-vm-clone
-EOF
-----
+=== Step 1: Start the Clone
 
-Wait for the clone to complete:
+1. On the **rhel9-vm** details page, click **Actions** -> **Clone**
 
-[source,bash,role="execute"]
-----
-oc get vmclone rhel9-vm-clone -n vm-demo -w
-----
+image::virt-actions-clone.png[Actions dropdown with Clone option highlighted]
 
-Press `Ctrl+C` when the PHASE shows `Succeeded`, then check your VMs:
+2. Change the name to `rhel9-vm-clone`
+3. Leave **Start VirtualMachine once created** checked
+4. Click **Clone**
 
-[source,bash,role="execute"]
-----
-oc get vms -n vm-demo
-----
+image::virt-clone-config.png[Clone VirtualMachine dialog with name and configuration]
 
-You'll see both `rhel9-vm` and `rhel9-vm-clone`. The clone has its own independent disk — changes to one don't affect the other. This is how you'd create golden images: configure a VM exactly how you want it, then clone it for each environment.
+=== Step 2: Watch the Clone Progress
+
+The dialog shows the clone progress: **Request sent** -> **In process** -> **Created**:
+
+image::virt-clone-in-progress.png[Clone progress showing In process status]
+
+Once complete, the console navigates to the clone's details page. You'll see both VMs in the left sidebar:
+
+image::virt-clone-complete.png[Clone complete showing both rhel9-vm and rhel9-vm-clone in the VM list]
+
+The clone has its own independent disk — changes to one don't affect the other. This is how you'd create golden images: configure a VM exactly how you want it, then clone it for each environment.
+
+IMPORTANT: Click back to **rhel9-vm** in the left sidebar before continuing. The next steps (snapshot and restore) should be done on the original VM, not the clone.
 
 == Snapshots
 
-Every operations team has been burned by a patch that broke something. Snapshots give you a safety net — capture the VM's disk and configuration before a change, and roll back in seconds if it goes wrong. These are Kubernetes-native resources that you can manage with `oc`, automate with pipelines, and back up with OADP.
+Every operations team has been burned by a patch that broke something. Snapshots give you a safety net — capture the VM's disk and configuration before a change, and roll back in seconds if it goes wrong.
 
-Create a snapshot of your running VM:
+=== Step 1: Take a Snapshot
 
-[source,bash,role="execute"]
-----
-cat <<EOF | oc apply -f -
-apiVersion: snapshot.kubevirt.io/v1beta1
-kind: VirtualMachineSnapshot
-metadata:
-  name: rhel9-vm-snap-1
-  namespace: vm-demo
-spec:
-  source:
-    apiGroup: kubevirt.io
-    kind: VirtualMachine
-    name: rhel9-vm
-EOF
-----
+1. On the **rhel9-vm** details page, click **Actions** -> **Take snapshot**
 
-Check snapshot status:
+image::virt-actions-snapshot.png[Actions dropdown with Take snapshot option]
 
-[source,bash,role="execute"]
-----
-oc get vmsnapshot
-----
+2. Leave the default name (`rhel9-vm-snapshot`) and click **Save**
 
-Wait for `readyToUse: true` — this means the snapshot has finished and is available for restore. You can also see snapshots in the **Fleet Virtualization** console: click **rhel9-vm** -> **Snapshots** tab:
+image::virt-snapshot-config.png[Take snapshot dialog with default name and disk selection]
 
-image::vm-snapshot-ready.png[VM Snapshots tab showing rhel9-vm-snap-1 with Ready status]
+NOTE: The warning about `cloudinitdisk` not being included is expected — cloud-init only runs on first boot and doesn't need to be captured.
 
-=== Restore from Snapshot
+=== Step 2: Verify the Snapshot
 
-**The scenario:** Imagine you've just applied an OS patch or a configuration change to this VM and something broke — the application won't start, the network config is wrong, or a package update caused a regression. Instead of spending hours troubleshooting or rebuilding from scratch, you restore to the snapshot you took before the change. The VM comes back exactly as it was — disk, configuration, everything.
+Click the **Snapshots** tab. The snapshot shows **Ready** status once complete:
 
-This is the same workflow you'd use in production: snapshot before maintenance, verify the change works, delete the snapshot if it's good, or restore if it's not.
+image::virt-snapshot-ready.png[Snapshots tab showing rhel9-vm-snapshot with Ready status]
 
-Stop the VM first, then apply the restore:
+=== Step 3: Restore from Snapshot
 
-[source,bash,role="execute"]
-----
-virtctl stop rhel9-vm
-oc wait --for=jsonpath='{.status.printableStatus}'=Stopped vm/rhel9-vm --timeout=60s
-----
+**The scenario:** Imagine you've just applied an OS patch or a configuration change and something broke. Instead of spending hours troubleshooting or rebuilding from scratch, you restore to the snapshot you took before the change. The VM comes back exactly as it was.
 
-[source,bash,role="execute"]
-----
-cat <<EOF | oc apply -f -
-apiVersion: snapshot.kubevirt.io/v1beta1
-kind: VirtualMachineRestore
-metadata:
-  name: rhel9-vm-restore
-  namespace: vm-demo
-spec:
-  target:
-    apiGroup: kubevirt.io
-    kind: VirtualMachine
-    name: rhel9-vm
-  virtualMachineSnapshotName: rhel9-vm-snap-1
-EOF
-----
+1. First, stop the VM — click the **Stop** button (square icon) in the top-right action buttons
 
-[source,bash,role="execute"]
-----
-oc get vmrestore
-----
+2. Once the VM shows **Stopped**, go to the **Snapshots** tab, click the kebab menu (three dots) next to the snapshot, and select **Restore VirtualMachine from snapshot**
 
-Start the VM again:
+image::virt-snapshot-restore-menu.png[Snapshot kebab menu showing Restore VirtualMachine from snapshot option]
 
-[source,bash,role="execute"]
-----
-virtctl start rhel9-vm
-oc get vms -w
-----
+3. Click **Restore** to confirm
 
-Press `Ctrl+C` when `Running`. The VM's disk and configuration are now back to the exact state they were in when you took the snapshot. This is how you'd roll back a failed OS patch or a broken config change — without rebuilding the VM from scratch.
+image::virt-restore-confirmation.png[Restore snapshot confirmation dialog]
+
+4. Start the VM again by clicking the **Start** button (play icon). The VM's disk and configuration are now back to the exact state they were in when you took the snapshot. This is how you'd roll back a failed OS patch or a broken config change — without rebuilding the VM from scratch.
 
 == Summary
 
