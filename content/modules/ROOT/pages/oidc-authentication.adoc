@@ -374,6 +374,8 @@ oc get groups
 
 You should see `ocp-developers` with `developer1` as a member — **created automatically** from the ID token. Compare this to LDAP where you had to run `oc adm groups sync` manually.
 
+TIP: You can also see the auto-created groups in the console at **User Management > Groups** — compare this to the LDAP module where you had to run `oc adm groups sync` before groups appeared.
+
 [source,bash,role="execute"]
 ----
 oc get user developer1 -o yaml

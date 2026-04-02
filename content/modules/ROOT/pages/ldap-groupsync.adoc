@@ -67,6 +67,8 @@ Check the current OAuth configuration:
 oc get oauth cluster -o yaml
 ----
 
+TIP: You can also view this in the console at **Administration > Cluster Settings > Configuration > OAuth** — it shows the configured identity providers in a readable format.
+
 Look at the `spec.identityProviders` section. You'll see that an `htpasswd` identity provider is already configured — this was set up during cluster provisioning to provide the `admin` account you're using now.
 
 [NOTE]
@@ -470,6 +472,8 @@ oc adm new-project app-dev --display-name="Application Development"
 oc adm new-project app-test --display-name="Application Testing"
 oc adm new-project app-prod --display-name="Application Production"
 ----
+
+TIP: These projects are now visible in the console project dropdown. Navigate to **Home > Projects** to see all three with their display names.
 
 **Verify projects were created:**
 

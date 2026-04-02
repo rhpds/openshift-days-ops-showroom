@@ -96,6 +96,8 @@ oc get svc -n app-management
 
 The service has a `ClusterIP` — this is only reachable from inside the cluster. To expose it externally, we need a Route.
 
+TIP: You can also see this in the console at **Networking > Services** (project: `app-management`) — click `weathernow` to see the service details, endpoints, and backing pods.
+
 == Create a Route
 
 A Route connects an external URL to your service through the OpenShift router (HAProxy-based ingress controller).

@@ -266,6 +266,8 @@ oc create configmap weather-config \
   -n ops-track-demo
 ----
 
+TIP: You can verify the ConfigMap in the console at **Workloads > ConfigMaps** (project: `ops-track-demo`) — click `weather-config` to see its keys and values.
+
 Restart the pod to pick up the new ConfigMap:
 
 [source,bash,role="execute"]
@@ -293,6 +295,8 @@ You should see:
 API_ENDPOINT=http://weather-api:8080
 CACHE_TTL=300
 ----
+
+TIP: In the console, click the weather-backend pod and select the **Environment** tab to see the injected variables without shelling into the container.
 
 **Takeaway:** CreateContainerConfigError = a referenced ConfigMap or Secret doesn't exist. Check `oc describe pod` for "not found" messages. Create the missing resource and restart the pod.
 

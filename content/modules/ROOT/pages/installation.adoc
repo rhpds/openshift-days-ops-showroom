@@ -206,6 +206,8 @@ curl -sk https://$(oc get route test-app -n install-test -o jsonpath='{.spec.hos
 
 **What this proves:** DNS works, router is functional, TLS certificates auto-generated, and the application is reachable from outside the cluster.
 
+TIP: You can also verify the route in the console at **Networking > Routes** (project: `install-test`) — click the route URL to test it directly from the browser.
+
 Clean up:
 
 [source,bash,role="execute"]
@@ -266,7 +268,11 @@ Wait a moment, then check that the PVC is `Bound` and the pod is `Running`:
 sleep 15 && oc get pvc test-pvc -n storage-test && oc get pod test-storage -n storage-test
 ----
 
-The PVC should show `Bound` and the pod should be `Running` or `Completed`. Check the pod wrote to the volume successfully:
+The PVC should show `Bound` and the pod should be `Running` or `Completed`.
+
+TIP: In the console, navigate to **Storage > PersistentVolumeClaims** (project: `storage-test`) to see the PVC status and its bound PersistentVolume.
+
+Check the pod wrote to the volume successfully:
 
 [source,bash,role="execute"]
 ----

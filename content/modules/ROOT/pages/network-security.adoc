@@ -45,6 +45,8 @@ OpenShift uses **OVN-Kubernetes** as the default network plugin. OVN-Kubernetes 
 oc get network.config cluster -o yaml
 ----
 
+TIP: You can also view this in the console at **Administration > Cluster Settings > Configuration > Network** for a formatted view of cluster and service network CIDRs.
+
 Key fields:
 
 * `networkType: OVNKubernetes` - Confirms OVN-Kubernetes is active

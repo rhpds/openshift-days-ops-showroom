@@ -179,6 +179,8 @@ Check the HPA:
 oc get hpa demo-app
 ----
 
+TIP: You can view the HPA in the console at **Workloads > HorizontalPodAutoscalers** (project: `performance-demo`) — it shows current vs target CPU percentage and the current replica count in real-time.
+
 === Generate Load
 
 Open a second terminal or run this in the background:
