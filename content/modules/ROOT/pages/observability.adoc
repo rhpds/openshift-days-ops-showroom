@@ -2,11 +2,11 @@
 
 == Module Overview
 
-**Duration:** 40 minutes +
+**Duration:** 50 minutes +
 **Format:** Hands-on observability configuration +
 **Audience:** Platform Engineers, Operations Teams
 
-Your cluster is running workloads and you need visibility into what's happening. OpenShift provides metrics and alerting out of the box via Prometheus and Alertmanager. In this module, you'll explore those built-in capabilities and then set up the logging pipeline with Loki and Vector.
+Your cluster is running workloads and you need visibility into what's happening. OpenShift provides metrics and alerting out of the box via Prometheus and Alertmanager. In this module, you'll explore those built-in capabilities, set up the logging pipeline with Loki and Vector, and deploy OpenTelemetry for distributed tracing.
 
 == Learning Objectives
 
@@ -16,6 +16,8 @@ By the end of this module, you will be able to:
 * Configure alerting rules and understand Alertmanager
 * Install and configure the OpenShift Logging stack
 * Query logs using the OpenShift console
+* Deploy OpenTelemetry and Tempo for distributed tracing
+* View traces in the OpenShift console
 
 == Built-in Metrics with Prometheus
 
@@ -491,16 +493,306 @@ image::histogram.png[Log histogram]
 It may take 1-2 minutes for logs to start appearing after the collector pods are running. If you see "No datapoints found", wait a moment and refresh.
 ====
 
-== Cleanup
+== OpenTelemetry for Distributed Tracing
 
-Remove the logging stack you deployed. The Prometheus monitoring stack is built-in and doesn't need cleanup. The LokiStack teardown takes a couple of minutes — this runs in the background so you can continue.
+Metrics tell you *what* is happening. Logs tell you *why*. **Traces** tell you *where* — when a request crosses multiple microservices, traces show the exact path and timing across every service. If a user reports "checkout is slow", a trace shows you: frontend (2ms) → API gateway (5ms) → inventory service (800ms) → payment (3ms) — so you instantly see inventory is the bottleneck.
+
+Developers instrument their apps with OpenTelemetry SDKs, but ops teams own the tracing infrastructure — deploying the collector, managing the storage backend, and making traces visible in the console.
+
+=== Install the Operators
+
+You need two additional operators. The Cluster Observability Operator (already installed for logging) provides the console UI.
+
+==== Tempo Operator (trace storage)
+
+1. Navigate to **Ecosystem -> Software Catalog**
+2. Search for **Tempo Operator**
+3. Click the **Tempo Operator** tile (Red Hat)
+4. Click **Install**, leave all defaults, click **Install**
+
+image::otel-tempo-operator-install.png[Tempo Operator install page]
+
+==== Red Hat build of OpenTelemetry (trace collection)
+
+1. Go back to **Ecosystem -> Software Catalog**
+2. Search for **Red Hat build of OpenTelemetry**
+3. Click the tile, then **Install**
+4. Leave all defaults, click **Install**
+
+image::otel-opentelemetry-operator-install.png[Red Hat build of OpenTelemetry install page]
+
+Verify both operators are ready:
 
 [source,bash,role="execute"]
 ----
-# Remove the custom alerting rule (instant)
+echo "Waiting for Tempo operator..."
+until oc get csv -A 2>/dev/null | grep -q "tempo.*Succeeded"; do sleep 10; done
+echo "Waiting for OpenTelemetry operator..."
+until oc get csv -A 2>/dev/null | grep -q "opentelemetry.*Succeeded"; do sleep 10; done
+echo "Both operators ready"
+----
+
+=== Deploy Tempo (Trace Storage)
+
+Tempo is the backend that stores and indexes traces — similar to how Loki stores logs. We'll use TempoMonolithic, a single-binary deployment suitable for workshops and small clusters.
+
+Create the namespace and deploy TempoMonolithic with multi-tenancy enabled:
+
+[source,bash,role="execute"]
+----
+oc create namespace tracing-system 2>/dev/null || true
+cat <<EOF | oc apply -f -
+apiVersion: tempo.grafana.com/v1alpha1
+kind: TempoMonolithic
+metadata:
+  name: sample
+  namespace: tracing-system
+spec:
+  storage:
+    traces:
+      backend: pv
+      size: 10Gi
+  jaegerui:
+    enabled: true
+    route:
+      enabled: true
+  multitenancy:
+    enabled: true
+    mode: openshift
+    authentication:
+      - tenantName: dev
+        tenantId: "1610b0c3-c509-4592-a256-a1871353dbfa"
+EOF
+----
+
+NOTE: Multi-tenancy is required for the console Traces UI to detect the Tempo instance. The `openshift` mode uses OpenShift's built-in authentication — no external OIDC setup needed.
+
+Wait for Tempo to be ready:
+
+[source,bash,role="execute"]
+----
+echo "Waiting for Tempo pod..."
+until oc get pods -n tracing-system -l app.kubernetes.io/component=tempo 2>/dev/null | grep -q Running; do sleep 5; done
+oc get pods -n tracing-system -l app.kubernetes.io/component=tempo
+----
+
+=== Set Up RBAC
+
+The tracing pipeline needs two sets of permissions: the collector needs write access to push traces, and users need read access to query them.
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector
+  namespace: tracing-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tempomonolithic-traces-reader
+rules:
+  - apiGroups: ["tempo.grafana.com"]
+    resources: ["dev"]
+    resourceNames: ["traces"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tempomonolithic-traces-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tempomonolithic-traces-reader
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: system:authenticated
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tempomonolithic-traces-write
+rules:
+  - apiGroups: ["tempo.grafana.com"]
+    resources: ["dev"]
+    resourceNames: ["traces"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tempomonolithic-traces-write
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tempomonolithic-traces-write
+subjects:
+  - kind: ServiceAccount
+    name: otel-collector
+    namespace: tracing-system
+EOF
+----
+
+=== Deploy the OpenTelemetry Collector
+
+The collector is the central receiving station for trace data. Apps send traces to the collector, and the collector forwards them to Tempo for storage. Think of it like Vector for logs — a pipeline component that sits between producers and storage.
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel
+  namespace: tracing-system
+spec:
+  mode: deployment
+  serviceAccount: otel-collector
+  config:
+    extensions:
+      bearertokenauth:
+        filename: /var/run/secrets/kubernetes.io/serviceaccount/token
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+    processors:
+      batch:
+        send_batch_size: 512
+        timeout: 5s
+    exporters:
+      otlp/tempo:
+        endpoint: tempo-sample-gateway.tracing-system.svc:4317
+        tls:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+        headers:
+          X-Scope-OrgID: dev
+        auth:
+          authenticator: bearertokenauth
+    service:
+      extensions: [bearertokenauth]
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [otlp/tempo]
+EOF
+----
+
+This collector:
+
+* **Receives** traces via OTLP on ports 4317 (gRPC) and 4318 (HTTP)
+* **Batches** incoming spans for efficiency
+* **Exports** to the Tempo gateway, authenticating with the service account token
+
+Verify the collector is running:
+
+[source,bash,role="execute"]
+----
+oc get pods -n tracing-system
+----
+
+You should see both the Tempo pod and the collector pod `Running`.
+
+=== Enable the Traces Console UI
+
+Like the logging UI, the Traces view needs a UIPlugin:
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: observability.openshift.io/v1alpha1
+kind: UIPlugin
+metadata:
+  name: distributed-tracing
+spec:
+  type: DistributedTracing
+EOF
+----
+
+You may see a console notification to refresh — click **Refresh** to reload.
+
+=== Send a Test Trace
+
+The collector is ready but nothing is sending traces yet. Let's send a test trace to verify the full pipeline:
+
+[source,bash,role="execute"]
+----
+oc run test-trace --rm -i --restart=Never --image=registry.access.redhat.com/ubi9/ubi-minimal -n tracing-system -- sh -c "
+curl -s -X POST http://otel-collector.tracing-system.svc:4318/v1/traces \
+  -H 'Content-Type: application/json' \
+  -d '{
+    \"resourceSpans\": [{
+      \"resource\": {
+        \"attributes\": [{
+          \"key\": \"service.name\",
+          \"value\": {\"stringValue\": \"workshop-demo\"}
+        }]
+      },
+      \"scopeSpans\": [{
+        \"spans\": [{
+          \"traceId\": \"11112222333344445555666677778888\",
+          \"spanId\": \"aaaa222233334444\",
+          \"name\": \"GET /api/weather\",
+          \"kind\": 2,
+          \"startTimeUnixNano\": \"\$(date +%s)000000000\",
+          \"endTimeUnixNano\": \"\$(date +%s)500000000\",
+          \"attributes\": [{
+            \"key\": \"http.method\",
+            \"value\": {\"stringValue\": \"GET\"}
+          }]
+        }]
+      }]
+    }]
+  }' && echo 'Trace sent successfully'
+"
+----
+
+This simulates what an instrumented application does — sends a span describing a single operation (`GET /api/weather`) with timing data.
+
+=== View Traces in the Console
+
+Navigate to **Observe -> Traces** in the console. Select the Tempo instance (`tracing-system / sample`) and tenant (`dev`):
+
+image::otel-traces-view.png[Observe Traces view showing workshop-demo trace with scatter graph]
+
+You should see the `workshop-demo` trace. Click on it to see the trace detail view — a timing waterfall showing each span:
+
+image::otel-trace-detail.png[Trace detail view showing GET /api/weather span with 500ms duration]
+
+With a single service this shows one span. In a real microservices application, you'd see multiple spans stacked in a waterfall — frontend → API → database — making it immediately obvious where latency is coming from.
+
+The collector is now ready for production use. Developers point their apps at `otel-collector.tracing-system.svc:4317` using OpenTelemetry SDKs, and traces automatically appear here.
+
+== Cleanup
+
+Remove the observability resources you deployed. The Prometheus monitoring stack is built-in and doesn't need cleanup.
+
+[source,bash,role="execute"]
+----
+# Remove the custom alerting rule
 oc delete prometheusrule ops-track-alerts -n openshift-monitoring --ignore-not-found
 
-# Remove the logging stack in the background
+# Remove the tracing stack
+(
+  oc delete opentelemetrycollector otel -n tracing-system --ignore-not-found
+  oc delete uiplugin distributed-tracing --ignore-not-found
+  oc delete tempomonolithic sample -n tracing-system --ignore-not-found
+  oc delete clusterrolebinding tempomonolithic-traces-reader tempomonolithic-traces-write --ignore-not-found
+  oc delete clusterrole tempomonolithic-traces-reader tempomonolithic-traces-write --ignore-not-found
+  oc delete sa otel-collector -n tracing-system --ignore-not-found
+  oc delete namespace tracing-system --ignore-not-found --wait=false
+) &>/dev/null &
+
+# Remove the logging stack
 (
   oc delete clusterlogforwarder collector -n openshift-logging --ignore-not-found
   oc delete uiplugin logging --ignore-not-found
@@ -511,8 +803,6 @@ oc delete prometheusrule ops-track-alerts -n openshift-monitoring --ignore-not-f
   oc delete sa collector -n openshift-logging --ignore-not-found
 ) &>/dev/null &
 echo "Cleanup running in background — you can continue to the next module"
-
-echo "Cleanup complete"
 ----
 
 == Summary
@@ -523,8 +813,10 @@ echo "Cleanup complete"
 * How to create custom alerting rules with PrometheusRule
 * How to install and configure the full logging stack (Loki + Vector)
 * How to view and filter logs in the OpenShift console
+* How to deploy the OpenTelemetry tracing pipeline (Tempo + OTel Collector)
+* How to view distributed traces in the console
 
-OpenShift also supports **OpenTelemetry** for distributed tracing across microservices. The Red Hat build of OpenTelemetry operator is available in OperatorHub for teams that need request-level tracing.
+Together, metrics, logs, and traces give you the **three pillars of observability** — each answers a different question about your cluster and workloads.
 
 **Key operational commands:**
 
@@ -545,6 +837,12 @@ oc get lokistack -n openshift-logging
 
 # Check ClusterLogForwarder status
 oc get clusterlogforwarder -n openshift-logging
+
+# View tracing pods
+oc get pods -n tracing-system
+
+# Check TempoMonolithic status
+oc get tempomonolithic -n tracing-system
 ----
 
 == Additional Resources
@@ -552,4 +850,5 @@ oc get clusterlogforwarder -n openshift-logging
 * **OpenShift Monitoring:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/monitoring/index[Monitoring]
 * **OpenShift Logging Documentation:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/logging/index[Logging]
 * **Logging 6.2 Stack:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/logging/logging-6-2[Logging 6.2]
+* **OpenShift Distributed Tracing:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/distributed_tracing/index[Distributed Tracing]
 * **Red Hat build of OpenTelemetry:** link:https://docs.redhat.com/en/documentation/red_hat_build_of_opentelemetry/[OpenTelemetry]
