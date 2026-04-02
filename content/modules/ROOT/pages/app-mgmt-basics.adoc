@@ -271,6 +271,12 @@ oc rollout history deployment/weathernow -n app-management
 
 You'll see multiple revisions. Each time you change the deployment, a new revision is created.
 
+You can also see this visually in the console. Navigate to **Workloads -> Deployments -> weathernow** and click the **ReplicaSets** tab:
+
+image::app-mgmt-replicasets-history.png[ReplicaSets tab showing deployment revision history with active and scaled-down replicas]
+
+Each ReplicaSet represents a revision. The active one shows `1 of 1 pods` while previous revisions are scaled to `0 of 0 pods` — OpenShift keeps them so it can roll back instantly.
+
 Roll back to the previous working version:
 
 [source,bash,role="execute"]

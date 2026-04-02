@@ -306,6 +306,12 @@ cluster-xxxxx-worker-0         0         0                             20h
 
 In a production cloud deployment, you'd see multiple MachineSets (one per availability zone) with active worker replicas that can be scaled up or down.
 
+You can see this in the console at **Compute -> MachineSets**:
+
+image::machinesets-console.png[MachineSets view showing worker MachineSet with 0 of 0 machines on compact cluster]
+
+In a production cluster, this view shows the machine count, instance type, CPU, and memory for each MachineSet — and you can scale directly from the console by editing the desired count.
+
 You can also view the machine resources:
 
 [source,bash,role="execute"]

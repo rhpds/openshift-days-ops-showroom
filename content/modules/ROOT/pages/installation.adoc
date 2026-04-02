@@ -283,6 +283,12 @@ NOTE: On this compact cluster the worker pool shows 0 machines because all nodes
 
 MachineConfigPools manage node-level configuration (kernel arguments, systemd units, etc.) and coordinate rolling updates.
 
+You can also verify this in the console. Navigate to **Compute -> MachineConfigPools**:
+
+image::installation-images/machineconfigpools-console.png[MachineConfigPools showing master and worker pools with Up to date status]
+
+The green *Up to date* indicators and *Degraded: False* confirm that all node configurations have been applied successfully. During an upgrade or configuration change, you would see the *Update status* change to *Updating* — this view is a quick way to monitor node rollout progress without polling the CLI.
+
 == Step 4: Test Networking (Hands-on)
 
 Verify networking works by creating a test application and route:

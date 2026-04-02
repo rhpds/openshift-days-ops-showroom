@@ -399,6 +399,12 @@ oc adm policy add-cluster-role-to-group cluster-reader ose-fancy-dev
 
 **What is cluster-reader?** A role that allows viewing administrative information (all projects, nodes, cluster settings) without edit permissions.
 
+You can verify this in the console. Navigate to **User Management -> RoleBindings**, switch the Kind filter to **Cluster-wide RoleBindings**, and search for `cluster-reader`:
+
+image::ldap-clusterrolebinding-reader.png[Cluster-wide RoleBindings showing ose-fancy-dev group bound to cluster-reader]
+
+The first row shows `ose-fancy-dev` bound to `cluster-reader` across all namespaces — exactly what we just configured.
+
 For more on roles, see link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/using-rbac[Using RBAC to define and apply permissions].
 
 **Test as a regular user:**
@@ -510,9 +516,15 @@ oc get rolebindings -n app-dev
 oc describe rolebinding -n app-dev | grep -A 5 ose-teamed-app
 ----
 
-In the **OCP Console**, navigate to **User Management -> RoleBindings**, select project `app-dev`, and click the rolebinding named **edit**. Switch to the **YAML** tab to see the full binding — it shows the group `ose-teamed-app` bound to the `edit` ClusterRole:
+**Verify in the console.** Navigate to **User Management -> RoleBindings**, select project `app-dev`, and filter by **Namespace RoleBindings**:
 
-image::ldap-rolebinding-yaml.png[RoleBinding YAML showing ose-teamed-app group bound to edit ClusterRole in app-dev]
+image::ldap-rolebindings-app-dev.png[RoleBindings for app-dev showing ose-teamed-app group with edit role]
+
+You can immediately see that `ose-teamed-app` has the `edit` role in `app-dev`. Now switch the project to `app-prod`:
+
+image::ldap-rolebindings-app-prod.png[RoleBindings for app-prod showing ose-fancy-dev with edit and ose-teamed-app with view]
+
+Notice the separation of privileges at a glance — `ose-fancy-dev` has `edit` access to production while `ose-teamed-app` only has `view`. This is the kind of access review that the console makes much faster than parsing CLI output.
 
 == Step 9: Test Project Permissions
 
