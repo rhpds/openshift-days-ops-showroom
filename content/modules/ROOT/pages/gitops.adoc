@@ -6,30 +6,34 @@
 **Format:** Hands-on +
 **Audience:** Platform Engineers, Operations Teams, SRE
 
-GitOps is a modern approach for managing infrastructure through Git. You define the desired state of your cluster in a Git repository, and a tool like ArgoCD continuously monitors and syncs the cluster to match. If someone makes a manual change, ArgoCD detects the drift and can automatically restore the correct state.
+As an OpenShift administrator managing multiple clusters, you need every cluster configured the same way — same quotas, same network policies, same security baselines. Making these changes manually on each cluster is slow, error-prone, and impossible to audit.
 
-As an OpenShift administrator, this means you can manage operators, cluster configuration, and application deployments across multiple clusters from a single source of truth in Git.
+GitOps solves this by treating cluster configuration as code in a Git repository. A tool called ArgoCD continuously watches that repository and ensures every cluster matches the desired state. If someone makes a manual change, ArgoCD detects the drift and can automatically fix it.
+
+In this module, you will use ArgoCD to deploy a production-ready project configuration from Git, then break it on purpose and watch ArgoCD catch the drift.
 
 == Learning Objectives
 
 By the end of this module, you will be able to:
 
-* Access and navigate the ArgoCD interface
-* Deploy an operator using GitOps instead of manual installation
-* Manage cluster configuration declaratively through Git
-* Observe how ArgoCD detects drift when someone makes manual changes
-* Resync resources to restore the desired state from Git
+* Access and navigate the ArgoCD interface on OpenShift
+* Deploy a complete project configuration (namespace, quotas, limits, network policy) from Git
+* Understand how ArgoCD detects configuration drift
+* Resync resources to restore the desired state
+* Enable self-healing so ArgoCD automatically reverts unauthorised changes
 
-== Understanding GitOps on OpenShift
+== How GitOps Works on OpenShift
 
-OpenShift GitOps uses link:https://argo-cd.readthedocs.io/en/stable/[ArgoCD] to implement the GitOps workflow:
+OpenShift GitOps uses link:https://argo-cd.readthedocs.io/en/stable/[ArgoCD] to implement a continuous reconciliation loop:
 
-1. **Define** desired state in a Git repository (YAML manifests, Kustomize, Helm)
-2. **Sync** ArgoCD watches the repo and applies changes to the cluster
-3. **Detect** ArgoCD compares the live cluster state against Git
-4. **Reconcile** if drift is detected, ArgoCD can alert or auto-heal
+1. **Define** — store your desired cluster state as YAML manifests in a Git repository
+2. **Sync** — ArgoCD applies those manifests to the cluster
+3. **Detect** — ArgoCD continuously compares the live cluster state against Git
+4. **Reconcile** — if drift is detected, ArgoCD flags it as OutOfSync and can auto-heal
 
-This approach gives you an audit trail (Git history), easy rollback (Git revert), and consistency across environments.
+The result: Git becomes the single source of truth. Every change is tracked, auditable, and reversible.
+
+For more details, see link:https://docs.redhat.com/en/documentation/red_hat_openshift_gitops/1.19/html/understanding_openshift_gitops/index[Understanding OpenShift GitOps].
 
 == Step 1: Access ArgoCD
 
@@ -48,7 +52,7 @@ Select **Log in via OpenShift** and use your admin credentials:
 * *Username*: `{openshift_cluster_admin_username}`
 * *Password*: `{openshift_cluster_admin_password}`
 
-Authorise access when prompted. You should now see the ArgoCD dashboard.
+Authorise access when prompted. You should now see the empty ArgoCD dashboard.
 
 **Verify from the CLI:**
 
@@ -57,20 +61,20 @@ Authorise access when prompted. You should now see the ArgoCD dashboard.
 oc get pods -n openshift-gitops
 ----
 
-You should see several pods running including the ArgoCD server, application controller, repo server, and Redis.
+You should see the ArgoCD server, application controller, repo server, Redis, and Dex pods all running.
 
-[source,bash,role="execute"]
-----
-oc get route openshift-gitops-server -n openshift-gitops -o jsonpath='{.spec.host}'
-----
+== Step 2: Deploy a Project Configuration from Git
 
-This is the URL for the ArgoCD UI.
+In production, platform teams define standard project configurations in Git — a namespace with resource quotas, default limits, and network policies. Every new team project gets the same baseline. Let's deploy one now.
 
-== Step 2: Deploy an Operator Using GitOps
+The Git repository for this workshop contains a cluster configuration bundle at `support/gitops/cluster-config/` with four resources:
 
-Instead of manually installing operators through the OperatorHub, you can define them as manifests in Git and let ArgoCD handle the installation. This ensures every cluster in your fleet gets the same operators with the same configuration.
+* **Namespace** — `gitops-managed-project` with labels for tracking
+* **ResourceQuota** — caps total CPU, memory, and pod count for the project
+* **LimitRange** — sets default CPU/memory requests and limits for containers that don't specify their own
+* **NetworkPolicy** — denies ingress from other namespaces (project isolation)
 
-We will deploy the **OpenShift Pipelines** operator using a Git repository that contains the Subscription and namespace manifests.
+This is the kind of baseline every production project should have.
 
 **Create the ArgoCD Application:**
 
@@ -80,14 +84,13 @@ cat <<'EOF' | oc apply -f -
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: pipelines
+  name: managed-project
   namespace: openshift-gitops
 spec:
   destination:
-    namespace: openshift-operators
     server: 'https://kubernetes.default.svc'
   source:
-    path: support/gitops/pipelines/
+    path: support/gitops/cluster-config/
     repoURL: 'https://github.com/rhpds/openshift-days-ops-showroom/'
     targetRevision: main
   project: default
@@ -98,136 +101,177 @@ spec:
 EOF
 ----
 
-**Watch ArgoCD sync the application:**
+**Watch ArgoCD sync:**
 
-Switch back to the ArgoCD UI. You should see the `pipelines` application appear. Click on it to see the resources being created.
+Switch to the ArgoCD UI. You should see the `managed-project` application tile appear on the dashboard.
 
-If it shows "OutOfSync", click **Sync** and then **Synchronize** to trigger the initial sync.
+* **Green heart** = Healthy
+* **Green circle with tick** = Synced
 
-**Verify in the OpenShift console:**
+If it shows "OutOfSync", click the tile, then click **Sync** → **Synchronize**.
 
-Navigate to **Operators -> Installed Operators**. You should see **Red Hat OpenShift Pipelines** listed as Succeeded. ArgoCD installed it by applying the Subscription manifest from Git.
+=== Explore the Application in ArgoCD
 
-TIP: You can also verify from the CLI:
+Click on the `managed-project` tile to open the application detail view. You'll see a **resource tree** showing the relationship between all managed resources:
 
-[source,bash,role="execute"]
-----
-oc get csv -n openshift-operators | grep pipelines
-----
+* `Application: managed-project` at the top
+* Branching down to: `Namespace`, `ResourceQuota`, `LimitRange`, `NetworkPolicy`
 
-**Understanding the Application properties:**
+Each resource node shows its sync and health status with colour-coded icons. Click on any resource — for example, the **ResourceQuota** — to open a detail panel on the right. This panel shows:
 
-|===
-|*Field* |*Purpose*
+* **Summary** — kind, namespace, creation time
+* **Live Manifest** — the current state on the cluster (what's actually running)
+* **Desired Manifest** — what's defined in Git (what it should be)
+* **Diff** — any differences between live and desired
+* **Events** — sync events and status changes
 
-|**Project** | Organisational unit within ArgoCD for grouping applications and access control
-|**Repository** | Git repo containing the desired state manifests
-|**Target Revision** | Branch, tag, or commit to deploy from
-|**Path** | Directory within the repo containing the manifests
-|**Destination** | Target cluster and namespace for deployment
-|**Sync Policy** | Whether ArgoCD syncs automatically or requires manual approval
-|===
+This is where you'll spend most of your time as an admin — checking that resources match their desired state and investigating when they don't.
 
-== Step 3: Manage Cluster Configuration via GitOps
+Click **Back** or the ArgoCD logo to return to the dashboard.
 
-Beyond operators, GitOps is ideal for managing cluster-wide configuration. Let's deploy a console banner — a `ConsoleNotification` resource that displays a message at the top of the OpenShift console.
+=== Explore the Application Details
 
-**Create the banner application in ArgoCD:**
+From the application view, click the **App Details** button in the top left. This shows the application configuration:
 
-[source,bash,role="execute"]
-----
-cat <<'EOF' | oc apply -f -
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: banner
-  namespace: openshift-gitops
-spec:
-  destination:
-    namespace: openshift-gitops
-    server: 'https://kubernetes.default.svc'
-  source:
-    path: support/gitops/banner/
-    repoURL: 'https://github.com/rhpds/openshift-days-ops-showroom/'
-    targetRevision: main
-  project: default
-  syncPolicy:
-    automated:
-      prune: false
-      selfHeal: false
-EOF
-----
+* **Source** — the Git repository URL, branch, and path ArgoCD is watching
+* **Destination** — which cluster and namespace the resources are deployed to
+* **Sync Policy** — whether sync is automatic or manual, and whether self-heal and prune are enabled
+* **Status** — current sync and health status
 
-**Check the OpenShift console** — you should see a blue banner at the top of the page with a congratulations message.
+Close the panel when done.
 
-**Verify the resource from CLI:**
+**Verify from the CLI:**
 
 [source,bash,role="execute"]
 ----
-oc get consolenotification
+oc get namespace gitops-managed-project
 ----
-
-You should see:
-
-----
-NAME          TEXT                                                                  LOCATION   AGE
-home-banner   Congratulations, you have successfully created a banner using ArgoCD! BannerTop  ...
-----
-
-== Step 4: Observe Drift Detection
-
-One of the most powerful features of GitOps is drift detection. Let's simulate someone making an unauthorised manual change and see how ArgoCD responds.
-
-**Make a manual change to the banner:**
 
 [source,bash,role="execute"]
 ----
-oc patch consolenotification home-banner -p '{"spec":{"text":"oops somebody changed this!"}}' --type=merge
+oc get resourcequota -n gitops-managed-project
 ----
 
-**Check the OpenShift console** — the banner text has changed to "oops somebody changed this!"
+[source,bash,role="execute"]
+----
+oc get limitrange -n gitops-managed-project
+----
 
-**Check ArgoCD** — go back to the ArgoCD UI. The `banner` application should now show **OutOfSync**. ArgoCD detected that the live cluster state no longer matches what's in Git.
+[source,bash,role="execute"]
+----
+oc get networkpolicy -n gitops-managed-project
+----
+
+All four resources were deployed from a single Git path. On a fleet of 10 clusters, you would point each cluster's ArgoCD at the same repository and every cluster would get this identical configuration automatically.
+
+TIP: In the OpenShift console, navigate to **Home -> Projects** and select `gitops-managed-project`. You can see the ResourceQuota and LimitRange under the project details.
+
+== Step 3: Simulate Configuration Drift
+
+Now let's see what happens when someone makes an unauthorised manual change — the kind of thing that happens in production when someone "just needs to fix something quickly."
+
+**Increase the pod quota manually:**
+
+[source,bash,role="execute"]
+----
+oc patch resourcequota compute-quota -n gitops-managed-project \
+  -p '{"spec":{"hard":{"pods":"100"}}}' --type=merge
+----
+
+This changes the pod limit from 20 (what's in Git) to 100. Verify the change:
+
+[source,bash,role="execute"]
+----
+oc get resourcequota compute-quota -n gitops-managed-project -o jsonpath='{.spec.hard.pods}'
+echo
+----
+
+Output: `100` — the manual change took effect.
+
+**Check ArgoCD:**
+
+Go back to the ArgoCD UI dashboard. The `managed-project` application tile now shows a **yellow warning icon** with **OutOfSync** status. ArgoCD detected that the live cluster state no longer matches what's defined in Git.
+
+Click the tile to open the application. In the resource tree, the **ResourceQuota** node is highlighted in yellow — that's the resource that drifted.
 
 **View the diff:**
 
-Click on the `banner` application, then click on the `home-banner` resource and select **Diff**. You'll see:
+Click on the `compute-quota` ResourceQuota in the resource tree. In the detail panel on the right, click the **Diff** tab. You'll see a side-by-side comparison:
 
-* **Green** — the original text from Git (desired state)
-* **Red** — the manual change (actual state)
+* **Green** — the value from Git (`pods: "20"`) — this is the desired state
+* **Red** — the manual change (`pods: "100"`) — this is what's actually on the cluster
 
-This visual diff makes it easy to see exactly what changed and who deviated from the source of truth.
+Notice that ArgoCD only flags the specific field that changed. The Namespace, LimitRange, and NetworkPolicy all show as Synced because they weren't touched.
 
-== Step 5: Resync to Desired State
+This is the power of GitOps for operations teams — across hundreds of resources, you can immediately pinpoint exactly what deviated from the baseline and when.
 
-Now restore the banner to its correct state from Git.
+== Step 4: Restore the Desired State
 
-**Resync the application:**
+**Resync from Git:**
 
-In ArgoCD, click **Sync** on the `banner` application, then click **Synchronize**.
+In the ArgoCD application view, click the **Sync** button in the top toolbar, then click **Synchronize** in the dialog that appears. You can leave all defaults — ArgoCD will apply every resource from Git.
+
+Watch the resource tree — the ResourceQuota node will flash as it updates, then return to green (Synced). The application tile on the dashboard will also return to a green Synced status.
 
 **Verify the fix:**
 
-Check the OpenShift console — the banner should be back to "Congratulations, you have successfully created a banner using ArgoCD!"
+[source,bash,role="execute"]
+----
+oc get resourcequota compute-quota -n gitops-managed-project -o jsonpath='{.spec.hard.pods}'
+echo
+----
+
+Output: `20` — the pod quota is back to the value defined in Git. The unauthorised change has been reverted.
+
+== Step 5: Enable Self-Healing
+
+In the previous step, you had to manually resync. In production, you want ArgoCD to automatically revert drift without human intervention.
+
+**Enable self-heal on the application:**
 
 [source,bash,role="execute"]
 ----
-oc get consolenotification home-banner -o jsonpath='{.spec.text}'
+oc patch application managed-project -n openshift-gitops \
+  --type=merge -p '{"spec":{"syncPolicy":{"automated":{"selfHeal":true}}}}'
 ----
 
-The cluster is back in sync with Git.
+**Test it — make another manual change:**
 
-== GitOps Beyond This Lab
+[source,bash,role="execute"]
+----
+oc patch resourcequota compute-quota -n gitops-managed-project \
+  -p '{"spec":{"hard":{"pods":"999"}}}' --type=merge
+----
 
-In production, GitOps is used for much more than banners:
+**Wait a few seconds, then check:**
 
-* **Operator management** — ensure the same operators and versions across all clusters
-* **RBAC configuration** — manage ClusterRoles and RoleBindings through Git
-* **Cluster policies** — enforce network policies, security contexts, and quotas
-* **Application delivery** — deploy applications consistently across dev, staging, and production
-* **Self-healing** — enable ArgoCD's self-heal to automatically revert manual changes
+[source,bash,role="execute"]
+----
+sleep 15
+oc get resourcequota compute-quota -n gitops-managed-project -o jsonpath='{.spec.hard.pods}'
+echo
+----
 
-With **self-heal** enabled, ArgoCD would have automatically reverted the banner change without any manual intervention. You can enable this under the application's sync policy settings.
+Output: `20` — ArgoCD automatically detected the drift and reverted it without any manual intervention.
+
+**Check the ArgoCD UI:**
+
+Go back to the ArgoCD dashboard. The `managed-project` application still shows **Synced** and **Healthy** — it briefly went OutOfSync when you made the change, then ArgoCD immediately corrected it.
+
+Click into the application and check the **Last Sync** timestamp — it will show a recent sync that was triggered by self-heal, not by you.
+
+You can also click on the `compute-quota` ResourceQuota and look at the **Events** tab to see the sync history — you'll see ArgoCD detected the drift and automatically resynced.
+
+This is how production clusters stay compliant. No matter what manual changes someone makes, ArgoCD continuously enforces the configuration defined in Git.
+
+== When to Use GitOps
+
+GitOps is most valuable for:
+
+* **Multi-cluster consistency** — same configuration across dev, staging, production, and edge clusters
+* **Compliance and auditing** — every change is a Git commit with author, timestamp, and approval
+* **Disaster recovery** — rebuild a cluster's entire configuration by pointing ArgoCD at the Git repo
+* **Preventing configuration drift** — self-heal ensures manual changes don't persist
 
 For more information, see link:https://docs.redhat.com/en/documentation/red_hat_openshift_gitops/1.19/html/understanding_openshift_gitops/index[Understanding OpenShift GitOps].
 
@@ -236,18 +280,18 @@ For more information, see link:https://docs.redhat.com/en/documentation/red_hat_
 **What you accomplished:**
 
 * Accessed the pre-deployed ArgoCD instance via the OpenShift console
-* Deployed the Pipelines operator entirely through GitOps instead of manual OperatorHub installation
-* Managed cluster configuration (console banner) declaratively from a Git repository
-* Observed ArgoCD detect drift when someone made a manual change
+* Deployed a complete project configuration (namespace, quotas, limits, network policy) from a Git repository
+* Observed ArgoCD detect configuration drift when a ResourceQuota was manually changed
 * Resynced to restore the desired state from Git
+* Enabled self-healing so ArgoCD automatically reverts unauthorised changes
 
-**Key takeaway:** GitOps provides an audit trail, easy rollback, and consistent configuration across clusters. Everything is in Git — if it's not in Git, it shouldn't be on the cluster.
+**Key takeaway:** GitOps turns cluster configuration into code. Everything is in Git — tracked, auditable, and automatically enforced. If it's not in Git, it shouldn't be on the cluster.
 
 == Cleanup
 
 [source,bash,role="execute"]
 ----
-oc delete application pipelines banner -n openshift-gitops --ignore-not-found
-oc delete consolenotification home-banner --ignore-not-found
+oc delete application managed-project -n openshift-gitops --ignore-not-found
+oc delete namespace gitops-managed-project --ignore-not-found
 echo "GitOps cleanup complete"
 ----
