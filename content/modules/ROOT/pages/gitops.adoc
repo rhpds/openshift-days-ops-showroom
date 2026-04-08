@@ -231,7 +231,7 @@ In the previous step, you had to manually resync. In production, you want ArgoCD
 
 [source,bash,role="execute"]
 ----
-oc patch application managed-project -n openshift-gitops \
+oc patch application.argoproj.io managed-project -n openshift-gitops \
   --type=merge -p '{"spec":{"syncPolicy":{"automated":{"selfHeal":true}}}}'
 ----
 
@@ -291,7 +291,7 @@ For more information, see link:https://docs.redhat.com/en/documentation/red_hat_
 
 [source,bash,role="execute"]
 ----
-oc delete application managed-project -n openshift-gitops --ignore-not-found
+oc delete application.argoproj.io managed-project -n openshift-gitops --ignore-not-found
 oc delete namespace gitops-managed-project --ignore-not-found
 echo "GitOps cleanup complete"
 ----
