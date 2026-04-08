@@ -41,18 +41,30 @@ OpenShift GitOps is already installed on your cluster. The ArgoCD instance is ru
 
 **Find ArgoCD in the console:**
 
-Look for the grid icon (nine tiles) in the top navigation bar of the OpenShift console and select **OpenShift GitOps Cluster Argo CD**.
+Look for the grid icon (nine tiles) in the top navigation bar of the OpenShift console and select **Cluster Argo CD** under OpenShift GitOps:
+
+image::gitops-nine-tiles.png[OpenShift console grid menu showing Cluster Argo CD link]
 
 If prompted about a certificate warning, proceed using the advanced options.
 
 **Log in via OpenShift:**
 
-Select **Log in via OpenShift** and use your admin credentials:
+Select **Log in via OpenShift**:
+
+image::gitops-argocd-login.png[ArgoCD login page with Log in via OpenShift button]
+
+Enter your admin credentials:
 
 * *Username*: `{openshift_cluster_admin_username}`
 * *Password*: `{openshift_cluster_admin_password}`
 
-Authorise access when prompted. You should now see the empty ArgoCD dashboard.
+image::gitops-openshift-login.png[OpenShift login form]
+
+Authorise access when prompted:
+
+image::gitops-authorize-access.png[OAuth authorize access page]
+
+TIP: If you have the **ArgoCD** tab in Showroom, you can use that instead — it's already authenticated.
 
 **Verify from the CLI:**
 
@@ -76,6 +88,29 @@ The Git repository for this workshop contains a cluster configuration bundle at 
 
 This is the kind of baseline every production project should have.
 
+**First, create a workshop project in ArgoCD to keep our exercises separate:**
+
+[source,bash,role="execute"]
+----
+cat <<'EOF' | oc apply -f -
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: workshop
+  namespace: openshift-gitops
+spec:
+  description: Workshop exercises
+  sourceRepos:
+  - '*'
+  destinations:
+  - namespace: '*'
+    server: 'https://kubernetes.default.svc'
+  clusterResourceWhitelist:
+  - group: '*'
+    kind: '*'
+EOF
+----
+
 **Create the ArgoCD Application:**
 
 [source,bash,role="execute"]
@@ -93,7 +128,7 @@ spec:
     path: support/gitops/cluster-config/
     repoURL: 'https://github.com/rhpds/openshift-days-ops-showroom/'
     targetRevision: main
-  project: default
+  project: workshop
   syncPolicy:
     automated:
       prune: false
@@ -103,7 +138,13 @@ EOF
 
 **Watch ArgoCD sync:**
 
-Switch to the ArgoCD UI. You should see the `managed-project` application tile appear on the dashboard.
+Switch to the ArgoCD UI. You may see other applications on the dashboard — these are managed by the platform. To see only your workshop application, use the **PROJECTS** filter on the left sidebar and select **workshop**:
+
+image::gitops-project-filter.png[ArgoCD PROJECTS filter dropdown showing default and workshop options]
+
+You should now see only the `managed-project` application tile:
+
+image::gitops-dashboard-synced.png[ArgoCD dashboard filtered by workshop project showing managed-project as Healthy and Synced]
 
 * **Green heart** = Healthy
 * **Green circle with tick** = Synced
@@ -114,29 +155,36 @@ If it shows "OutOfSync", click the tile, then click **Sync** → **Synchronize**
 
 Click on the `managed-project` tile to open the application detail view. You'll see a **resource tree** showing the relationship between all managed resources:
 
-* `Application: managed-project` at the top
-* Branching down to: `Namespace`, `ResourceQuota`, `LimitRange`, `NetworkPolicy`
+image::gitops-resource-tree-synced.png[ArgoCD resource tree showing managed-project with four child resources all Synced]
 
-Each resource node shows its sync and health status with colour-coded icons. Click on any resource — for example, the **ResourceQuota** — to open a detail panel on the right. This panel shows:
+* `managed-project` at the centre
+* Branching out to: `default-limits` (LimitRange), `gitops-managed-project` (Namespace), `compute-quota` (ResourceQuota), `deny-from-other-namespaces` (NetworkPolicy)
 
-* **Summary** — kind, namespace, creation time
-* **Live Manifest** — the current state on the cluster (what's actually running)
-* **Desired Manifest** — what's defined in Git (what it should be)
+Each resource node shows its sync and health status with colour-coded icons. Click on any resource — for example, the **compute-quota** ResourceQuota — to open a detail panel:
+
+image::gitops-quota-detail.png[ArgoCD detail panel for compute-quota showing Summary and Live Manifest tabs]
+
+This panel shows:
+
+* **Summary** — kind, namespace, creation time, sync status
+* **Live Manifest** — the current state on the cluster
+* **Desired Manifest** — what's defined in Git
 * **Diff** — any differences between live and desired
 * **Events** — sync events and status changes
 
 This is where you'll spend most of your time as an admin — checking that resources match their desired state and investigating when they don't.
 
-Click **Back** or the ArgoCD logo to return to the dashboard.
-
 === Explore the Application Details
 
-From the application view, click the **App Details** button in the top left. This shows the application configuration:
+Click the **Details** button in the top toolbar. This shows the application configuration:
 
-* **Source** — the Git repository URL, branch, and path ArgoCD is watching
-* **Destination** — which cluster and namespace the resources are deployed to
-* **Sync Policy** — whether sync is automatic or manual, and whether self-heal and prune are enabled
-* **Status** — current sync and health status
+image::gitops-app-details.png[ArgoCD App Details showing project workshop, repo URL, path, and sync status]
+
+* **Project** — `workshop` (our filtered workspace)
+* **Repo URL** — the Git repository ArgoCD is watching
+* **Path** — `support/gitops/cluster-config/` within that repo
+* **Target Revision** — `main` branch
+* **Status** — Synced to a specific commit
 
 Close the panel when done.
 
@@ -190,16 +238,24 @@ Output: `100` — the manual change took effect.
 
 **Check ArgoCD:**
 
-Go back to the ArgoCD UI dashboard. The `managed-project` application tile now shows a **yellow warning icon** with **OutOfSync** status. ArgoCD detected that the live cluster state no longer matches what's defined in Git.
+Go back to the ArgoCD UI. The `managed-project` application now shows **OutOfSync**. ArgoCD detected that the live cluster state no longer matches what's defined in Git.
 
-Click the tile to open the application. In the resource tree, the **ResourceQuota** node is highlighted in yellow — that's the resource that drifted.
+Click the tile to open the application. In the resource tree, the **ResourceQuota** node is highlighted in yellow — that's the resource that drifted:
+
+image::gitops-resource-tree-outofsync.png[ArgoCD resource tree showing OutOfSync status with compute-quota highlighted]
 
 **View the diff:**
 
-Click on the `compute-quota` ResourceQuota in the resource tree. In the detail panel on the right, click the **Diff** tab. You'll see a side-by-side comparison:
+Click on the `compute-quota` ResourceQuota in the resource tree. In the detail panel, click the **Diff** tab:
 
-* **Green** — the value from Git (`pods: "20"`) — this is the desired state
-* **Red** — the manual change (`pods: "100"`) — this is what's actually on the cluster
+image::gitops-quota-outofsync.png[compute-quota detail showing OutOfSync status]
+
+You'll see a side-by-side comparison showing the exact difference:
+
+image::gitops-diff-view.png[ArgoCD diff view showing pods 100 on the left vs pods 20 on the right]
+
+* The live cluster has `pods: "100"` — the manual change
+* The desired state from Git has `pods: "20"` — what it should be
 
 Notice that ArgoCD only flags the specific field that changed. The Namespace, LimitRange, and NetworkPolicy all show as Synced because they weren't touched.
 
@@ -209,9 +265,15 @@ This is the power of GitOps for operations teams — across hundreds of resource
 
 **Resync from Git:**
 
-In the ArgoCD application view, click the **Sync** button in the top toolbar, then click **Synchronize** in the dialog that appears. You can leave all defaults — ArgoCD will apply every resource from Git.
+In the ArgoCD application view, click the **Sync** button in the top toolbar, then click **Synchronize** in the dialog that appears:
 
-Watch the resource tree — the ResourceQuota node will flash as it updates, then return to green (Synced). The application tile on the dashboard will also return to a green Synced status.
+image::gitops-sync-dialog.png[ArgoCD sync dialog showing all four resources checked for synchronization]
+
+You can leave all defaults — ArgoCD will apply every resource from Git.
+
+Watch the resource tree — the ResourceQuota node will flash as it updates, then return to green (Synced):
+
+image::gitops-resynced.png[ArgoCD resource tree back to all Synced after resync]
 
 **Verify the fix:**
 
@@ -256,7 +318,9 @@ Output: `20` — ArgoCD automatically detected the drift and reverted it without
 
 **Check the ArgoCD UI:**
 
-Go back to the ArgoCD dashboard. The `managed-project` application still shows **Synced** and **Healthy** — it briefly went OutOfSync when you made the change, then ArgoCD immediately corrected it.
+Go back to the ArgoCD dashboard. The `managed-project` application still shows **Synced** and **Healthy** — it briefly went OutOfSync when you made the change, then ArgoCD immediately corrected it:
+
+image::gitops-selfheal-synced.png[ArgoCD dashboard showing managed-project still Synced after self-heal]
 
 Click into the application and check the **Last Sync** timestamp — it will show a recent sync that was triggered by self-heal, not by you.
 
@@ -292,6 +356,7 @@ For more information, see link:https://docs.redhat.com/en/documentation/red_hat_
 [source,bash,role="execute"]
 ----
 oc delete application.argoproj.io managed-project -n openshift-gitops --ignore-not-found
+oc delete appproject workshop -n openshift-gitops --ignore-not-found
 oc delete namespace gitops-managed-project --ignore-not-found
 echo "GitOps cleanup complete"
 ----
