@@ -54,6 +54,8 @@ Your workshop runs in a split-panel interface:
 
 Along the top of the right panel you'll find tabs for each tool deployed in your environment:
 
+image::showroom-tabs.png[Showroom interface showing tabs for OCP Console, Terminal, RHACS, ArgoCD, and Developer Hub]
+
 [cols="1,3"]
 |===
 |Tab |What it is
