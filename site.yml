@@ -45,14 +45,13 @@ asciidoc:
     module_enable_appmgmt: 'true'
     module_enable_ingress: 'true'
     module_enable_netsec: 'true'
-    module_enable_waf: 'true'
     module_enable_debugging: 'true'
+    module_enable_gitops: 'true'
     # Identity & Access
     module_enable_ldap: 'true'
     module_enable_oidc: 'true'
     # Day 2 Operations
     module_enable_observability: 'true'
-    module_enable_backup: 'true'
     module_enable_performance: 'true'
     # Advanced Topics
     module_enable_virt: 'true'
