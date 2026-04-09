@@ -21,7 +21,6 @@ asciidoc:
   attributes:
     toclevels: 2
     # Module flags - inject-env-vars.sh overwrites this section at runtime
-    module_enable_concepts: 'true'
     module_enable_install: 'true'
     module_enable_appmgmt: 'true'
     module_enable_ingress: 'true'

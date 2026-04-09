@@ -25,7 +25,6 @@ fi
 # These control which nav items are shown via ifeval conditionals
 
 echo "Module settings (getting started):"
-echo "  MODULE_ENABLE_CONCEPTS=${MODULE_ENABLE_CONCEPTS:-true}"
 echo "  MODULE_ENABLE_INSTALL=${MODULE_ENABLE_INSTALL:-true}"
 echo "Module settings (core operations):"
 echo "  MODULE_ENABLE_APPMGMT=${MODULE_ENABLE_APPMGMT:-true}"
@@ -50,9 +49,8 @@ echo "  MODULE_ENABLE_SECURITY=${MODULE_ENABLE_SECURITY:-true}"
 # So we set the attribute to 'true' or 'false'
 ATTRS=""
 
-# Module flags - all 19 catalog parameters
+# Module flags
 # Getting Started
-ATTRS="${ATTRS}    module_enable_concepts: '${MODULE_ENABLE_CONCEPTS:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_install: '${MODULE_ENABLE_INSTALL:-true}'"$'\n'
 # Core Operations
 ATTRS="${ATTRS}    module_enable_appmgmt: '${MODULE_ENABLE_APPMGMT:-true}'"$'\n'

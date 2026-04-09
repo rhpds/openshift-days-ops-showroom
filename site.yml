@@ -39,7 +39,6 @@ asciidoc:
     toclevels: 2
     # Module flags - matches catalog parameter names (module_enable_*)
     # Getting Started
-    module_enable_concepts: 'true'
     module_enable_install: 'true'
     # Core Operations
     module_enable_appmgmt: 'true'
