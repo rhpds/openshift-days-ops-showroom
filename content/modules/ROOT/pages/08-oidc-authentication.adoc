@@ -141,13 +141,13 @@ image::oidc-rhbk-realm-created.png[Manage realms showing master and OpenShift re
 
 You're now working inside the OpenShift realm. Everything you create from here — users, groups, clients — belongs to this realm.
 
-== Step 4: Create Users
+== Step 4: Create Your First User
 
-Create three users representing different roles in your organization.
+Create a user manually so you understand the Keycloak user management interface.
 
-IMPORTANT: All four fields (**Username**, **Email**, **First name**, **Last name**) must be filled in. Keycloak's user profile policy requires them — if any are missing, the user's account will be marked as "not fully set up" and login will fail with an unhelpful error.
+IMPORTANT: All four fields (**Username**, **Email**, **First name**, **Last name**) must be filled in. Keycloak's user profile policy requires them — if any are missing, login will fail with an unhelpful error.
 
-**Create the first user (admin1):**
+**Create admin1:**
 
 1. Click **Users** in the left sidebar
 2. Click **Add user**
@@ -172,36 +172,17 @@ image::oidc-rhbk-set-password.png[Set password dialog with Temporary set to Off]
 +
 9. Click **Save** and confirm
 
-**Create two more users the same way:**
-
-[cols="1,1,1,1"]
-|===
-|Username |First name |Last name |Email
-
-|`developer1` |Developer |User |developer1@example.com
-|`viewer1` |Viewer |User |viewer1@example.com
-|===
-
-Set the same password (`OpenShift123!`) for each, with **Temporary** set to **Off**.
-
-TIP: After creating each user, click **Users** in the sidebar to go back to the user list, then **Add user** for the next one.
-
-== Step 5: Create Groups
+== Step 5: Create Your First Group
 
 Groups in Keycloak map to OpenShift groups. When a user logs into OpenShift, their Keycloak group membership is included in the ID token — OpenShift reads it and creates the groups automatically.
 
 1. Click **Groups** in the left sidebar
 2. Click **Create group**
 3. Set name to: `ocp-admins` and click **Create**
-4. Click **Groups** again (back to the list)
-5. Create group: `ocp-developers`
-6. Create group: `ocp-viewers`
 
-You should see all three groups listed:
+image::oidc-rhbk-groups-created.png[Groups page showing ocp-admins group]
 
-image::oidc-rhbk-groups-created.png[Groups page showing ocp-admins ocp-developers and ocp-viewers]
-
-**Assign users to groups:**
+**Assign admin1 to the group:**
 
 1. Click **Users** → click **admin1**
 2. Click the **Groups** tab — you'll see "No groups":
@@ -209,75 +190,89 @@ image::oidc-rhbk-groups-created.png[Groups page showing ocp-admins ocp-developer
 image::oidc-rhbk-user-join-group.png[User Groups tab showing Join Group button]
 +
 3. Click **Join Group** → select **ocp-admins** → click **Join**
-4. Go back to **Users** → click **developer1** → **Groups** → **Join Group** → **ocp-developers** → **Join**
-5. Go back to **Users** → click **viewer1** → **Groups** → **Join Group** → **ocp-viewers** → **Join**
 
-== Step 6: Create the OIDC Client
+== Step 6: Script the Remaining Users and Groups
 
-This is the core of the integration. An OIDC **client** represents OpenShift in Keycloak — it defines how OpenShift authenticates users and what information it receives.
+You've seen how users and groups work in the Keycloak UI. Rather than repeating those clicks, we'll use the Keycloak REST API to create the remaining users, groups, and the OIDC client — the same API you'd use to automate this in production.
 
-1. Click **Clients** in the left sidebar
-2. Click **Create client**
-3. Set:
-   - **Client type**: OpenID Connect
-   - **Client ID**: `openshift`
-4. Click **Next**
-5. On the **Capability config** page:
-   - **Client authentication**: **On** (this makes it a confidential client — OpenShift will authenticate with a client secret)
-6. Click **Next**
-7. On the **Login settings** page, you need to tell Keycloak where OpenShift will redirect users after login. Get the OAuth callback URL:
-+
 [source,bash,role="execute"]
 ----
-echo "https://oauth-openshift.$(oc get ingresses.config cluster -o jsonpath='{.spec.domain}')/oauth2callback/rhbk"
+KEYCLOAK_URL="https://$(oc get route keycloak -n rhbk -o jsonpath='{.spec.host}')"
+KC_ADMIN_USER=$(oc get secret keycloak-initial-admin -n rhbk -o jsonpath='{.data.username}' | base64 -d)
+KC_ADMIN_PASS=$(oc get secret keycloak-initial-admin -n rhbk -o jsonpath='{.data.password}' | base64 -d)
+OAUTH_CALLBACK="https://oauth-openshift.$(oc get ingresses.config cluster -o jsonpath='{.spec.domain}')/oauth2callback/rhbk"
+
+# Get admin token
+TOKEN=$(curl -sk "${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token" \
+  -d "grant_type=password" -d "client_id=admin-cli" \
+  -d "username=${KC_ADMIN_USER}" -d "password=${KC_ADMIN_PASS}" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
+echo "=== Creating remaining users ==="
+for user in developer1 viewer1; do
+  FIRST=$(echo $user | sed 's/1$//' | sed 's/.*/\u&/')
+  curl -sk -X POST "${KEYCLOAK_URL}/admin/realms/OpenShift/users" \
+    -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+    -d "{\"username\":\"${user}\",\"email\":\"${user}@example.com\",\"firstName\":\"${FIRST}\",\"lastName\":\"User\",\"enabled\":true,\"credentials\":[{\"type\":\"password\",\"value\":\"OpenShift123!\",\"temporary\":false}]}"
+  echo "  Created $user"
+done
+
+echo "=== Creating remaining groups ==="
+for group in ocp-developers ocp-viewers; do
+  curl -sk -X POST "${KEYCLOAK_URL}/admin/realms/OpenShift/groups" \
+    -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+    -d "{\"name\":\"${group}\"}"
+  echo "  Created $group"
+done
+
+echo "=== Assigning users to groups ==="
+DEV1_ID=$(curl -sk "${KEYCLOAK_URL}/admin/realms/OpenShift/users?username=developer1" \
+  -H "Authorization: Bearer $TOKEN" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
+VIEWER1_ID=$(curl -sk "${KEYCLOAK_URL}/admin/realms/OpenShift/users?username=viewer1" \
+  -H "Authorization: Bearer $TOKEN" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
+DEVS_GID=$(curl -sk "${KEYCLOAK_URL}/admin/realms/OpenShift/groups?search=ocp-developers" \
+  -H "Authorization: Bearer $TOKEN" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
+VIEWERS_GID=$(curl -sk "${KEYCLOAK_URL}/admin/realms/OpenShift/groups?search=ocp-viewers" \
+  -H "Authorization: Bearer $TOKEN" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
+
+curl -sk -X PUT "${KEYCLOAK_URL}/admin/realms/OpenShift/users/${DEV1_ID}/groups/${DEVS_GID}" \
+  -H "Authorization: Bearer $TOKEN"
+echo "  developer1 → ocp-developers"
+curl -sk -X PUT "${KEYCLOAK_URL}/admin/realms/OpenShift/users/${VIEWER1_ID}/groups/${VIEWERS_GID}" \
+  -H "Authorization: Bearer $TOKEN"
+echo "  viewer1 → ocp-viewers"
+
+echo "=== Creating OIDC client ==="
+curl -sk -X POST "${KEYCLOAK_URL}/admin/realms/OpenShift/clients" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d "{\"clientId\":\"openshift\",\"enabled\":true,\"protocol\":\"openid-connect\",\"publicClient\":false,\"clientAuthenticatorType\":\"client-secret\",\"redirectUris\":[\"${OAUTH_CALLBACK}\"],\"directAccessGrantsEnabled\":true}"
+echo "  Client 'openshift' created with redirect URI"
+
+CLIENT_UUID=$(curl -sk "${KEYCLOAK_URL}/admin/realms/OpenShift/clients?clientId=openshift" \
+  -H "Authorization: Bearer $TOKEN" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
+
+echo "=== Adding groups claim mapper ==="
+curl -sk -X POST "${KEYCLOAK_URL}/admin/realms/OpenShift/clients/${CLIENT_UUID}/protocol-mappers/models" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"name":"groups","protocol":"openid-connect","protocolMapper":"oidc-group-membership-mapper","config":{"full.path":"false","id.token.claim":"true","access.token.claim":"true","claim.name":"groups","userinfo.token.claim":"true"}}'
+echo "  Groups mapper added — ID tokens will include group membership"
+
+echo "=== Fetching client secret ==="
+CLIENT_SECRET=$(curl -sk "${KEYCLOAK_URL}/admin/realms/OpenShift/clients/${CLIENT_UUID}/client-secret" \
+  -H "Authorization: Bearer $TOKEN" | python3 -c "import sys,json; print(json.load(sys.stdin)['value'])")
+echo "  Client secret retrieved automatically"
+
+echo ""
+echo "Done — Keycloak is fully configured"
 ----
-+
-8. Set **Valid redirect URIs** to the URL from the command above
-+
-image::oidc-rhbk-client-redirect-uri.png[Login settings page with Valid redirect URIs set to the OAuth callback URL]
-+
-9. Click **Save**
 
-**Get the client secret** — OpenShift needs this to authenticate with Keycloak:
+TIP: In production, you'd use a Keycloak realm export or the Keycloak Operator's `KeycloakRealmImport` CR to automate this entire setup declaratively.
 
-1. After saving, you'll be on the client details page
-2. Click the **Credentials** tab
-3. Copy the **Client secret** value — you'll need it in the next step (click the copy icon next to the secret)
-
-**Configure the groups claim mapper:**
-
-This is the critical step that enables automatic group sync. Without this mapper, OpenShift won't know what groups a user belongs to.
-
-1. Click **Clients** in the left sidebar
-2. Click **openshift** (the client you just created)
-3. Click the **Client scopes** tab (on the client details page, not the sidebar)
-4. Click **openshift-dedicated** (this scope was auto-created with the client)
-5. Click the **Mappers** tab — you'll see "No mappers":
-+
-image::oidc-rhbk-dedicated-mappers.png[openshift-dedicated Mappers tab showing No mappers]
-+
-6. Click **Configure a new mapper**
-7. Select **Group Membership** from the list
-8. Set:
-   - **Name**: `groups`
-   - **Token Claim Name**: `groups`
-   - **Full group path**: toggle to **Off** (OpenShift expects just the group name, not the full path)
-+
-image::oidc-rhbk-group-mapper.png[Group Membership mapper configuration form]
-+
-9. Leave the other toggles as defaults and click **Save**
-
-This mapper injects a `groups` array into every ID token — for example, when developer1 logs in, the token will contain `"groups": ["ocp-developers"]`. OpenShift reads this claim and creates the group automatically.
+Verify the setup in the Keycloak UI — click **Users** and **Groups** to confirm all three users and three groups are present. Click **Clients** → **openshift** to see the client configuration and the groups mapper.
 
 == Step 7: Configure OpenShift OAuth
 
-Back in the terminal, create the client secret using the value you copied from the Keycloak Credentials tab:
-
-[source,bash,role="execute"]
-----
-# Paste the client secret value you copied from the Keycloak Credentials tab
-read -p "Enter the client secret: " CLIENT_SECRET
-----
+The script retrieved the client secret automatically. Now create the OpenShift secret and configure OAuth:
 
 [source,bash,role="execute"]
 ----
@@ -319,14 +314,14 @@ spec:
         email:
         - email
         groups:
-        - groups                     # reads the groups claim from the mapper you created
+        - groups
       extraScopes:
       - email
       - profile
 EOF
 ----
 
-The key line is `claims.groups: [groups]` — this tells OpenShift to read the `groups` claim from the ID token and create OpenShift groups from it. This is why you created the mapper in Step 6.
+The key line is `claims.groups: [groups]` — this tells OpenShift to read the `groups` claim from the ID token and create OpenShift groups from it. This is why the script added the groups mapper to the OIDC client.
 
 Wait for the OAuth rollout:
 
