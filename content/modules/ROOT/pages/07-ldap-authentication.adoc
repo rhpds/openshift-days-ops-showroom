@@ -1,62 +1,15 @@
 = Identity & Users
 
-== Module Overview
-
 **Duration:** 55 minutes +
-**Format:** Hands-on identity provider configuration +
-**Audience:** Platform Engineers, Operations Teams, Security Administrators
+**Format:** Hands-on identity provider configuration
 
-**Narrative Context:**
+== The Scenario
 
-You've verified the cluster is healthy. Now let's configure **enterprise user authentication** by integrating with an LDAP directory.
+Your cluster is running with an HTPasswd admin account — fine for initial setup, but production needs real identity management. In this module you'll integrate an LDAP directory, sync groups into OpenShift, configure RBAC so different teams get different access, and test it by logging in as actual users.
 
-As an operations team, you need to:
-- Integrate with existing identity management systems
-- Configure group-based access control
-- Manage user permissions across projects
-- Remove default administrative accounts for security
+OpenShift's OAuth server supports multiple identity providers — LDAP, OpenID Connect, HTPasswd, GitHub, GitLab, Google, and more. We're using LDAP here because it's the most common enterprise setup and demonstrates group synchronization. The OIDC module covers the modern alternative.
 
-== Learning Objectives
-
-By the end of this module, you will be able to:
-
-* Understand OpenShift identity provider options (LDAP, OIDC, HTPasswd, GitHub)
-* Configure LDAP authentication with OAuth
-* Sync LDAP groups to OpenShift groups
-* Implement role-based access control (RBAC)
-* Test user authentication and permissions
-* Manage users and groups via CLI and console
-* Follow security best practices for production authentication
-
-== Understanding OpenShift Authentication
-
-OpenShift uses an **OAuth server** for authentication. The OAuth server validates user credentials against configured identity providers and issues access tokens for API and console access.
-
-**Supported Identity Providers (OpenShift 4.20):**
-
-* **LDAP** - Validate usernames and passwords against LDAPv3 servers (Active Directory, OpenLDAP, Red Hat Directory Server)
-* **HTPasswd** - Validate usernames and passwords against flat file using htpasswd
-* **Keystone** - Integrate OpenStack Keystone v3 server
-* **GitHub** - OAuth authentication with GitHub or GitHub Enterprise
-* **GitLab** - OAuth authentication with GitLab
-* **Google** - OAuth authentication with Google accounts
-* **OpenID Connect** - Integrate with OpenID Connect identity providers (Microsoft Entra ID, Okta, Keycloak, Red Hat SSO)
-* **Request header** - Proxy authentication for enterprise SSO systems
-* **Basic authentication** - Remote Basic authentication (not recommended for most use cases)
-
-**When to use each:**
-
-* **LDAP** - Existing LDAP/Active Directory infrastructure (most common enterprise auth)
-* **OpenID Connect** - Modern SSO, cloud identity providers, SAML bridges
-* **Request header** - Front-end proxy doing authentication (Apache mod_auth_mellon, Keycloak Gatekeeper)
-* **GitHub/GitLab** - Developer self-service, public repositories
-* **Google** - Developer workstations, Google Workspace integration
-* **HTPasswd** - Demos, testing, proof-of-concept only
-* **Keystone** - OpenStack platform integration
-
-**This workshop uses LDAP** as the hands-on example - it's the most common enterprise authentication method and demonstrates group synchronization.
-
-For complete identity provider details, see link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/understanding-identity-provider[Understanding identity providers].
+TIP: For the full list of supported identity providers, see link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/understanding-identity-provider[Understanding identity providers].
 
 == Step 1: Examine Default Authentication
 
