@@ -1,33 +1,12 @@
 = OpenShift Virtualization
 
-== Module Overview
+**Duration:** 35 minutes
 
-**Duration:** 35 minutes +
-**Audience:** Infrastructure Architects, IT Operations
+== The Scenario
 
-Your organization has workloads running on VMs that can't be containerized yet — databases, middleware, Windows services. OpenShift Virtualization lets you run those VMs alongside containers on the same platform using KubeVirt — a CNCF project built on RHEL KVM. Same scheduler, same networking, same monitoring, same RBAC, same `oc` commands.
+Some workloads can't be containerized yet — databases, middleware, Windows services. OpenShift Virtualization lets you run those VMs alongside containers on the same platform using KubeVirt (CNCF project, built on RHEL KVM). Same scheduler, same networking, same monitoring, same RBAC, same `oc` commands.
 
-**What this means for your organization:**
-
-* **One platform** — VMs and containers managed with the same tools and skills
-* **Migrate at your pace** — run VMs today, containerize when ready. The Migration Toolkit for Virtualization (MTV) handles VM migration with network and storage mapping
-* **Production-ready** — live migration, snapshots, SVVP-certified Windows support, bare-metal performance
-
-**Common use cases:**
-
-* **Consolidate virtualization platforms** — bring VMs from existing hypervisors onto the same platform as your containers. One set of tools, one team, one support contract instead of managing separate stacks
-* **Legacy applications** — that Oracle database, the .NET Framework app, the RHEL 6 middleware server — run them as VMs alongside your modern containerized services
-* **Windows workloads** — run SVVP-certified Windows Server VMs for Active Directory, SQL Server, IIS, or any Windows-dependent application
-* **Dev/test environments** — clone production VMs in seconds to create isolated test environments without separate infrastructure
-* **Lift and shift** — use the Migration Toolkit for Virtualization (MTV) to migrate VMs with their networks and storage mappings, then modernize at your own pace
-
-== Learning Objectives
-
-* Create a VM from the console using InstanceTypes
-* See how VMs are just pods under the hood
-* Live migrate a running VM between nodes
-* Clone a VM for rapid provisioning
-* Take snapshots for backup/rollback
+In this module you'll create a VM from the console, see how it's really just a pod underneath, live migrate it between nodes, clone it, and take snapshots — all with the same tools you use for containers.
 
 == Prerequisites Check
 
