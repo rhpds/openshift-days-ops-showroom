@@ -1,41 +1,15 @@
 = Installation & Verification
 
-== Module Overview
+**Duration:** 25 minutes +
+**Format:** Hands-on verification
 
-**Duration:** 20-25 minutes +
-**Format:** Hands-on verification +
-**Audience:** Platform Engineers, Operations Teams, Cluster Administrators
+== What You're Checking
 
-_You've learned about OpenShift's architecture and value. Now let's verify a cluster is healthy and ready for workloads._
+These are the same checks you'd run after an installation, after an upgrade, or when something feels off — ClusterOperators, node config, networking, storage, and etcd health.
 
-_These are the same checks you'd perform after installation, after upgrades, during troubleshooting, or as part of regular health monitoring._
+Your cluster was provisioned using IPI (Installer-Provisioned Infrastructure), which automates compute, network, storage, and DNS. OpenShift also supports UPI, Agent-based/Assisted Installer for bare metal, and managed offerings (ROSA, ARO). See the link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/installation_overview/index[Installation Documentation] for details.
 
-=== Learning Objectives
-
-By the end of this module, you will be able to:
-
-* Verify cluster health using ClusterOperators
-* Understand upgrade channels and available updates
-* Verify node configuration with MachineConfigPools
-* Validate networking and storage functionality
-* Check etcd health for control plane stability
-
-== About This Cluster
-
-This workshop cluster is pre-provisioned using **Installer-Provisioned Infrastructure (IPI)** — OpenShift fully automated the provisioning of compute, network, storage, and DNS. The result is a production-ready 3-node compact cluster (combined control-plane and worker roles).
-
-OpenShift supports multiple installation methods depending on your environment:
-
-* **IPI** — Full-stack automation for cloud (AWS, Azure, GCP) and on-premise (vSphere, bare metal)
-* **UPI** — You provision infrastructure, installer deploys OpenShift
-* **Agent-based / Assisted Installer** — Bootable ISO or web-based GUI for bare metal
-* **Managed offerings** — ROSA, ARO, OpenShift Dedicated (Red Hat and cloud providers handle operations)
-
-For details on installation planning and configuration, see the link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/installation_overview/index[OpenShift Installation Documentation].
-
-TIP: Two things that cannot be changed after installation: the **pod network CIDR** and the **service network CIDR**. Plan these carefully — if they overlap with your corporate network, you'll need to rebuild the cluster.
-
-Now let's verify this cluster is healthy and ready for workloads.
+TIP: Two things that **cannot be changed** after installation: the **pod network CIDR** and the **service network CIDR**. If they overlap with your corporate network, you're rebuilding the cluster.
 
 == Step 1: Verify Cluster Operators (Primary Health Check)
 
