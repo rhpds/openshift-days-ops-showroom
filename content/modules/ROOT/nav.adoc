@@ -37,10 +37,10 @@ endif::[]
 
 // Identity & Access
 ifeval::["{module_enable_ldap}" == "true"]
-* xref:07-ldap-authentication.adoc[LDAP Authentication]
+* xref:07-ldap-authentication.adoc[Identity - LDAP]
 endif::[]
 ifeval::["{module_enable_oidc}" == "true"]
-* xref:08-oidc-authentication.adoc[OIDC Authentication]
+* xref:08-oidc-authentication.adoc[Identity - OIDC]
 endif::[]
 
 // Day 2 Operations
