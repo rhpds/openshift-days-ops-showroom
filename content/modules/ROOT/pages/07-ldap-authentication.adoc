@@ -618,43 +618,6 @@ Restore the cluster to its original authentication state before proceeding to ot
 
 [source,bash,role="execute",subs="attributes"]
 ----
-# Verify admin login works before removing LDAP
 oc login -u {openshift_cluster_admin_username} -p {openshift_cluster_admin_password} --insecure-skip-tls-verify
-oc whoami | grep -q admin || { echo "ERROR: Admin login failed — do not proceed with cleanup"; exit 1; }
-
-# Restore OAuth to htpasswd only (remove LDAP provider)
-cat <<'CLEANUP' | oc apply -f -
-apiVersion: config.openshift.io/v1
-kind: OAuth
-metadata:
-  name: cluster
-spec:
-  identityProviders:
-  - name: htpasswd
-    mappingMethod: claim
-    type: HTPasswd
-    htpasswd:
-      fileData:
-        name: htpasswd
-CLEANUP
-
-# Remove LDAP secrets and config
-oc delete secret ldap-secret -n openshift-config --ignore-not-found
-oc delete configmap ca-config-map -n openshift-config --ignore-not-found
-
-# Remove LDAP users, identities, and groups
-oc delete user normaluser1 fancyuser1 fancyuser2 teamuser1 teamuser2 --ignore-not-found
-oc delete identity --all --ignore-not-found
-oc delete group ose-fancy-dev ose-normal-dev ose-teamed-app ose-user --ignore-not-found
-
-# Remove RBAC bindings
-oc adm policy remove-cluster-role-from-user cluster-admin fancyuser1 2>/dev/null || true
-oc adm policy remove-cluster-role-from-group cluster-reader ose-fancy-dev 2>/dev/null || true
-
-# Remove test projects and wait for OAuth rollout in the background
-(
-  oc delete project app-dev app-test app-prod --ignore-not-found
-  oc rollout status deployment/oauth-openshift -n openshift-authentication --timeout=120s
-) &>/dev/null &
-echo "Cleanup running in background — OAuth restoring to htpasswd only. You can continue to the next module."
+bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/cleanup-scripts/cleanup-ldap.sh)
 ----
