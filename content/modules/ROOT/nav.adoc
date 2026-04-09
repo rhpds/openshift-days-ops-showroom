@@ -32,7 +32,7 @@ ifeval::["{module_enable_debugging}" == "true"]
 * xref:05-debugging-troubleshooting.adoc[Debugging & Troubleshooting]
 endif::[]
 ifeval::["{module_enable_gitops}" == "true"]
-* xref:06-gitops.adoc[OpenShift GitOps]
+* xref:06-gitops.adoc[GitOps]
 endif::[]
 
 // Identity & Access
