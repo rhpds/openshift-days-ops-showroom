@@ -1,67 +1,70 @@
-// OpenShift Days - Ops Track (101)
+// OpenShift Days - Ops Track
 // Navigation with catalog parameter conditionals
 //
-// Flow: Getting Started → Core Ops → Identity → Day 2 Ops → Advanced → Sections
+// Flow: Setup → Core Ops → Identity → Day 2 Ops → Advanced
 //
 // Catalog parameters (from agnosticv):
-//   module_enable_concepts, module_enable_install,
+//   module_enable_install,
 //   module_enable_appmgmt, module_enable_ingress, module_enable_netsec,
-//   module_enable_debugging,
+//   module_enable_debugging, module_enable_gitops,
 //   module_enable_ldap, module_enable_oidc,
 //   module_enable_observability, module_enable_performance,
 //   module_enable_virt, module_enable_devhub, module_enable_ols,
-//   module_enable_cloud_infra, module_enable_hcp
+//   module_enable_acm, module_enable_security
 
-// Getting Started (Environment Setup is always shown)
-* xref:index.adoc[Environment Setup]
-ifeval::["{module_enable_concepts}" == "true"]
-* xref:ocp-concepts.adoc[OpenShift Platform Overview]
-endif::[]
+// Setup & Overview (always shown)
+* xref:00-setup-overview.adoc[00 - Setup & Overview]
 ifeval::["{module_enable_install}" == "true"]
-* xref:installation.adoc[Installation & Verification]
+* xref:01-installation.adoc[01 - Installation & Verification]
 endif::[]
 
 // Core Operations - deploy, expose, secure, debug
 ifeval::["{module_enable_appmgmt}" == "true"]
-* xref:app-mgmt-basics.adoc[Application Management Basics]
+* xref:02-app-mgmt.adoc[02 - Application Management]
 endif::[]
 ifeval::["{module_enable_ingress}" == "true"]
-* xref:ingress-loadbalancing.adoc[Ingress & Load Balancing]
+* xref:03-ingress-loadbalancing.adoc[03 - Ingress & Load Balancing]
 endif::[]
 ifeval::["{module_enable_netsec}" == "true"]
-* xref:network-security.adoc[Network Security]
+* xref:04-network-security.adoc[04 - Network Security]
 endif::[]
 ifeval::["{module_enable_debugging}" == "true"]
-* xref:debugging-troubleshooting.adoc[Debugging & Troubleshooting]
+* xref:05-debugging-troubleshooting.adoc[05 - Debugging & Troubleshooting]
 endif::[]
 ifeval::["{module_enable_gitops}" == "true"]
-* xref:gitops.adoc[GitOps - Declarative Cluster Management]
+* xref:06-gitops.adoc[06 - OpenShift GitOps]
 endif::[]
 
 // Identity & Access
 ifeval::["{module_enable_ldap}" == "true"]
-* xref:ldap-groupsync.adoc[Identity - LDAP Authentication]
+* xref:07-ldap-authentication.adoc[07 - LDAP Authentication]
 endif::[]
 ifeval::["{module_enable_oidc}" == "true"]
-* xref:oidc-authentication.adoc[Identity - OIDC Authentication]
+* xref:08-oidc-authentication.adoc[08 - OIDC Authentication]
 endif::[]
 
 // Day 2 Operations
 ifeval::["{module_enable_observability}" == "true"]
-* xref:observability.adoc[Observability & Logging]
+* xref:09-observability.adoc[09 - Observability & Logging]
 endif::[]
 ifeval::["{module_enable_performance}" == "true"]
-* xref:performance-tuning.adoc[Performance Tuning]
+* xref:10-performance-tuning.adoc[10 - Performance Tuning]
 endif::[]
 
 // Advanced Topics
 ifeval::["{module_enable_virt}" == "true"]
-* xref:virtualization.adoc[Virtualization]
+* xref:11-virtualization.adoc[11 - Virtualization]
 endif::[]
 ifeval::["{module_enable_devhub}" == "true"]
-* xref:developer-hub.adoc[Developer Hub]
+* xref:12-developer-hub.adoc[12 - Developer Hub]
 endif::[]
 ifeval::["{module_enable_ols}" == "true"]
-* xref:openshift-lightspeed.adoc[OpenShift Lightspeed]
+* xref:13-openshift-lightspeed.adoc[13 - OpenShift Lightspeed]
 endif::[]
-
+// TODO: Add when content pages are created
+// ifeval::["{module_enable_acm}" == "true"]
+// * xref:14-acm.adoc[14 - ACM Multi-Cluster Management]
+// endif::[]
+// ifeval::["{module_enable_security}" == "true"]
+// * xref:15-security.adoc[15 - Advanced Cluster Security]
+// endif::[]
