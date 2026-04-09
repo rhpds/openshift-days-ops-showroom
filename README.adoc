@@ -10,33 +10,35 @@ A comprehensive modular workshop for OpenShift administrators. Modules are selec
 
 *Getting Started*
 
-* *OpenShift Platform Overview* (30 min) - Integrated platform approach, console, monitoring, registry, routing, upgrades, operator ecosystem
-* *Installation & Verification* (20-25 min) - Installation methods (IPI, UPI, Agent-based, Assisted), cluster health checks, storage provisioning
+* *link:content/modules/ROOT/pages/00-setup-overview.adoc[00 - Setup & Overview]* (35 min) - Lab access, Showroom interface, CLI verification, platform overview, console, monitoring, registry, routing, upgrades, operator ecosystem
+* *link:content/modules/ROOT/pages/01-installation.adoc[01 - Installation & Verification]* (25 min) - Installation methods (IPI, UPI, Agent-based, Assisted), cluster health checks, storage provisioning
 
 *Core Operations*
 
-* *Application Management Basics* (35 min) - Deployment, Routes with TLS, scaling, self-healing, probes, rollback
-* *Ingress & Load Balancing* (25 min) - Ingress Controller, Routes with TLS termination, rate limiting, IP whitelist, Services
-* *Network Security* (30 min) - OVN-Kubernetes, NetworkPolicy, EgressFirewall, EgressIP
-* *Debugging & Troubleshooting* (30 min) - Diagnostic toolkit, fixing ImagePullBackOff, CrashLoopBackOff, OOMKilled
+* *link:content/modules/ROOT/pages/02-app-mgmt.adoc[02 - Application Management]* (35 min) - Deployment, Routes with TLS, scaling, self-healing, probes, rollback
+* *link:content/modules/ROOT/pages/03-ingress-loadbalancing.adoc[03 - Ingress & Load Balancing]* (25 min) - Ingress Controller, Routes with TLS termination, rate limiting, IP whitelist, Services
+* *link:content/modules/ROOT/pages/04-network-security.adoc[04 - Network Security]* (30 min) - OVN-Kubernetes, NetworkPolicy, EgressFirewall, EgressIP
+* *link:content/modules/ROOT/pages/05-debugging-troubleshooting.adoc[05 - Debugging & Troubleshooting]* (30 min) - Diagnostic toolkit, fixing ImagePullBackOff, CrashLoopBackOff, OOMKilled
+* *link:content/modules/ROOT/pages/06-gitops.adoc[06 - OpenShift GitOps]* (25 min) - ArgoCD login, app deployment, console banner management, drift detection
 
 *Identity & Access*
 
-* *LDAP Authentication* (55 min) - OAuth configuration, LDAP structure, group sync, RBAC
-* *OIDC Authentication* (55 min) - Red Hat build of Keycloak deployment, OIDC configuration, group sync, RBAC
+* *link:content/modules/ROOT/pages/07-ldap-authentication.adoc[07 - LDAP Authentication]* (55 min) - OAuth configuration, LDAP structure, group sync, RBAC
+* *link:content/modules/ROOT/pages/08-oidc-authentication.adoc[08 - OIDC Authentication]* (55 min) - Red Hat build of Keycloak deployment, OIDC configuration, group sync, RBAC
 
 *Day 2 Operations*
 
-* *Observability & Logging* (50 min) - Prometheus metrics, dashboards, user workload monitoring, Alertmanager, OpenTelemetry distributed tracing, logging stack
-* *Performance Tuning* (30-35 min) - Resource diagnostics, VPA right-sizing, HPA autoscaling, performance monitoring
+* *link:content/modules/ROOT/pages/09-observability.adoc[09 - Observability & Logging]* (50 min) - Prometheus metrics, dashboards, user workload monitoring, Alertmanager, OpenTelemetry distributed tracing, logging stack
+* *link:content/modules/ROOT/pages/10-performance-tuning.adoc[10 - Performance Tuning]* (35 min) - Resource diagnostics, VPA right-sizing, HPA autoscaling, performance monitoring
 
 *Advanced Topics*
 
-* *Virtualization* (35 min) - VM creation, networking, live migration, cloning, snapshots
-* *Developer Hub* (30 min) - Software catalog, templates, deployment verification
-* *OpenShift Lightspeed* (10 min) - AI assistant, OLSConfig creation, console integration
-* *ACM Multi-Cluster Management* - _Coming soon_
-* *Security - ACS & Compliance* - _Coming soon_
+* *link:content/modules/ROOT/pages/11-virtualization.adoc[11 - Virtualization]* (35 min) - VM creation, networking, live migration, cloning, snapshots
+* *link:content/modules/ROOT/pages/12-developer-hub.adoc[12 - Developer Hub]* (30 min) - Software catalog, templates, deployment verification
+* *link:content/modules/ROOT/pages/13-openshift-lightspeed.adoc[13 - OpenShift Lightspeed]* (10 min) - AI assistant, OLSConfig creation, console integration
+* *14 - ACM Multi-Cluster Management* (30 min) - _Coming soon_
+* *15 - Advanced Cluster Security* (15 min) - _Coming soon_
+* *16 - Secrets Management (HashiCorp Vault)* - _TBD_
 
 == Module Selection
 
