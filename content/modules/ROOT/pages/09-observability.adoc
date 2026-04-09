@@ -1,23 +1,13 @@
 = Observability & Logging
 
-== Module Overview
-
 **Duration:** 50 minutes +
-**Format:** Hands-on observability configuration +
-**Audience:** Platform Engineers, Operations Teams
+**Format:** Hands-on observability configuration
 
-Your cluster is running workloads and you need visibility into what's happening. OpenShift provides metrics and alerting out of the box via Prometheus and Alertmanager. In this module, you'll explore those built-in capabilities, set up the logging pipeline with Loki and Vector, and deploy OpenTelemetry for distributed tracing.
+== The Scenario
 
-== Learning Objectives
+Something's wrong with your cluster. How do you know? Where do you look? If you can't answer that in 30 seconds, your observability stack isn't ready for production.
 
-By the end of this module, you will be able to:
-
-* Explore the built-in Prometheus metrics and dashboards
-* Configure alerting rules and understand Alertmanager
-* Install and configure the OpenShift Logging stack
-* Query logs using the OpenShift console
-* Deploy OpenTelemetry and Tempo for distributed tracing
-* View traces in the OpenShift console
+In this module you'll explore the metrics and alerting that's already running (Prometheus, Alertmanager), set up a logging pipeline (Loki, Vector) so you can actually search logs, and deploy distributed tracing (OpenTelemetry, Tempo) to follow requests across services.
 
 == Built-in Metrics with Prometheus
 
