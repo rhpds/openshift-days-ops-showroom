@@ -182,18 +182,17 @@ Live migration requires compatible CPU features on the source and target nodes. 
 [source,bash,role="execute"]
 ----
 VM_NODE=$(oc get vmi rhel9-vm -n vm-demo -o jsonpath='{.status.nodeName}')
+CURRENT_VENDOR=$(oc get node "$VM_NODE" -o jsonpath='{.metadata.labels}' 2>/dev/null | grep -q 'cpu-vendor.node.kubevirt.io/Intel' && echo Intel || echo AMD)
 INTEL_COUNT=$(oc get nodes -l cpu-vendor.node.kubevirt.io/Intel=true --no-headers 2>/dev/null | wc -l | tr -d ' ')
 AMD_COUNT=$(oc get nodes -l cpu-vendor.node.kubevirt.io/AMD=true --no-headers 2>/dev/null | wc -l | tr -d ' ')
 
 # Pick the vendor with 2+ nodes so migration has a target
 if [ "$INTEL_COUNT" -ge 2 ]; then VENDOR="Intel"
 elif [ "$AMD_COUNT" -ge 2 ]; then VENDOR="AMD"
-else echo "WARNING: No vendor has 2+ nodes — migration may not work"; VENDOR="Intel"; fi
+else VENDOR="$CURRENT_VENDOR"; fi
 
-echo "Cluster has $INTEL_COUNT Intel and $AMD_COUNT AMD nodes — pinning to $VENDOR"
+echo "Cluster has $INTEL_COUNT Intel and $AMD_COUNT AMD nodes — VM is on $CURRENT_VENDOR, pinning to $VENDOR"
 
-# Check if VM is already on the right vendor
-CURRENT_VENDOR=$(oc get node "$VM_NODE" -o jsonpath='{.metadata.labels}' 2>/dev/null | grep -q 'cpu-vendor.node.kubevirt.io/Intel' && echo Intel || echo AMD)
 if [ "$CURRENT_VENDOR" != "$VENDOR" ]; then
   echo "VM is on $CURRENT_VENDOR node — moving to $VENDOR..."
   oc patch vm rhel9-vm -n vm-demo --type=merge -p "{\"spec\":{\"runStrategy\":\"Halted\"}}"
