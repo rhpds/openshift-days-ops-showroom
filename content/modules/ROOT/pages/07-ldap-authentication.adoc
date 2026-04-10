@@ -174,13 +174,14 @@ All oauth-openshift pods should be `Running` and `Ready 1/1`.
 
 The OAuth pods need a few moments after rollout to fully initialize their LDAP connections. This checks that LDAP login actually works before moving on:
 
-[source,bash,role="execute"]
+[source,bash,role="execute",subs="attributes"]
 ----
+OCP_SERVER=$(oc whoami --show-server)
 echo "Waiting for LDAP authentication to be ready..."
-until oc login -u normaluser1 -p 'Op#nSh1ft' $(oc whoami --show-server) --insecure-skip-tls-verify 2>&1 | grep -q "Login successful"; do
+until oc login -u normaluser1 -p 'Op#nSh1ft' $OCP_SERVER --insecure-skip-tls-verify 2>&1 | grep -q "Login successful"; do
   sleep 10
 done
-oc login -u admin --insecure-skip-tls-verify 2>/dev/null
+oc login -u {openshift_cluster_admin_username} -p {openshift_cluster_admin_password} $OCP_SERVER --insecure-skip-tls-verify 2>/dev/null
 echo "LDAP authentication is ready"
 ----
 
