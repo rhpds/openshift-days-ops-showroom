@@ -256,7 +256,7 @@ done
 wait 2>/dev/null
 ----
 
-You'll see a mix of `200` (allowed) and `000` (connection refused). The router is rejecting connections beyond the concurrent limit of 2.
+You'll see a mix of `403` (rate limited) and `000` (connection dropped). The router is rejecting connections beyond the concurrent limit of 2.
 
 Now remove rate limiting and try the same test:
 
