@@ -44,11 +44,7 @@ For more details, see link:https://docs.redhat.com/en/documentation/red_hat_open
 
 OpenShift GitOps is already installed on your cluster. The ArgoCD instance is running in the `openshift-gitops` namespace.
 
-**Find ArgoCD in the console:**
-
-Look for the grid icon (nine tiles) in the top navigation bar of the OpenShift console and select **Cluster Argo CD** under OpenShift GitOps:
-
-image::gitops-nine-tiles.png[OpenShift console grid menu showing Cluster Argo CD link]
+Click the **ArgoCD** tab at the top of this workshop window.
 
 If prompted about a certificate warning, proceed using the advanced options.
 
@@ -69,7 +65,7 @@ Authorise access when prompted:
 
 image::gitops-authorize-access.png[OAuth authorize access page]
 
-TIP: If you have the **ArgoCD** tab in Showroom, you can use that instead — it's already authenticated.
+NOTE: You can also open ArgoCD in a separate browser tab — look for the grid icon (nine tiles) in the OpenShift console navigation bar and select **Cluster Argo CD** under OpenShift GitOps.
 
 **Verify from the CLI:**
 
