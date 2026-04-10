@@ -1,6 +1,9 @@
 = Performance Tuning
+:page-toclevels: 1
 
-== Module Overview
+== Getting Started
+
+=== Module Overview
 
 **Duration:** 30 minutes +
 **Audience:** Platform Engineers, SRE, Operations Teams
@@ -9,7 +12,7 @@
 
 **In this module:** You'll diagnose and fix real performance problems using OpenShift's autoscaling and monitoring tools.
 
-== Learning Objectives
+=== Learning Objectives
 
 * Diagnose and fix resource-related pod failures
 * Use VPA to right-size application resources
@@ -242,14 +245,14 @@ The graphs show how your HPA scaling event looked over time — CPU utilisation 
 
 This is how you'd answer the question in a capacity review: "Do we need more nodes, or are our apps just over-provisioned?" In many clusters, VPA alone frees enough capacity to avoid buying more infrastructure.
 
-== Clean Up
+== Cleanup & Takeaways
 
 [source,bash,role="execute"]
 ----
 oc delete project performance-demo
 ----
 
-== Key Takeaways
+=== Key Takeaways
 
 [cols="1,2"]
 |===

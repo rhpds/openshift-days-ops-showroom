@@ -1,4 +1,5 @@
 = Observability & Logging
+:page-toclevels: 1
 
 **Duration:** 50 minutes +
 **Format:** Hands-on observability configuration
@@ -497,7 +498,7 @@ spec:
 EOF
 ----
 
-== Verify and View Logs
+=== Verify and View Logs
 
 Wait 2-3 minutes for LokiStack pods and collectors to start, then verify the full stack:
 
@@ -792,7 +793,7 @@ With a single service this shows one span. In a real microservices application, 
 
 The collector is now ready for production use. Developers point their apps at `otel-collector.tracing-system.svc:4317` using OpenTelemetry SDKs, and traces automatically appear here.
 
-== Cleanup
+== Cleanup & Summary
 
 Remove the observability resources you deployed. The Prometheus monitoring stack is built-in and doesn't need cleanup.
 
@@ -801,7 +802,7 @@ Remove the observability resources you deployed. The Prometheus monitoring stack
 bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/cleanup-scripts/cleanup-observability.sh)
 ----
 
-== Summary
+=== Summary
 
 **What you learned:**
 
@@ -841,7 +842,7 @@ oc get pods -n tracing-system
 oc get tempomonolithic -n tracing-system
 ----
 
-== Additional Resources
+=== Additional Resources
 
 * **OpenShift Monitoring:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/monitoring/index[Monitoring]
 * **OpenShift Logging Documentation:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/logging/index[Logging]

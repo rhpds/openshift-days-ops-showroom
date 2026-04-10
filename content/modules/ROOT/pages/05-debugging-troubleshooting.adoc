@@ -1,6 +1,9 @@
 = Debugging & Troubleshooting
+:page-toclevels: 1
 
-== Module Overview
+== Getting Started
+
+=== Module Overview
 
 **Duration:** 30 minutes +
 **Format:** Hands-on Lab — Real Problem Solving +
@@ -8,7 +11,7 @@
 
 Your cluster is running a weather application made up of several microservices. Some of them have just broken. Your job is to diagnose and fix each one — these are the same kinds of issues that generate real support tickets.
 
-== Learning Objectives
+=== Learning Objectives
 
 By the end of this module, you will be able to:
 
@@ -16,7 +19,7 @@ By the end of this module, you will be able to:
 * Fix ImagePullBackOff, CrashLoopBackOff, ConfigMap errors, resource constraint violations, and service routing issues
 * Use the Observe → Diagnose → Fix → Verify workflow
 
-== Your Diagnostic Toolkit
+=== Your Diagnostic Toolkit
 
 These are the commands you'll use constantly:
 
@@ -46,7 +49,7 @@ oc create namespace ops-track-demo 2>/dev/null || true
 oc apply -f https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/broken-apps.yaml
 ----
 
-== See What's Broken
+=== See What's Broken
 
 Five microservices have been deployed with intentional misconfigurations. Let's triage the damage.
 
@@ -72,9 +75,11 @@ NOTE: You might notice `weather-cache` is missing from the pod list — that's o
 
 **Your mission:** Fix all five.
 
-== Problem 1: ImagePullBackOff (weather-frontend)
+== Fix the Problems
 
-=== Diagnose
+=== Problem 1: ImagePullBackOff (weather-frontend)
+
+==== Diagnose
 
 In the **OCP Console**, click on the `weather-frontend` pod. The **Events** tab at the bottom shows the error with colour-coded severity — you'll see the image pull failure immediately.
 
@@ -100,7 +105,7 @@ The image tag `9.9` doesn't exist. Let's confirm the image reference:
 oc get deployment weather-frontend -n ops-track-demo -o jsonpath='{.spec.template.spec.containers[0].image}'
 ----
 
-=== Fix
+==== Fix
 
 Update the image to the correct tag (`latest`):
 
@@ -109,7 +114,7 @@ Update the image to the correct tag (`latest`):
 oc set image deployment/weather-frontend weather-frontend=registry.access.redhat.com/ubi9/httpd-24:latest -n ops-track-demo
 ----
 
-=== Verify
+==== Verify
 
 [source,bash,role="execute"]
 ----
@@ -120,9 +125,9 @@ You should see `1/1 Running`.
 
 **Takeaway:** ImagePullBackOff = wrong image name, missing tag, or no pull credentials. Always check `oc describe pod` → Events.
 
-== Problem 2: CrashLoopBackOff (weather-api)
+=== Problem 2: CrashLoopBackOff (weather-api)
 
-=== Diagnose
+==== Diagnose
 
 The pod keeps starting and crashing. In the **OCP Console**, click the `weather-api` pod, then the **Logs** tab. The log viewer shows the error message with real-time streaming. If the pod has restarted, use the **Container** dropdown to select the previous container's logs.
 
@@ -143,7 +148,7 @@ Error: Missing required config file /etc/weather/config.yaml
 
 The app is trying to read a config file that doesn't exist.
 
-=== Fix
+==== Fix
 
 Create the missing config file as a ConfigMap and mount it into the container. We'll also fix the container command to run the actual application:
 
@@ -161,7 +166,7 @@ oc patch deployment weather-api -n ops-track-demo --type=json -p='[
 ]'
 ----
 
-=== Verify
+==== Verify
 
 [source,bash,role="execute"]
 ----
@@ -172,9 +177,9 @@ You should see `1/1 Running`.
 
 **Takeaway:** CrashLoopBackOff = the app starts then exits. Always check `oc logs` and `oc logs --previous`. Common causes: missing config, bad command, failed health checks, out of memory.
 
-== Problem 3: Resource Constraint Violation (weather-cache)
+=== Problem 3: Resource Constraint Violation (weather-cache)
 
-=== Diagnose
+==== Diagnose
 
 You may have noticed `weather-cache` doesn't appear in the pod list at all. In the **OCP Console**, navigate to **Workloads -> Deployments** (project: `ops-track-demo`) and click `weather-cache`. The **Events** tab immediately shows the `FailedCreate` error explaining why no pod was created.
 
@@ -212,7 +217,7 @@ oc get deployment weather-cache -n ops-track-demo -o jsonpath='{.spec.template.s
 oc get limitrange -n ops-track-demo -o yaml | grep -A4 "max:"
 ----
 
-=== Fix
+==== Fix
 
 Fix the memory typo — change `512Gi` to `512Mi` and `1Ti` to `1Gi`:
 
@@ -221,7 +226,7 @@ Fix the memory typo — change `512Gi` to `512Mi` and `1Ti` to `1Gi`:
 oc set resources deployment/weather-cache -n ops-track-demo --requests=cpu=100m,memory=512Mi --limits=cpu=500m,memory=1Gi
 ----
 
-=== Verify
+==== Verify
 
 [source,bash,role="execute"]
 ----
@@ -232,9 +237,9 @@ You should see `1/1 Running`. The pod can now be created because the resource re
 
 **Takeaway:** When a pod never appears at all, check the ReplicaSet events (`oc describe replicaset`). LimitRanges and ResourceQuotas can silently prevent pods from being created.
 
-== Problem 4: CreateContainerConfigError (weather-backend)
+=== Problem 4: CreateContainerConfigError (weather-backend)
 
-=== Diagnose
+==== Diagnose
 
 [source,bash,role="execute"]
 ----
@@ -254,7 +259,7 @@ The deployment references a ConfigMap that doesn't exist:
 oc get deployment weather-backend -n ops-track-demo -o jsonpath='{.spec.template.spec.containers[0].envFrom}' | python3 -m json.tool
 ----
 
-=== Fix
+==== Fix
 
 Create the missing ConfigMap with the keys the app expects:
 
@@ -275,7 +280,7 @@ Restart the pod to pick up the new ConfigMap:
 oc delete pod -l app=weather-backend -n ops-track-demo
 ----
 
-=== Verify
+==== Verify
 
 [source,bash,role="execute"]
 ----
@@ -300,9 +305,9 @@ TIP: In the console, click the weather-backend pod and select the **Environment*
 
 **Takeaway:** CreateContainerConfigError = a referenced ConfigMap or Secret doesn't exist. Check `oc describe pod` for "not found" messages. Create the missing resource and restart the pod.
 
-== Problem 5: Service Routing Broken (weather-proxy)
+=== Problem 5: Service Routing Broken (weather-proxy)
 
-=== Diagnose
+==== Diagnose
 
 This pod is `Running` — so what's wrong? In the **OCP Console**, navigate to **Networking -> Services** (project: `ops-track-demo`) and click `weather-proxy`. The **Pods** tab shows **0 Pods** — immediately revealing that the service can't find any matching pods.
 
@@ -326,7 +331,7 @@ echo "=== Service selector ===" && oc get svc weather-proxy -n ops-track-demo -o
 
 Spot the difference? The service selector says `weather-proxi` (typo) but the pod label is `weather-proxy`.
 
-=== Fix
+==== Fix
 
 Patch the service selector to match the actual pod label:
 
@@ -335,7 +340,7 @@ Patch the service selector to match the actual pod label:
 oc patch svc weather-proxy -n ops-track-demo -p '{"spec":{"selector":{"app":"weather-proxy"}}}'
 ----
 
-=== Verify
+==== Verify
 
 [source,bash,role="execute"]
 ----
@@ -346,7 +351,9 @@ You should now see the pod's IP in the `ENDPOINTS` column. Traffic will flow to 
 
 **Takeaway:** When a pod is Running but the service isn't working, check if the service selector matches the pod labels. A single character typo can break routing. Use `oc get endpointslice` to verify.
 
-== All Fixed
+== Quick Reference
+
+=== All Fixed
 
 Switch to the **OCP Console** tab — **Workloads -> Pods** (project: `ops-track-demo`). All five pods should now show green `Running` status. Compare this to the red/orange/yellow view you saw at the start — that visual progression is the troubleshooting workflow in action.
 
@@ -370,7 +377,7 @@ weather-frontend-xxxxx              1/1     Running   0          1m
 weather-proxy-xxxxx                 1/1     Running   0          5m
 ----
 
-== Quick Reference
+=== Quick Reference
 
 [cols="1,2,2"]
 |===
@@ -405,7 +412,9 @@ weather-proxy-xxxxx                 1/1     Running   0          5m
 |`oc describe pvc` → Events → Check StorageClass name/existence
 |===
 
-== Summary
+== Cleanup & Summary
+
+=== Summary
 
 You diagnosed and fixed five common OpenShift issues:
 
@@ -417,7 +426,7 @@ You diagnosed and fixed five common OpenShift issues:
 
 The pattern is always the same: **check status → describe pod/replicaset → read logs/events → fix → verify.**
 
-== Cleanup
+=== Cleanup
 
 NOTE: If the **Developer Hub** module is part of your workshop, **skip this cleanup** — it uses the weather app pods in `ops-track-demo` to demonstrate the Kubernetes plugin.
 

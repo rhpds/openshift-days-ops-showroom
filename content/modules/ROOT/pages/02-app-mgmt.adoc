@@ -1,6 +1,9 @@
 = Application Management Basics
+:page-toclevels: 1
 
-== Module Overview
+== Getting Started
+
+=== Module Overview
 
 **Duration:** 35 minutes +
 **Format:** Hands-on +
@@ -8,7 +11,7 @@
 
 In this module, you'll deploy an application, expose it to the outside world, scale it for capacity, see how OpenShift self-heals when things fail, and configure health checks. This is the core ops workflow for managing workloads on OpenShift.
 
-== Learning Objectives
+=== Learning Objectives
 
 By the end of this module, you will be able to:
 
@@ -18,7 +21,9 @@ By the end of this module, you will be able to:
 * Understand OpenShift self-healing (pod recreation)
 * Configure liveness and readiness probes
 
-== Deploy an Application
+== Deploy & Inspect
+
+=== Deploy an Application
 
 Create a project and deploy a web server:
 
@@ -63,7 +68,7 @@ oc get pods -n app-management
 
 You should see one pod in `Running` status — the same pod you just saw in the Topology view.
 
-== Inspect Your Application
+=== Inspect Your Application
 
 Before moving on, get familiar with the two most important diagnostic commands. These work on any pod in any namespace. The console's pod detail view (click any pod name) shows the same information across the **Details**, **Events**, and **Logs** tabs — the console log viewer supports real-time streaming, text search, and downloading.
 
@@ -98,7 +103,9 @@ The service has a `ClusterIP` — this is only reachable from inside the cluster
 
 TIP: You can also see this in the console at **Networking > Services** (project: `app-management`) — click `weathernow` to see the service details, endpoints, and backing pods.
 
-== Create a Route
+== Expose & Scale
+
+=== Create a Route
 
 A Route connects an external URL to your service through the OpenShift router (HAProxy-based ingress controller).
 
@@ -126,7 +133,7 @@ image::app-mgmt-weathernow-app.png[WeatherNow application showing weather data]
 
 Your application is now accessible from outside the cluster.
 
-== Scale the Application
+=== Scale the Application
 
 One pod isn't enough for production. Scale to 3 replicas:
 
@@ -155,7 +162,9 @@ oc get endpointslice -l kubernetes.io/service-name=weathernow -n app-management
 
 Each pod's IP is listed as an endpoint. When a new pod starts, it's automatically added. When a pod dies, it's removed.
 
-== Self-Healing
+== Resilience
+
+=== Self-Healing
 
 When a pod dies, OpenShift automatically replaces it. Let's see this in action.
 
@@ -175,14 +184,14 @@ TIP: You can also watch this in the **OCP Console** at **Workloads -> Pods** (pr
 
 **The Deployment controller** detected that the actual state (2 pods) didn't match the desired state (3 pods) and created a replacement. This happens in seconds, with no manual intervention.
 
-== Application Probes
+=== Application Probes
 
 How does OpenShift know if your application is actually healthy? Without probes, a pod shows `Running` even if the app inside has hung, crashed its listener, or is returning errors to every request. Probes fix that.
 
 * **Readiness probe** — "Can this pod handle traffic?" If it fails, the pod is removed from the service endpoints. No requests get sent to it.
 * **Liveness probe** — "Is this pod still alive?" If it fails, OpenShift restarts the container.
 
-=== Break It On Purpose
+==== Break It On Purpose
 
 Let's see what happens when probes fail. Add a readiness probe pointing at the **wrong port** — port 9999, where nothing is listening:
 
@@ -228,7 +237,7 @@ oc describe pod -l deployment=weathernow -n app-management | grep -A2 "Readiness
 
 The pod is alive but not ready. No traffic reaches it. This is exactly what happens in production when an app's health endpoint goes down — OpenShift protects users from broken pods automatically.
 
-=== Fix the Probe
+==== Fix the Probe
 
 Now fix it — point the readiness probe at port 8080 where httpd is actually listening, and add a liveness probe too:
 
@@ -270,7 +279,7 @@ The form visually shows the difference between liveness, readiness, and startup 
 
 image::edit-health-checks.png[Edit Health Checks form showing configured readiness and liveness probes]
 
-== Rollback a Bad Deployment
+=== Rollback a Bad Deployment
 
 Someone just pushed a bad image update. How do you undo it?
 
@@ -317,7 +326,9 @@ oc rollout status deployment/weathernow -n app-management --timeout=60s
 
 The deployment is back to the working version. In production, `oc rollout undo` is often the fastest way to recover from a bad release — faster than fixing the code and redeploying.
 
-== Summary
+== Cleanup & Summary
+
+=== Summary
 
 You completed the core application lifecycle on OpenShift:
 
@@ -342,7 +353,7 @@ oc rollout undo deployment/myapp               # Rollback
 oc rollout status deployment/myapp             # Watch rollout
 ----
 
-== Cleanup
+=== Cleanup
 
 NOTE: If the **Ingress & Load Balancing** module is part of your workshop, **skip this cleanup** — it reuses the `weathernow` application in the `app-management` namespace.
 

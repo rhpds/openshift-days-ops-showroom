@@ -1,4 +1,5 @@
 = OpenShift Lightspeed
+:page-toclevels: 1
 
 == Module Overview
 
@@ -15,11 +16,13 @@ OpenShift Lightspeed is an AI-powered assistant integrated into the OpenShift we
 
 In this module, you'll configure OpenShift Lightspeed and use it to understand OpenShift concepts, gather information from cluster resources, troubleshoot broken workloads and more.
 
-== Prerequisites
+=== Prerequisites
 
 The OpenShift Lightspeed Operator has been pre-installed on your cluster. However, to be fully operational, OpenShift Lightspeed must be connected to an LLM provider. In this module, you'll also create the configuration necessary to enable this connection.
 
-== Verify the Operator Installation
+== Deploy OpenShift Lightspeed
+
+=== Verify the Operator Installation
 
 First, verify the OpenShift Lightspeed operator is installed:
 
@@ -38,7 +41,7 @@ To switch namespace, use the dropdown at the top:
 
 image::ols-switch-namespace.png[Switch to openshift-lightspeed namespace]
 
-== Create the OLSConfig
+=== Create the OLSConfig
 
 The operator is installed but needs configuration to connect to an LLM provider. OpenShift Lightspeed supports various model providers, including public cloud services (WatsonX, Azure OpenAI, OpenAI) and on-premise solutions (Red Hat OpenShift AI, RHEL AI). For this workshop, Azure OpenAI credentials have been pre-configured as a secret.
 
@@ -88,7 +91,7 @@ Key configuration parameters:
 * `spec.ols.defaultProvider` - Sets the default provider when multiple are configured
 * `spec.ols.introspectionEnabled` - When set to `true`, OpenShift Lightspeed automatically deploys an MCP server that allows users to query cluster resources to provide context-aware responses (Technology Preview in OpenShift 4.20)
 
-== Wait for OpenShift Lightspeed to Initialize
+=== Wait for OpenShift Lightspeed to Initialize
 
 Monitor the deployment progress:
 
@@ -116,7 +119,9 @@ oc get olsconfig cluster -o jsonpath='{.status.conditions}' | jq .
 
 All conditions should show `"status": "True"` and `"message": "Ready"`.
 
-== Access OpenShift Lightspeed in the Web Console
+== Using Lightspeed
+
+=== Access OpenShift Lightspeed in the Web Console
 
 Once the OLSConfig is ready, the OpenShift Lightspeed chat button in the bottom right corner will now be functional:
 
@@ -126,7 +131,7 @@ Click the button to open the Openshift Lightspeed chat window:
 
 image::ols-chat-window.png[OpenShift Lightspeed chat window]
 
-== Starter Question
+=== Starter Question
 
 OpenShift Lightspeed allows users to interact and ask questions about OpenShift using natural language. Thanks to its specific knowledge about OpenShift, it is particularly useful for exploring and understanding concepts and resources in this platform.
 
@@ -141,7 +146,9 @@ OpenShift Lightspeed will likely provide a response explaining what both Deploym
 
 image::ols-related-docs.png[Related documentation in Openshift Lightspeed]
 
-== Assisted YAML generation
+== Capabilities
+
+=== Assisted YAML generation
 
 OpenShift Lightspeed maintains the context of the current conversation, allowing you to ask follow-up questions to refine or expand on previous responses. 
 
@@ -154,7 +161,7 @@ Please note that OpenShift Lightspeed provides guidance and crafts the resources
 
 image::ols-copy-yaml.png[Copy YAML button in OpenShift Lightspeed]
 
-== Cluster Interaction and Troubleshooting
+=== Cluster Interaction and Troubleshooting
 
 A demo pod with an intentional issue has been deployed. Let's use OpenShift Lightspeed to diagnose it.
 
@@ -198,7 +205,7 @@ What's wrong in this pod?
 
 OpenShift Lightspeed will analyze the pod specification to identify the issue — in this case, an invalid node selector. Additionally, it will likely propose a solution to help you fix the problem.
 
-== OpenShift Lightspeed Beyond Containers
+=== OpenShift Lightspeed Beyond Containers
 
 Throughout this module, we've seen how OpenShift Lightspeed can assist with container-based workloads such as Pods, Deployments, Routes, Services, etc. However, the OpenShift platform extends well beyond containers.
 

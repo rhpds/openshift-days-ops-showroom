@@ -1,4 +1,5 @@
 = OpenID Connect (OIDC) Authentication with Keycloak
+:page-toclevels: 1
 
 == Module Overview
 
@@ -17,7 +18,9 @@ You will:
 
 The same concepts apply to Microsoft Entra ID, Okta, Google Workspace, and any OIDC provider — Keycloak just lets you see both sides of the integration.
 
-== Step 1: Install the RHBK Operator
+== Deploy Keycloak
+
+=== Step 1: Install the RHBK Operator
 
 [source,bash,role="execute"]
 ----
@@ -61,7 +64,7 @@ until oc get crd keycloaks.k8s.keycloak.org 2>/dev/null | grep -q keycloaks; do 
 echo "RHBK operator ready"
 ----
 
-== Step 2: Deploy Keycloak
+=== Step 2: Deploy Keycloak
 
 Deploy a Keycloak instance. We use `dev-file` for the embedded database — in production you'd use external PostgreSQL.
 
@@ -123,7 +126,9 @@ image::oidc-rhbk-welcome.png[RHBK admin console welcome page showing master real
 
 This is where you manage realms, users, clients, and authentication flows.
 
-== Step 3: Create an OpenShift Realm
+== Configure Users & Groups
+
+=== Step 3: Create an OpenShift Realm
 
 Keycloak uses **realms** to isolate sets of users, credentials, and clients. The default `master` realm is for Keycloak administration only — you should always create a separate realm for your applications.
 
@@ -141,7 +146,7 @@ image::oidc-rhbk-realm-created.png[Manage realms showing master and OpenShift re
 
 You're now working inside the OpenShift realm. Everything you create from here — users, groups, clients — belongs to this realm.
 
-== Step 4: Create Your First User
+=== Step 4: Create Your First User
 
 Create a user manually so you understand the Keycloak user management interface.
 
@@ -172,7 +177,7 @@ image::oidc-rhbk-set-password.png[Set password dialog with Temporary set to Off]
 +
 9. Click **Save** and confirm
 
-== Step 5: Create Your First Group
+=== Step 5: Create Your First Group
 
 Groups in Keycloak map to OpenShift groups. When a user logs into OpenShift, their Keycloak group membership is included in the ID token — OpenShift reads it and creates the groups automatically.
 
@@ -191,7 +196,7 @@ image::oidc-rhbk-user-join-group.png[User Groups tab showing Join Group button]
 +
 3. Click **Join Group** → select **ocp-admins** → click **Join**
 
-== Step 6: Script the Remaining Users and Groups
+=== Step 6: Script the Remaining Users and Groups
 
 You've seen how users and groups work in the Keycloak UI. Rather than repeating those clicks, we'll use the Keycloak REST API to create the remaining users, groups, and the OIDC client — the same API you'd use to automate this in production.
 
@@ -270,7 +275,9 @@ TIP: In production, you'd use a Keycloak realm export or the Keycloak Operator's
 
 Verify the setup in the Keycloak UI — click **Users** and **Groups** to confirm all three users and three groups are present. Click **Clients** → **openshift** to see the client configuration and the groups mapper.
 
-== Step 7: Configure OpenShift OAuth
+== Connect to OpenShift
+
+=== Step 7: Configure OpenShift OAuth
 
 The script retrieved the client secret automatically. Now create the OpenShift secret and configure OAuth:
 
@@ -336,7 +343,7 @@ done
 echo "OAuth is live with rhbk provider — you can log in now"
 ----
 
-== Step 8: Test OIDC Login and Automatic Group Sync
+=== Step 8: Test OIDC Login and Automatic Group Sync
 
 1. In the **OCP Console** tab, click your username (top-right) and select **Log out**
 2. Click the **reload button** (circular arrow) next to the OCP Console tab name. You'll see both identity providers:
@@ -378,7 +385,9 @@ oc get user developer1 -o yaml
 
 Notice the identity provider is `rhbk` and the user was created on first login.
 
-== Step 9: Configure RBAC and Verify Permissions
+== Configure RBAC
+
+=== Step 9: Configure RBAC and Verify Permissions
 
 Grant permissions to the OIDC groups:
 
@@ -429,14 +438,16 @@ This is the same RBAC pattern from the LDAP module — but the groups were creat
 oc login -u {openshift_cluster_admin_username} -p {openshift_cluster_admin_password} --insecure-skip-tls-verify
 ----
 
-== Cleanup
+== Cleanup & Summary
+
+=== Cleanup
 
 [source,bash,role="execute"]
 ----
 bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/cleanup-scripts/cleanup-oidc.sh)
 ----
 
-== Summary
+=== Summary
 
 **What you did:**
 
@@ -453,7 +464,7 @@ bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showr
 
 Both methods are valid — choose based on your organization's identity infrastructure. Many enterprises use Keycloak as a broker that federates to LDAP/AD backends, giving you OIDC's automatic sync with LDAP's existing user directory.
 
-== Additional Resources
+=== Additional Resources
 
 * **OpenID Connect Configuration:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/configuring-oidc-identity-provider[Configuring an OpenID Connect identity provider]
 * **Red Hat build of Keycloak:** link:https://docs.redhat.com/en/documentation/red_hat_build_of_keycloak/[RHBK Documentation]

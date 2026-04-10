@@ -1,6 +1,9 @@
 = GitOps - Declarative Cluster Management
+:page-toclevels: 1
 
-== Module Overview
+== Getting Started
+
+=== Module Overview
 
 **Duration:** 20-25 minutes +
 **Format:** Hands-on +
@@ -12,7 +15,7 @@ GitOps solves this by treating cluster configuration as code in a Git repository
 
 In this module, you will use ArgoCD to deploy a production-ready project configuration from Git, then break it on purpose and watch ArgoCD catch the drift.
 
-== Learning Objectives
+=== Learning Objectives
 
 By the end of this module, you will be able to:
 
@@ -22,7 +25,7 @@ By the end of this module, you will be able to:
 * Resync resources to restore the desired state
 * Enable self-healing so ArgoCD automatically reverts unauthorised changes
 
-== How GitOps Works on OpenShift
+=== How GitOps Works on OpenShift
 
 OpenShift GitOps uses link:https://argo-cd.readthedocs.io/en/stable/[ArgoCD] to implement a continuous reconciliation loop:
 
@@ -35,7 +38,9 @@ The result: Git becomes the single source of truth. Every change is tracked, aud
 
 For more details, see link:https://docs.redhat.com/en/documentation/red_hat_openshift_gitops/1.19/html/understanding_openshift_gitops/index[Understanding OpenShift GitOps].
 
-== Step 1: Access ArgoCD
+== Deploy with ArgoCD
+
+=== Step 1: Access ArgoCD
 
 OpenShift GitOps is already installed on your cluster. The ArgoCD instance is running in the `openshift-gitops` namespace.
 
@@ -75,7 +80,7 @@ oc get pods -n openshift-gitops
 
 You should see the ArgoCD server, application controller, repo server, Redis, and Dex pods all running.
 
-== Step 2: Deploy a Project Configuration from Git
+=== Step 2: Deploy a Project Configuration from Git
 
 In production, platform teams define standard project configurations in Git — a namespace with resource quotas, default limits, and network policies. Every new team project gets the same baseline. Let's deploy one now.
 
@@ -151,7 +156,7 @@ image::gitops-dashboard-synced.png[ArgoCD dashboard filtered by workshop project
 
 If it shows "OutOfSync", click the tile, then click **Sync** → **Synchronize**.
 
-=== Explore the Application in ArgoCD
+==== Explore the Application in ArgoCD
 
 Click on the `managed-project` tile to open the application detail view. You'll see a **resource tree** showing the relationship between all managed resources:
 
@@ -174,7 +179,7 @@ This panel shows:
 
 This is where you'll spend most of your time as an admin — checking that resources match their desired state and investigating when they don't.
 
-=== Explore the Application Details
+==== Explore the Application Details
 
 Click the **Details** button in the top toolbar. This shows the application configuration:
 
@@ -214,7 +219,9 @@ All four resources were deployed from a single Git path. On a fleet of 10 cluste
 
 TIP: In the OpenShift console, navigate to **Home -> Projects** and select `gitops-managed-project`. You can see the ResourceQuota and LimitRange under the project details.
 
-== Step 3: Simulate Configuration Drift
+== Drift Detection & Self-Healing
+
+=== Step 3: Simulate Configuration Drift
 
 Now let's see what happens when someone makes an unauthorised manual change — the kind of thing that happens in production when someone "just needs to fix something quickly."
 
@@ -261,7 +268,7 @@ Notice that ArgoCD only flags the specific field that changed. The Namespace, Li
 
 This is the power of GitOps for operations teams — across hundreds of resources, you can immediately pinpoint exactly what deviated from the baseline and when.
 
-== Step 4: Restore the Desired State
+=== Step 4: Restore the Desired State
 
 **Resync from Git:**
 
@@ -285,7 +292,7 @@ echo
 
 Output: `20` — the pod quota is back to the value defined in Git. The unauthorised change has been reverted.
 
-== Step 5: Enable Self-Healing
+=== Step 5: Enable Self-Healing
 
 In the previous step, you had to manually resync. In production, you want ArgoCD to automatically revert drift without human intervention.
 
@@ -339,7 +346,9 @@ GitOps is most valuable for:
 
 For more information, see link:https://docs.redhat.com/en/documentation/red_hat_openshift_gitops/1.19/html/understanding_openshift_gitops/index[Understanding OpenShift GitOps].
 
-== Summary
+== Cleanup & Summary
+
+=== Summary
 
 **What you accomplished:**
 
@@ -351,7 +360,7 @@ For more information, see link:https://docs.redhat.com/en/documentation/red_hat_
 
 **Key takeaway:** GitOps turns cluster configuration into code. Everything is in Git — tracked, auditable, and automatically enforced. If it's not in Git, it shouldn't be on the cluster.
 
-== Cleanup
+=== Cleanup
 
 [source,bash,role="execute"]
 ----

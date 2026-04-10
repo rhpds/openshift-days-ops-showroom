@@ -1,4 +1,5 @@
 = Identity & Users
+:page-toclevels: 1
 
 **Duration:** 45 minutes +
 **Format:** Hands-on identity provider configuration
@@ -11,7 +12,9 @@ OpenShift's OAuth server supports multiple identity providers — LDAP, OpenID C
 
 TIP: For the full list of supported identity providers, see link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/understanding-identity-provider[Understanding identity providers].
 
-== Step 1: Examine Default Authentication
+== Configure LDAP
+
+=== Step 1: Examine Default Authentication
 
 Check the current OAuth configuration:
 
@@ -42,7 +45,7 @@ oc get secret -n kube-system kubeadmin -o yaml
 
 Expected: `not found` — confirming the bootstrap account has been removed.
 
-== Step 2: Understand LDAP Structure
+=== Step 2: Understand LDAP Structure
 
 This lab environment provides LDAP with the following groups:
 
@@ -53,7 +56,7 @@ This lab environment provides LDAP with the following groups:
 
 **LDAP user credentials:** All users have password `Op#nSh1ft`
 
-== Step 3: Configure LDAP Identity Provider
+=== Step 3: Configure LDAP Identity Provider
 
 To configure LDAP authentication, we need:
 
@@ -179,7 +182,9 @@ oc login -u admin --insecure-skip-tls-verify 2>/dev/null
 echo "LDAP authentication is ready"
 ----
 
-== Step 4: Test LDAP Authentication
+== Test & Sync Groups
+
+=== Step 4: Test LDAP Authentication
 
 If you reload the **OCP Console** tab and log out, you'll now see both identity providers on the login page:
 
@@ -238,7 +243,7 @@ oc get users
 
 You'll see `normaluser1` was automatically created on first login.
 
-== Step 5: Sync LDAP Groups to OpenShift
+=== Step 5: Sync LDAP Groups to OpenShift
 
 LDAP group synchronization imports LDAP groups as OpenShift Groups, making RBAC management easier.
 
@@ -336,7 +341,7 @@ oc get users
 
 Confirms the same thing via CLI — only users who have authenticated appear here.
 
-== Step 6: Configure RBAC with Groups
+=== Step 6: Configure RBAC with Groups
 
 Grant the `ose-fancy-dev` group **cluster-reader** privileges to view cluster-wide resources:
 
@@ -401,7 +406,9 @@ oc whoami
 oc whoami --show-context
 ----
 
-== Step 7: Create Projects for Collaboration
+== RBAC & Projects
+
+=== Step 7: Create Projects for Collaboration
 
 Log back in as cluster admin:
 
@@ -428,7 +435,7 @@ TIP: These projects are now visible in the console project dropdown. Navigate to
 oc get projects | grep app-
 ----
 
-== Step 8: Map Groups to Projects
+=== Step 8: Map Groups to Projects
 
 Grant the `ose-teamed-app` group **edit** access to dev and test:
 
@@ -476,7 +483,7 @@ image::ldap-rolebindings-app-prod.png[RoleBindings for app-prod showing ose-fanc
 
 Notice the separation of privileges at a glance — `ose-fancy-dev` has `edit` access to production while `ose-teamed-app` only has `view`. This is the kind of access review that the console makes much faster than parsing CLI output.
 
-== Step 9: Test Project Permissions
+=== Step 9: Test Project Permissions
 
 **Test as normaluser1 (no group access):**
 
@@ -548,7 +555,7 @@ Both return: `yes` (view role allows read operations)
 
 **Perfect!** This demonstrates how operations teams verify RBAC is correctly configured without creating test resources.
 
-== Step 10: Security Best Practices
+== Security Best Practices
 
 **Ensure kubeadmin is removed after configuring identity provider:**
 
@@ -592,7 +599,9 @@ For complete implementation details, see the link:https://docs.redhat.com/en/doc
 
 **For this lab, manual group sync is sufficient** for learning purposes.
 
-== Summary
+== Cleanup & Summary
+
+=== Summary
 
 You configured LDAP authentication end-to-end: connected to an external directory, synced groups, mapped those groups to project-level RBAC, and verified it by logging in as three different users with different access levels.
 
@@ -604,7 +613,7 @@ You configured LDAP authentication end-to-end: connected to an external director
 4. Use groups for RBAC, not individual users
 5. Follow least-privilege: view over edit, edit over admin
 
-== Additional Resources
+=== Additional Resources
 
 * **Authentication and Authorization Guide:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/index[Official documentation]
 * **Identity Providers Overview:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/understanding-identity-provider[Understanding identity providers]
@@ -612,7 +621,7 @@ You configured LDAP authentication end-to-end: connected to an external director
 * **RBAC Documentation:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/using-rbac[Using RBAC]
 * **Group Sync:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/ldap-syncing[Syncing LDAP groups]
 
-== Cleanup
+=== Cleanup
 
 Restore the cluster to its original authentication state before proceeding to other modules:
 

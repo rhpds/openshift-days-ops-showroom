@@ -1,4 +1,5 @@
 = Ingress & Load Balancing
+:page-toclevels: 1
 
 **Duration:** 25 minutes +
 **Format:** Hands-on ingress configuration
@@ -158,11 +159,13 @@ In the **OCP Console**, navigate to **Networking -> Routes** (select **All Proje
 
 image::ingress-images/ingress-routes-all.png[All routes across the cluster with TLS termination badges]
 
-== Protect Your Routes
+== Advanced Configuration
+
+=== Protect Your Routes
 
 Routes support annotations that control rate limiting, security headers, and HTTP behavior. Let's apply them and prove they work.
 
-=== HTTP to HTTPS Redirect
+==== HTTP to HTTPS Redirect
 
 By default, HTTP requests to an edge route get a generic 503 page. In production, you want HTTP to redirect to HTTPS automatically.
 
@@ -197,7 +200,7 @@ HTTP now redirects to HTTPS automatically — exactly what you want in productio
 * **None** — reject HTTP entirely (503)
 * **Allow** — serve content over HTTP too (not recommended)
 
-=== HSTS (HTTP Strict Transport Security)
+==== HSTS (HTTP Strict Transport Security)
 
 HSTS tells browsers to always use HTTPS — even if the user types `http://`. This prevents downgrade attacks.
 
@@ -224,7 +227,7 @@ curl -sk -D - "https://$(oc get route weathernow -o jsonpath='{.spec.host}')" 2>
 
 The `strict-transport-security` header is now in every response. Browsers that see this will refuse to use HTTP for this domain for one year (`max-age=31536000`).
 
-=== Rate Limiting Under Load
+==== Rate Limiting Under Load
 
 Apply rate limiting to restrict concurrent connections:
 
@@ -275,7 +278,7 @@ wait 2>/dev/null
 
 All `200` — every request succeeds without rate limiting. That's the difference one annotation makes.
 
-== Ingress Controller Scaling
+=== Ingress Controller Scaling
 
 The ingress controller can be scaled by changing `spec.replicas` on the IngressController CR. On cloud platforms with LoadBalancer services, adding replicas puts more routers behind the external load balancer for higher throughput.
 
@@ -300,7 +303,7 @@ You can view ingress controller health in the console at **Administration -> Clu
 
 image::ingress-images/ingress-operator-conditions.png[Ingress operator conditions showing Available, Progressing, Degraded status]
 
-== Cleanup
+== Cleanup & Summary
 
 [source,bash,role="execute"]
 ----
@@ -312,7 +315,7 @@ oc patch route weathernow -n app-management --type=merge \
 echo "Cleanup complete"
 ----
 
-== Summary
+=== Summary
 
 **What you learned:**
 
@@ -336,7 +339,7 @@ oc get routes -A
 oc get pods -n openshift-ingress -o wide
 ----
 
-== Additional Resources
+=== Additional Resources
 
 * **Ingress Controller:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/networking/configuring-ingress-cluster-traffic[Configuring ingress cluster traffic]
 * **Route Annotations:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/networking/configuring-ingress-cluster-traffic#nw-route-specific-annotations_route-configuration[Route-specific annotations]

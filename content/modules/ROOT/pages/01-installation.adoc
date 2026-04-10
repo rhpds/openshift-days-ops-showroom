@@ -1,4 +1,5 @@
 = Installation & Verification
+:page-toclevels: 1
 
 **Duration:** 25 minutes +
 **Format:** Hands-on verification
@@ -11,7 +12,9 @@ Your cluster was provisioned using IPI (Installer-Provisioned Infrastructure), w
 
 TIP: Two things that **cannot be changed** after installation: the **pod network CIDR** and the **service network CIDR**. If they overlap with your corporate network, you're rebuilding the cluster.
 
-== Step 1: Verify Cluster Operators (Primary Health Check)
+== Cluster Health
+
+=== Step 1: Verify Cluster Operators (Primary Health Check)
 
 **ClusterOperators** are the single source of truth for cluster health. Each operator manages a specific cluster component and reports its status.
 
@@ -70,7 +73,7 @@ Check the `Conditions` section for details about why it's degraded.
 
 image::installation-images/clusteroperators-console.png[ClusterOperators in web console]
 
-== Step 2: Check Cluster Version and Update Status
+=== Step 2: Check Cluster Version and Update Status
 
 View the current cluster version:
 
@@ -189,7 +192,9 @@ Clean up:
 oc delete project install-test &>/dev/null &
 ----
 
-== Step 5: Test Storage Provisioning
+== Storage & etcd
+
+=== Step 5: Test Storage Provisioning
 
 Verify dynamic storage works by creating a PVC and a pod that mounts it:
 
@@ -262,7 +267,7 @@ Clean up:
 oc delete project storage-test &>/dev/null &
 ----
 
-== Step 6: Verify etcd Health
+=== Step 6: Verify etcd Health
 
 You've already seen the Prometheus monitoring stack in the Platform Overview. For post-installation verification, the most important dashboard is **etcd** — the distributed key-value store that holds all cluster state.
 
@@ -288,7 +293,7 @@ oc get clusteroperator monitoring
 
 **Key takeaway:** `oc get clusteroperators` is your primary health check. All operators showing `True False False` means a healthy cluster ready for workloads.
 
-== Additional Resources
+=== Additional Resources
 
 * **Installing OpenShift:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/installation_overview/index[Installation Documentation]
 * **Verifying Cluster Status:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/support/troubleshooting#verifying-node-health[Troubleshooting Guide]

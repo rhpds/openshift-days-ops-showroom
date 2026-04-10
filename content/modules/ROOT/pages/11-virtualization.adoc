@@ -1,4 +1,5 @@
 = OpenShift Virtualization
+:page-toclevels: 1
 
 **Duration:** 35 minutes
 
@@ -8,7 +9,7 @@ Some workloads can't be containerized yet — databases, middleware, Windows ser
 
 In this module you'll create a VM from the console, see how it's really just a pod underneath, live migrate it between nodes, clone it, and take snapshots — all with the same tools you use for containers.
 
-== Prerequisites Check
+=== Prerequisites Check
 
 OpenShift Virtualization should already be installed. Verify:
 
@@ -22,7 +23,9 @@ Expected output shows `Succeeded`:
 kubevirt-hyperconverged-operator.v4.20.x   OpenShift Virtualization   4.20.x   Succeeded
 ----
 
-== Create a VM
+== Create & Explore a VM
+
+=== Create a VM
 
 First, create a project for this module:
 
@@ -33,7 +36,7 @@ oc new-project vm-demo
 
 Now create a VM using the console — the same cloud-style experience your teams get in AWS or Azure.
 
-=== Step 1: Open the Create Wizard
+==== Step 1: Open the Create Wizard
 
 1. In the OpenShift console, switch to the **Fleet Virtualization** perspective from the top-left dropdown
 2. Verify the **Project** dropdown at the top shows `vm-demo` — if not, select it now
@@ -41,7 +44,7 @@ Now create a VM using the console — the same cloud-style experience your teams
 
 image::virt-create-dropdown.png[Create VirtualMachine dropdown showing From InstanceType option]
 
-=== Step 2: Select Boot Source and InstanceType
+==== Step 2: Select Boot Source and InstanceType
 
 1. At the top of the wizard, select the **Red Hat Enterprise Linux 9** boot source from the volume list
 2. Under **Select InstanceType**, choose **Red Hat provided** -> **General Purpose** -> **medium: 1 CPUs, 4 GiB Memory**
@@ -61,7 +64,7 @@ OpenShift Virtualization provides **InstanceTypes** — predefined compute profi
 
 image::virt-create-wizard.png[VM creation wizard showing InstanceType selection and VM details]
 
-=== Step 3: Configure and Create
+==== Step 3: Configure and Create
 
 In the **VirtualMachine details** section:
 
@@ -74,7 +77,7 @@ The VM details page opens. You'll see the status change from **Provisioning** to
 
 image::virt-provisioning.png[VM details page showing Provisioning status]
 
-=== Step 4: Access the VM Console
+==== Step 4: Access the VM Console
 
 Once the VM is running, click the **Console** tab. You'll see the VNC console with the VM's boot output:
 
@@ -90,7 +93,7 @@ image::virt-console-creds.png[VNC console with guest credentials shown at top]
 
 Pick a size, pick a boot image, deploy. No YAML needed.
 
-== It's Just a Pod
+=== It's Just a Pod
 
 This is the key insight for operations teams. Your VM runs inside a `virt-launcher` pod — which means everything you already know about managing pods applies to VMs. Same scheduler, same RBAC, same resource quotas, same `oc` commands. You don't need separate tools, separate teams, or separate runbooks for VMs vs containers:
 
@@ -113,7 +116,9 @@ That's your VM. It's a pod. The same `oc` commands work:
 oc describe pod -l vm.kubevirt.io/name=rhel9-vm -n vm-demo | tail -10
 ----
 
-== Unified Monitoring
+== Monitoring & Networking
+
+=== Unified Monitoring
 
 VM metrics flow into the same Prometheus stack as your containers — one dashboard for everything. No need for a separate monitoring tool for your VMs.
 
@@ -134,7 +139,7 @@ Or query from CLI — the VM uses resources just like any pod:
 oc adm top pods -n vm-demo
 ----
 
-== Expose the VM (Same Networking as Containers)
+=== Expose the VM (Same Networking as Containers)
 
 VMs get pod IPs on the same SDN as containers — same Services, same Routes, same NetworkPolicies. One networking model for VMs and containers:
 
@@ -171,11 +176,13 @@ The VM is now reachable via the service — the same way you'd expose a containe
 
 For VMs running web applications (Apache, IIS, Tomcat), you'd create a Service on port 80/443 and a Route with TLS edge termination — the same workflow you use for containers. When migrating multi-tier applications, move the VMs with MTV, wire them up with Services and Routes, and they're live on OpenShift without changing the application.
 
-== Live Migration
+== VM Lifecycle
+
+=== Live Migration
 
 This is the feature that makes OpenShift Virtualization production-ready. When you need to patch a node, upgrade the OS, or replace hardware, you drain the node. Containers reschedule automatically, and VMs live migrate automatically too. `oc adm drain` handles both. Zero downtime during maintenance windows.
 
-=== Step 1: Prepare for Migration
+==== Step 1: Prepare for Migration
 
 Live migration requires compatible CPU features on the source and target nodes. Workshop clusters can have mixed Intel and AMD nodes — VMs can only migrate between nodes with the same CPU vendor. This script detects your VM's CPU vendor and ensures it's on a node where migration is possible:
 
@@ -207,7 +214,7 @@ oc get vmi rhel9-vm -n vm-demo -o jsonpath='Ready — Node: {.status.nodeName}' 
 
 NOTE: In production, you'd ensure homogeneous CPU hardware in your cluster or use a specific CPU model in the VM's spec. This is a common operational consideration for any KubeVirt/OpenShift Virtualization deployment.
 
-=== Step 2: Note the Current Node
+==== Step 2: Note the Current Node
 
 Check which node the VM is on before migration:
 
@@ -216,7 +223,7 @@ Check which node the VM is on before migration:
 oc get vmi rhel9-vm -n vm-demo -o jsonpath='Node: {.status.nodeName}' && echo ""
 ----
 
-=== Step 3: Trigger the Migration
+==== Step 3: Trigger the Migration
 
 1. On the VM details page, click the **Actions** dropdown in the top-right corner
 2. Hover over **Migration** to expand the submenu
@@ -228,7 +235,7 @@ image::virt-actions-migrate.png[Actions dropdown showing Migration submenu with 
 
 image::virt-migrate-auto-node.png[Migration dialog with Automatically selected Node option]
 
-=== Step 4: Watch the Migration
+==== Step 4: Watch the Migration
 
 The VM status changes to **Migrating** while the live migration is in progress:
 
@@ -243,11 +250,11 @@ oc get vmi rhel9-vm -n vm-demo -o jsonpath='Node: {.status.nodeName}' && echo ""
 
 The VM moved while still running. No downtime, no reconnection needed.
 
-== Clone a VM
+=== Clone a VM
 
 Need another copy of a VM — for testing, dev environments, or scaling out? Clone it. This creates a full copy of the VM's disk and configuration.
 
-=== Step 1: Start the Clone
+==== Step 1: Start the Clone
 
 1. On the **rhel9-vm** details page, click **Actions** -> **Clone**
 
@@ -259,7 +266,7 @@ image::virt-actions-clone.png[Actions dropdown with Clone option highlighted]
 
 image::virt-clone-config.png[Clone VirtualMachine dialog with name and configuration]
 
-=== Step 2: Watch the Clone Progress
+==== Step 2: Watch the Clone Progress
 
 The dialog shows the clone progress: **Request sent** -> **In process** -> **Created**:
 
@@ -273,11 +280,11 @@ The clone has its own independent disk — changes to one don't affect the other
 
 IMPORTANT: Click back to **rhel9-vm** in the left sidebar before continuing. The next steps (snapshot and restore) should be done on the original VM, not the clone.
 
-== Snapshots
+=== Snapshots
 
 Every operations team has been burned by a patch that broke something. Snapshots give you a safety net — capture the VM's disk and configuration before a change, and roll back in seconds if it goes wrong.
 
-=== Step 1: Take a Snapshot
+==== Step 1: Take a Snapshot
 
 1. On the **rhel9-vm** details page, click **Actions** -> **Take snapshot**
 
@@ -289,13 +296,13 @@ image::virt-snapshot-config.png[Take snapshot dialog with default name and disk 
 
 NOTE: The warning about `cloudinitdisk` not being included is expected — cloud-init only runs on first boot and doesn't need to be captured.
 
-=== Step 2: Verify the Snapshot
+==== Step 2: Verify the Snapshot
 
 Click the **Snapshots** tab. The snapshot shows **Ready** status once complete:
 
 image::virt-snapshot-ready.png[Snapshots tab showing rhel9-vm-snapshot with Ready status]
 
-=== Step 3: Break Something
+==== Step 3: Break Something
 
 The snapshot is your safety net — let's prove it works by breaking the VM. Open the **Console** tab and log in with the guest credentials shown at the top. Then create a file and delete something:
 
@@ -306,7 +313,7 @@ sudo rm /etc/motd
 
 Now the VM has changed — a new file exists, a system file is gone. Let's restore to the snapshot and prove both changes are reverted.
 
-=== Step 4: Restore from Snapshot
+==== Step 4: Restore from Snapshot
 
 1. **Stop** the VM — click the **Stop** button (square icon) in the top-right action buttons
 
@@ -329,7 +336,9 @@ cat /etc/motd
 
 The file you created is gone and `/etc/motd` is back. The disk was restored to the exact state when you took the snapshot — this is how you roll back a failed OS patch or a broken config change without rebuilding from scratch.
 
-== Summary
+== Cleanup & Summary
+
+=== Summary
 
 [cols="1,2"]
 |===
@@ -359,7 +368,7 @@ The file you created is gone and `/etc/motd` is back. The disk was restored to t
 
 **The value:** Run VMs and containers side-by-side on one platform. One set of tools, one set of skills. Migrate existing VMs with MTV when ready, or run them indefinitely — OpenShift supports both. Windows Server is SVVP-certified, and RHEL/Fedora/CentOS boot from pre-cached images in seconds.
 
-== Cleanup
+=== Cleanup
 
 Deleting VM disks and namespaces takes a couple of minutes. This runs in the background so you can move on to the next module immediately.
 
@@ -374,7 +383,7 @@ Deleting VM disks and namespaces takes a couple of minutes. This runs in the bac
 echo "Cleanup running in background — you can continue to the next module"
 ----
 
-== Additional Resources
+=== Additional Resources
 
 * **OpenShift Virtualization:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/index[Virtualization documentation]
 * **virtctl Reference:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/virt-using-the-cli-tools#virt-virtctl-commands_virt-using-the-cli-tools[virtctl commands]
