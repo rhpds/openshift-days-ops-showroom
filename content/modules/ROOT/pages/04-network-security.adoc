@@ -1,4 +1,5 @@
 = Network Security
+:page-toclevels: 1
 
 **Duration:** 30 minutes +
 **Format:** Hands-on network security configuration
@@ -255,11 +256,13 @@ oc delete adminnetworkpolicy cluster-deny-external-dns
 
 NOTE: AdminNetworkPolicy uses `policy.networking.k8s.io/v1alpha1`. There is also `BaselineAdminNetworkPolicy` which acts as a fallback — it applies only when no other ANP or NetworkPolicy matches. Together, ANP and BANP give platform teams guardrails while still allowing namespace-level customization.
 
-== EgressFirewall: Controlling Outbound Traffic
+== Egress Controls
+
+=== EgressFirewall: Controlling Outbound Traffic
 
 **EgressFirewall** controls which external IPs/domains pods can reach. This is an OVN-Kubernetes feature.
 
-=== Understanding EgressFirewall
+==== Understanding EgressFirewall
 
 EgressFirewall applies per-namespace and evaluates rules in order. Traffic not matching any rule is **allowed** by default.
 
@@ -270,7 +273,7 @@ View the API:
 oc explain egressfirewall.spec
 ----
 
-=== Create an EgressFirewall
+==== Create an EgressFirewall
 
 Block traffic to a specific CIDR (example: block 1.1.1.0/24):
 
@@ -294,7 +297,7 @@ EOF
 
 This blocks egress to 1.1.1.0/24 but allows all other traffic.
 
-=== Test EgressFirewall
+==== Test EgressFirewall
 
 [source,bash,role="execute"]
 ----
@@ -305,14 +308,14 @@ oc exec -n netpol-frontend deployment/frontend -- curl -s --connect-timeout 3 ht
 oc exec -n netpol-frontend deployment/frontend -- curl -s --connect-timeout 3 -I http://google.com | head -1
 ----
 
-=== View EgressFirewall
+==== View EgressFirewall
 
 [source,bash,role="execute"]
 ----
 oc get egressfirewall -n netpol-frontend -o yaml
 ----
 
-=== DNS-Based EgressFirewall
+==== DNS-Based EgressFirewall
 
 You can also use DNS names instead of IP addresses (OVN resolves them):
 
@@ -341,7 +344,7 @@ This allows only traffic to `www.redhat.com` and `quay.io`, blocking everything 
 
 NOTE: Wildcard DNS names (e.g., `*.redhat.com`) are a Technology Preview feature in OpenShift 4.20 and may not be enabled on all clusters. Use specific hostnames for production configurations.
 
-=== EgressFirewall Use Cases
+==== EgressFirewall Use Cases
 
 [cols="1,2"]
 |===
@@ -372,11 +375,11 @@ NOTE: Wildcard DNS names (e.g., `*.redhat.com`) are a Technology Preview feature
 * If you add a deny-all **egress** NetworkPolicy, you'll break DNS resolution. Pods need to reach CoreDNS (port 53 UDP/TCP in the `openshift-dns` namespace). Always allow DNS explicitly when restricting egress.
 ====
 
-== EgressIP: Predictable Source IPs
+=== EgressIP: Predictable Source IPs
 
 **EgressIP** assigns a fixed source IP for egress traffic from specific pods. Useful when external firewalls need to allowlist your cluster.
 
-=== Understanding EgressIP
+==== Understanding EgressIP
 
 [source,bash,role="execute"]
 ----
@@ -389,7 +392,7 @@ EgressIP requires:
 2. Available IPs on the node's network
 3. EgressIP CR referencing namespace/pod selectors
 
-=== View EgressIP Capability
+==== View EgressIP Capability
 
 [source,bash,role="execute"]
 ----
@@ -398,7 +401,7 @@ oc get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.anno
 
 Nodes must have the label `k8s.ovn.org/egress-assignable=""` to be eligible to host EgressIPs.
 
-=== EgressIP Configuration Example
+==== EgressIP Configuration Example
 
 [source,yaml]
 ----
@@ -420,7 +423,7 @@ spec:
 
 **Note:** EgressIP configuration requires network planning and is typically done during cluster setup. The IPs must be routable on the node network.
 
-=== When to Use EgressIP
+==== When to Use EgressIP
 
 [cols="1,2"]
 |===
@@ -482,7 +485,7 @@ oc get pods -n openshift-dns
 
 CoreDNS provides DNS resolution for all pods in the cluster.
 
-== Cleanup
+== Cleanup & Summary
 
 [source,bash,role="execute"]
 ----
@@ -490,8 +493,6 @@ CoreDNS provides DNS resolution for all pods in the cluster.
 oc delete namespace netpol-frontend netpol-backend --ignore-not-found --wait=false
 echo "Cleanup running in background — you can continue to the next module"
 ----
-
-== Summary
 
 **What you learned:**
 
@@ -521,7 +522,7 @@ oc get egressip -A
 oc get dns cluster -o yaml
 ----
 
-== Additional Resources
+=== Additional Resources
 
 * **OVN-Kubernetes:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/ovn-kubernetes_network_plugin/index[OVN-Kubernetes network plugin]
 * **NetworkPolicy:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/networking/network-policy[About network policy]
