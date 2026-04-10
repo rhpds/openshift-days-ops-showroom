@@ -22,8 +22,5 @@ tabs:
   - name: ArgoCD
     url: 'https://openshift-gitops-server-openshift-gitops.${DOMAIN}'
 
-  - name: Quay
-    url: 'https://quay.${DOMAIN}'
-
   - name: Developer Hub
     url: 'https://backstage-developer-hub-backstage.${DOMAIN}'
