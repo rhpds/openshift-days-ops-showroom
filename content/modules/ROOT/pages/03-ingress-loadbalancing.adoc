@@ -248,7 +248,7 @@ The annotations are set — but do they actually work? Let's prove it. Send 20 c
 ----
 echo "=== With rate limiting (max 2 concurrent) ==="
 ROUTE_HOST=$(oc get route weathernow -o jsonpath='{.spec.host}')
-sleep 3
+sleep 5
 RESULTS=""
 for i in $(seq 1 20); do
   curl -sk -o /dev/null -w "%{http_code}\n" "https://$ROUTE_HOST" &
@@ -271,7 +271,7 @@ oc annotate route weathernow -n app-management \
 [source,bash,role="execute"]
 ----
 echo "=== Without rate limiting ==="
-sleep 3
+sleep 5
 for i in $(seq 1 20); do
   curl -sk -o /dev/null -w "%{http_code}\n" "https://$(oc get route weathernow -o jsonpath='{.spec.host}')" &
 done
