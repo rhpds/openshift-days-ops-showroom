@@ -196,7 +196,9 @@ echo "Following the redirect:"
 curl -skL -o /dev/null -w "  Status: %{http_code}\n" "http://$ROUTE_HOST"
 ----
 
-HTTP now redirects to HTTPS automatically - exactly what you want in production. The three options for `insecureEdgeTerminationPolicy`:
+The `302` confirms HTTP is redirecting to HTTPS. The `403` after following the redirect is the app's normal response (the default httpd test page returns 403 because there's no custom content deployed). The important thing is the redirect itself - HTTP traffic is no longer served unencrypted.
+
+The three options for `insecureEdgeTerminationPolicy`:
 
 * **Redirect** - HTTP 302 to HTTPS (recommended)
 * **None** - reject HTTP entirely (503)
