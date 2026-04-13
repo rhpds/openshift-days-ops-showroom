@@ -54,7 +54,7 @@ spec:
 EOF
 ----
 
-Wait for the pod to start:
+Wait for the pod to start (this takes a minute or two):
 
 [source,bash,role="execute"]
 ----
@@ -64,8 +64,6 @@ echo "Waiting for Keycloak to be ready..."
 oc wait --for=condition=Ready pod/keycloak-0 -n rhbk --timeout=120s
 echo "Keycloak is running"
 ----
-
-NOTE: If this hangs, press **Ctrl+C** to exit and re-run the command.
 
 Create a route for external access:
 
