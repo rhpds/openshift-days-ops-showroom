@@ -92,10 +92,10 @@ Wait for the operator (~1 minute):
 
 [source,bash,role="execute"]
 ----
-oc get csv -n openshift-vertical-pod-autoscaler -w
+echo "Waiting for VPA operator..."
+until oc get csv -n openshift-vertical-pod-autoscaler 2>/dev/null | grep -q Succeeded; do sleep 10; done
+oc get csv -n openshift-vertical-pod-autoscaler
 ----
-
-Press `Ctrl+C` when you see `Succeeded`.
 
 === Get VPA Recommendations
 
