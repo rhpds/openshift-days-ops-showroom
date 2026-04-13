@@ -350,7 +350,10 @@ After the UIPlugin is created, you may see a notification in the console:
 
 image::Loki_refresh.png[Web console update notification]
 
-Click **Refresh** to reload the console with the new Logs view.
+Click **Refresh** to reload the console with the new Logs view. This may log you out of the console - if so, log back in with:
+
+* Username: `{openshift_cluster_admin_username}`
+* Password: `{openshift_cluster_admin_password}`
 
 Navigate to **Observe -> Logs** in the console. You'll see three log types:
 
@@ -524,6 +527,11 @@ curl -s -X POST http://otel-collector.tracing-system.svc:4318/v1/traces \
 This simulates what an instrumented application does - sends a span describing a single operation (`GET /api/weather`) with timing data.
 
 === View Traces in the Console
+
+Loading the Traces view may log you out of the console. If so, log back in with:
+
+* Username: `{openshift_cluster_admin_username}`
+* Password: `{openshift_cluster_admin_password}`
 
 Navigate to **Observe -> Traces** in the console. Select the Tempo instance (`tracing-system / sample`) and tenant (`dev`):
 
