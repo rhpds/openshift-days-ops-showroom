@@ -294,9 +294,7 @@ The Operator sees the CR change and triggers a rolling restart - new pods with p
 oc rollout status deployment/backstage-developer-hub -n backstage --timeout=300s
 ----
 
-TIP: This may take a moment. Press **Ctrl+C** if you need to skip ahead.
-
-This takes 2-3 minutes as the init container installs the dynamic plugins before the main container starts.
+NOTE: This takes 2-3 minutes as the init container installs the dynamic plugins before the main container starts. This is normal - please give it time.
 
 === Step 5: Label the Workloads
 
