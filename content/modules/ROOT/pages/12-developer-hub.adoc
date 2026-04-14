@@ -87,7 +87,7 @@ As an operations administrator, you need to understand how RHDH is deployed and 
 
 === View RHDH in the OpenShift Console
 
-1. In the OpenShift console, go to **Workloads** -> **Pods**
+1. In the OpenShift console, make sure the **Administrator** perspective is selected from the top-left dropdown (it may have changed from a previous module), then go to **Workloads** -> **Pods**
 2. Select the **backstage** project from the project dropdown
 3. You'll see the `backstage-developer-hub` and `backstage-psql-developer-hub` pods running
 
