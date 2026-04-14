@@ -265,7 +265,7 @@ Need another copy of a VM - for testing, dev environments, or scaling out? Clone
 image::virt-actions-clone.png[Actions dropdown with Clone option highlighted]
 
 2. Change the name to `rhel9-vm-clone`
-3. Leave **Start VirtualMachine once created** checked
+3. Check the **Start VirtualMachine once created** checkbox
 4. Click **Clone**
 
 image::virt-clone-config.png[Clone VirtualMachine dialog with name and configuration]
