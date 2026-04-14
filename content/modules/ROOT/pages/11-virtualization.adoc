@@ -327,7 +327,7 @@ virtctl console rhel9-vm -n vm-demo
 Log in with the credentials above, then run these commands inside the VM:
 
 ----
-touch /home/important-data.txt
+touch /home/rhel/important-data.txt
 sudo rm /etc/motd
 ----
 
@@ -353,7 +353,7 @@ image::virt-restore-confirmation.png[Restore snapshot confirmation dialog]
 Once the VM is running, open the **Console** tab and log in again. Verify the restore worked:
 
 ----
-ls /home/cloud-user/important-data.txt
+ls /home/rhel/important-data.txt
 cat /etc/motd
 ----
 
