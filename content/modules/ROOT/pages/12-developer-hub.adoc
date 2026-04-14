@@ -63,7 +63,7 @@ Wait for the new pod to be ready:
 
 [source,bash,role="execute"]
 ----
-oc rollout status deployment/backstage-developer-hub -n backstage --timeout=120s
+oc rollout status deployment/backstage-developer-hub -n backstage --timeout=300s
 ----
 
 NOTE: This can take a couple of minutes while the pod restarts with the new configuration. This is normal - please give it time.
