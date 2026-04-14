@@ -59,14 +59,14 @@ Restart the deployment to pick up the config change:
 oc rollout restart deployment/backstage-developer-hub -n backstage
 ----
 
-Wait for the new pod to be ready (this takes about a minute):
+Wait for the new pod to be ready:
 
 [source,bash,role="execute"]
 ----
 oc rollout status deployment/backstage-developer-hub -n backstage --timeout=120s
 ----
 
-TIP: This may take a moment. Press **Ctrl+C** if you need to skip ahead.
+NOTE: This can take a couple of minutes while the pod restarts with the new configuration. This is normal - please give it time.
 
 NOTE: In production, you'd also configure a GitHub integration with an access token for private repositories. The `backend.reading.allow` approach works for public repos.
 
