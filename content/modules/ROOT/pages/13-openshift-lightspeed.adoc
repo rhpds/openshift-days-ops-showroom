@@ -128,6 +128,8 @@ You may have been logged out of the console during the Lightspeed deployment. If
 * Username: `{openshift_cluster_admin_username}`
 * Password: `{openshift_cluster_admin_password}`
 
+TIP: If you see an authentication error when using Lightspeed, reload the **OCP Console** tab and try again.
+
 Once the OLSConfig is ready, the OpenShift Lightspeed chat button in the bottom right corner will now be functional:
 
 image::ols-chat-button.png[Lightspeed chat button in bottom right]
