@@ -94,7 +94,9 @@ Wait for the operator (~1 minute):
 ----
 echo "Waiting for VPA operator..."
 until oc get csv -n openshift-vertical-pod-autoscaler 2>/dev/null | grep -q Succeeded; do sleep 10; done
-oc get csv -n openshift-vertical-pod-autoscaler
+echo "Waiting for VPA CRD to register..."
+until oc get crd verticalpodautoscalers.autoscaling.k8s.io 2>/dev/null; do sleep 5; done
+echo "VPA operator ready"
 ----
 
 === Get VPA Recommendations
