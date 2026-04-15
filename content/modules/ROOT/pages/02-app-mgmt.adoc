@@ -32,7 +32,7 @@ Create a project and deploy a web server:
 oc new-project app-management
 ----
 
-Now deploy the WeatherNow application using the OpenShift Console.
+Now deploy the WeatherNow application using the OpenShift Console. WeatherNow is a simple httpd-based container used as a test workload throughout the ops track.
 
 . In the top-right corner of the console, click the **+** (Add) button and select **Container images**:
 +
@@ -321,6 +321,12 @@ Verify the original image is restored:
 [source,bash,role="execute"]
 ----
 oc get deployment weathernow -n app-management -o jsonpath='{.spec.template.spec.containers[0].image}'
+----
+
+You should see the original WeatherNow image (shown as a digest since OpenShift resolves image tags via the ImageStream):
+
+----
+quay.io/openshift-workshop-applications/weathernow@sha256:362b6db3...
 ----
 
 [source,bash,role="execute"]

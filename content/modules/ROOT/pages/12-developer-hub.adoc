@@ -81,7 +81,7 @@ image::rhdh-home-page.png[Developer Hub home page]
 This is a basic RHDH deployment with guest authentication. In production, you would configure SSO integration, populate the software catalog, and add software templates. This module focuses on how Ops manages and monitors RHDH.
 ====
 
-== Ops Admin: Managing RHDH from Console and CLI
+== Step 4: Ops Admin - Managing RHDH from Console and CLI
 
 As an operations administrator, you need to understand how RHDH is deployed and how to manage it. Let's explore.
 
@@ -129,7 +129,7 @@ Get detailed status:
 oc describe backstage developer-hub -n backstage
 ----
 
-=== Step 4: Register an Application in the Catalog
+=== Step 5: Register an Application in the Catalog
 
 The catalog is the heart of Developer Hub - a unified view of every service your organization runs. Right now it's empty because nobody has registered anything. Let's fix that.
 
@@ -300,7 +300,15 @@ NOTE: This takes 2-3 minutes as the init container installs the dynamic plugins 
 
 The Kubernetes plugin discovers pods by matching a label on the workloads to the `backstage.io/kubernetes-id` annotation on the catalog component. Label the weather app deployments:
 
-NOTE: This step requires the weather app deployments from the **Debugging & Troubleshooting** module to be running in `ops-track-demo`. If you haven't completed that module, you can skip this step - the catalog entry will still register, the Kubernetes tab will simply show no pods.
+NOTE: This step requires the weather app deployments from the **Debugging & Troubleshooting** module to be running in `ops-track-demo`. If you haven't completed that module, run the following to deploy the weather app services so the Kubernetes tab has pods to display:
+
+[source,bash,role="execute"]
+----
+oc create namespace ops-track-demo 2>/dev/null || true
+for dep in weather-api weather-backend weather-cache weather-frontend weather-proxy; do
+  oc create deployment $dep --image=registry.access.redhat.com/ubi9/httpd-24 -n ops-track-demo 2>/dev/null || true
+done
+----
 
 [source,bash,role="execute"]
 ----
@@ -362,3 +370,12 @@ This module gave you a working RHDH with live cluster visibility. A full platfor
 * **TechDocs** - documentation lives alongside the code and renders in the portal
 
 **Interested in a deep-dive?** Ask your instructor about the **Platform Engineering with RHDH Workshop**.
+
+== Cleanup
+
+Remove the resources created during this module. The RHDH operator and Backstage instance remain for other modules.
+
+[source,bash,role="execute"]
+----
+bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/cleanup-scripts/cleanup-developer-hub.sh)
+----

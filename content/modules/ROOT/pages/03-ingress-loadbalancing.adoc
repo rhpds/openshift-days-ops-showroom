@@ -260,6 +260,8 @@ wait 2>/dev/null
 
 You'll see a mix of `403` (request reached the app) and `000` (connection dropped by HAProxy before reaching the app). The `000` responses prove the router is dropping connections beyond the concurrent limit.
 
+NOTE: The exact ratio of `403` to `000` responses will vary between runs depending on timing and system load.
+
 Now remove rate limiting and try the same test:
 
 [source,bash,role="execute"]
@@ -313,7 +315,10 @@ image::ingress-images/ingress-operator-conditions.png[Ingress operator condition
 ----
 # Remove annotations and reset route
 oc annotate route weathernow -n app-management \
-  haproxy.router.openshift.io/hsts_header- 2>/dev/null
+  haproxy.router.openshift.io/hsts_header- \
+  haproxy.router.openshift.io/rate-limit-connections- \
+  haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp- \
+  haproxy.router.openshift.io/rate-limit-connections.rate-http- 2>/dev/null
 oc patch route weathernow -n app-management --type=merge \
   -p '{"spec":{"tls":{"insecureEdgeTerminationPolicy":""}}}' 2>/dev/null
 echo "Cleanup complete"

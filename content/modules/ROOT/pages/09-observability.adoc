@@ -162,7 +162,7 @@ While the restarts accumulate, navigate to **Observe -> Alerting -> Alerting Rul
 
 image::alerting-rules-search.png[Alerting Rules showing custom HighPodRestartRate rule]
 
-Click on the rule to see its details. After about 2 minutes (once the pod has restarted 3+ times and the `for: 5m` duration passes), you'll see the alert transition from **Inactive** → **Pending** → **Firing**:
+Click on the rule to see its details. After about 5-7 minutes (once the pod has restarted 3+ times and the `for: 5m` duration passes), you'll see the alert transition from **Inactive** → **Pending** → **Firing**:
 
 image::alerting-rule-detail.png[HighPodRestartRate rule detail showing expression and active alerts]
 
@@ -337,10 +337,14 @@ EOF
 
 === Verify and View Logs
 
-Wait 2-3 minutes for LokiStack pods and collectors to start, then verify the full stack:
+Wait for the collector pods to start before verifying the full stack:
 
 [source,bash,role="execute"]
 ----
+echo "Waiting for collector pods to start..."
+until oc get pods -n openshift-logging -l app.kubernetes.io/component=collector --no-headers 2>/dev/null | grep -q Running; do
+  sleep 10
+done
 oc get pods -n openshift-logging
 ----
 

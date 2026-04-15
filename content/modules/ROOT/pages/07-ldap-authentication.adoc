@@ -99,6 +99,8 @@ oc create configmap ca-config-map \
 bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/07-ldap-authentication/configure-oauth-ldap.sh)
 ----
 
+This script creates an OAuth configuration that adds the LDAP identity provider alongside the existing HTPasswd provider. It configures: the bind DN (`uid=openshiftworkshop,...`), the LDAP URL (`ldaps://ldap.jumpcloud.com`) with a `memberOf` filter restricting login to the `ose-user` group, attribute mappings (`dn` -> ID, `mail` -> email, `cn` -> display name, `uid` -> username), and references the CA cert and bind password you created above.
+
 **Understanding the OAuth configuration:**
 
 The `oauth-cluster.yaml` file configures the LDAP identity provider. Key elements:
@@ -190,7 +192,7 @@ Output: `normaluser1`
 oc auth can-i create project
 ----
 
-Output: `no` (project self-provisioning is disabled in this environment - you'll learn about this in the Governance module)
+Output: `no` (project self-provisioning is disabled in this environment)
 
 Notice the user was **automatically created** on first login. Log back in as admin to view the user object.
 

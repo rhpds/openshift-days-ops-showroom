@@ -134,7 +134,7 @@ Once the OLSConfig is ready, the OpenShift Lightspeed chat button in the bottom 
 
 image::ols-chat-button.png[Lightspeed chat button in bottom right]
 
-Click the button to open the Openshift Lightspeed chat window:
+Click the button to open the OpenShift Lightspeed chat window:
 
 image::ols-chat-window.png[OpenShift Lightspeed chat window]
 
@@ -151,7 +151,7 @@ OpenShift Lightspeed will search for the most relevant sections of the documenta
 
 OpenShift Lightspeed will likely provide a response explaining what both Deployment and StatefulSet resources are, along with a comparison between them. If you scroll down to the end of the response, OpenShift Lightspeed will display links to the most relevant documentation, allowing you to quickly access those sections and explore further:
 
-image::ols-related-docs.png[Related documentation in Openshift Lightspeed]
+image::ols-related-docs.png[Related documentation in OpenShift Lightspeed]
 
 == Capabilities
 
@@ -170,7 +170,7 @@ image::ols-copy-yaml.png[Copy YAML button in OpenShift Lightspeed]
 
 === Cluster Interaction and Troubleshooting
 
-A demo pod with an intentional issue has been deployed. Let's use OpenShift Lightspeed to diagnose it.
+A demo pod with an intentional issue has been pre-deployed as part of the workshop setup. Let's use OpenShift Lightspeed to diagnose it.
 
 First, check the broken pod:
 

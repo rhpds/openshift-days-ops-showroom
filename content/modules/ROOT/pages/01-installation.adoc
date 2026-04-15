@@ -242,14 +242,26 @@ spec:
 EOF
 ----
 
-Wait a moment, then check that the PVC is `Bound` and the pod is `Running`:
+Wait for the PVC to bind and the pod to start:
 
 [source,bash,role="execute"]
 ----
-sleep 15 && oc get pvc test-pvc -n storage-test && oc get pod test-storage -n storage-test
+echo "Waiting for storage test to complete..."
+until oc get pod test-storage -n storage-test --no-headers 2>/dev/null | grep -qE 'Running|Completed'; do
+  sleep 5
+done
+oc get pvc test-pvc -n storage-test && oc get pod test-storage -n storage-test
 ----
 
-The PVC should show `Bound` and the pod should be `Running` or `Completed`.
+The PVC should show `Bound` and the pod should be `Running` or `Completed`:
+
+----
+NAME       STATUS   VOLUME        CAPACITY   ACCESS MODES   STORAGECLASS                           AGE
+test-pvc   Bound    pvc-xxxxxxx   1Gi        RWO            ocs-external-storagecluster-ceph-rbd   15s
+
+NAME           READY   STATUS    RESTARTS   AGE
+test-storage   1/1     Running   0          15s
+----
 
 TIP: In the console, navigate to **Storage > PersistentVolumeClaims** (project: `storage-test`) to see the PVC status and its bound PersistentVolume.
 
@@ -285,6 +297,11 @@ Also verify the monitoring operator is healthy:
 [source,bash,role="execute"]
 ----
 oc get clusteroperator monitoring
+----
+
+----
+NAME         VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE   MESSAGE
+monitoring   4.20.x    True        False         False      3h
 ----
 
 == Summary

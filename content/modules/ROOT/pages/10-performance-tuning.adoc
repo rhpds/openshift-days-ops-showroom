@@ -108,11 +108,22 @@ Create a VPA resource targeting the memory-hog deployment. We're using `updateMo
 oc apply -f https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/vpa-memory-hog.yaml
 ----
 
-Wait for VPA to analyze the pod:
+Wait for VPA to analyze the pod and produce a recommendation:
 
 [source,bash,role="execute"]
 ----
-sleep 30 && oc get vpa memory-hog-vpa
+echo "Waiting for VPA recommendation..."
+until oc get vpa memory-hog-vpa -o jsonpath='{.status.recommendation}' 2>/dev/null | grep -q containerRecommendations; do
+  sleep 10
+done
+oc get vpa memory-hog-vpa
+----
+
+You should see output like:
+
+----
+NAME             MODE   CPU   MEM       PROVIDED   AGE
+memory-hog-vpa   Off    35m   262144k   True       2m
 ----
 
 View the detailed recommendation:
@@ -122,7 +133,17 @@ View the detailed recommendation:
 oc get vpa memory-hog-vpa -o jsonpath='{.status.recommendation.containerRecommendations[0]}' | jq .
 ----
 
-NOTE: If you see no output, the VPA recommender hasn't collected enough metrics yet. Wait 30-60 seconds and run the command again.
+You should see output similar to:
+
+----
+{
+  "containerName": "memory-hog",
+  "lowerBound": { "cpu": "25m", "memory": "262144k" },
+  "target": { "cpu": "35m", "memory": "262144k" },
+  "uncappedTarget": { "cpu": "35m", "memory": "262144k" },
+  "upperBound": { "cpu": "500m", "memory": "512Mi" }
+}
+----
 
 VPA recommends **~256Mi memory** instead of the 2Gi requested. That's based on actual observed usage - not guesswork.
 
@@ -181,6 +202,15 @@ Check the HPA:
 oc get hpa demo-app
 ----
 
+You should see:
+
+----
+NAME       REFERENCE             TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
+demo-app   Deployment/demo-app   cpu: <unknown>/50%   1         5         1          10s
+----
+
+The `<unknown>` target is normal - it takes about a minute for the metrics server to start reporting CPU usage for the new pod.
+
 TIP: You can view the HPA in the console at **Workloads > HorizontalPodAutoscalers** (project: `performance-demo`) - it shows current vs target CPU percentage and the current replica count in real-time.
 
 === Generate Load
@@ -225,7 +255,7 @@ oc get pods -l app=demo-app
 oc delete pod load-generator
 ----
 
-The HPA will scale back down after ~5 minutes of reduced load.
+The HPA will scale back down after ~5 minutes of reduced load. This is the default `stabilizationWindowSeconds` for scale-down - it prevents flapping. You don't need to wait for it; just know that in production, scale-down is intentionally slow.
 
 == Part 4: Make a Capacity Decision
 

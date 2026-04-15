@@ -247,12 +247,28 @@ oc get adminnetworkpolicy
 
 The `PRIORITY` field determines evaluation order - lower numbers are evaluated first. This allows platform teams to enforce security baselines that namespace owners cannot override.
 
-Clean up:
+Now prove it works. Try resolving DNS via the blocked external server:
+
+[source,bash,role="execute"]
+----
+oc exec -n netpol-backend deployment/backend -- nslookup -timeout=2 -retry=1 google.com 8.8.8.8
+----
+
+Expected: `communications error to 8.8.8.8#53: timed out` followed by `no servers could be reached`. The ANP blocked outbound DNS to 8.8.8.8.
+
+Clean up and verify DNS recovers:
 
 [source,bash,role="execute"]
 ----
 oc delete adminnetworkpolicy cluster-deny-external-dns
 ----
+
+[source,bash,role="execute"]
+----
+oc exec -n netpol-backend deployment/backend -- nslookup -timeout=2 -retry=1 google.com 8.8.8.8
+----
+
+Expected: DNS resolution succeeds again - the ANP is gone.
 
 NOTE: AdminNetworkPolicy uses `policy.networking.k8s.io/v1alpha1`. There is also `BaselineAdminNetworkPolicy` which acts as a fallback - it applies only when no other ANP or NetworkPolicy matches. Together, ANP and BANP give platform teams guardrails while still allowing namespace-level customization.
 

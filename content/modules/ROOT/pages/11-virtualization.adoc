@@ -186,7 +186,7 @@ This is the feature that makes OpenShift Virtualization production-ready. When y
 
 ==== Step 1: Prepare for Migration
 
-Live migration requires compatible CPU features on the source and target nodes. Workshop clusters can have mixed Intel and AMD nodes - VMs can only migrate between nodes with the same CPU vendor. This script detects your VM's CPU vendor and ensures it's on a node where migration is possible:
+Live migration requires compatible CPU features on the source and target nodes. Workshop clusters can have mixed Intel and AMD nodes in the pool - VMs can only migrate between nodes with the same CPU vendor because the CPU instruction sets are incompatible. This script detects your VM's CPU vendor and pins it to the vendor that has 2+ nodes (so there's a valid migration target):
 
 [source,bash,role="execute"]
 ----
@@ -364,7 +364,7 @@ ls /home/rhel/important-data.txt
 cat /etc/motd
 ----
 
-The file you created is gone and `/etc/motd` is back. The disk was restored to the exact state when you took the snapshot - this is how you roll back a failed OS patch or a broken config change without rebuilding from scratch.
+`ls` should show `No such file or directory` - the file you created is gone. `cat /etc/motd` should show the original welcome message that was deleted - it's been restored. The disk was reverted to the exact state when you took the snapshot. The disk was restored to the exact state when you took the snapshot - this is how you roll back a failed OS patch or a broken config change without rebuilding from scratch.
 
 Click the **reload button** on the Terminal tab to exit the console.
 
