@@ -340,6 +340,8 @@ Connect to the VM console:
 virtctl console rhel9-vm -n vm-demo
 ----
 
+NOTE: You may see boot output (kernel messages, systemd services) scrolling. Wait for the `rhel9-vm login:` prompt to appear, then press **Enter** if needed.
+
 Log in with the credentials above, then verify the restore worked:
 
 ----
