@@ -396,6 +396,8 @@ NOTE: If the **Ingress & Load Balancing** module is part of your workshop, **ski
 
 [source,bash,role="execute"]
 ----
-oc delete namespace app-management --ignore-not-found --wait=false
-echo "Cleanup running in background - you can continue to the next module"
+oc delete namespace app-management --ignore-not-found
+echo "Cleanup complete"
 ----
+
+NOTE: This waits for the namespace to be fully deleted before returning. This ensures the next module can recreate it cleanly.

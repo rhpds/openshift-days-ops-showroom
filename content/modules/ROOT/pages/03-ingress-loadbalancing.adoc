@@ -58,6 +58,11 @@ This section uses a test application. Run the following to ensure the project an
 
 [source,bash,role="execute"]
 ----
+# Wait for namespace to be fully removed if it's still terminating from a previous module
+while oc get namespace app-management 2>/dev/null | grep -q Terminating; do
+  echo "Waiting for app-management namespace to finish deleting..."
+  sleep 5
+done
 oc new-project app-management 2>/dev/null || oc project app-management
 ----
 
