@@ -21,10 +21,6 @@ By the end of this module, you will be able to:
 * Understand OpenShift self-healing (pod recreation)
 * Configure liveness and readiness probes
 
-image::diagrams/02_route.png[OpenShift Route - Service - Pods, 500, align=center]
-
-image::diagrams/02_service.png[OpenShift Service Load Balancing, 500, align=center]
-
 == Deploy & Inspect
 
 === Deploy an Application
@@ -58,6 +54,8 @@ This creates two resources:
 
 * **Deployment** - defines what container to run and how many replicas
 * **Service** - internal load balancer that routes traffic to the pods
+
+image::diagrams/02_service.png[OpenShift Service Load Balancing, 500, align=center]
 
 You'll be taken to the Topology view. Notice the pod is running and the service is created, but under **Routes** it says "No Routes found for this resource" - the application isn't accessible from outside the cluster yet.
 
@@ -110,6 +108,8 @@ TIP: You can also see this in the console at **Networking > Services** (project:
 == Expose & Scale
 
 === Create a Route
+
+image::diagrams/02_route.png[OpenShift Route - Service - Pods, 500, align=center]
 
 A Route connects an external URL to your service through the OpenShift router (HAProxy-based ingress controller).
 

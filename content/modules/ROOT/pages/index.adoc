@@ -4,10 +4,6 @@
 **Duration:** 35 minutes +
 **Format:** Hands-on demonstration
 
-image::diagrams/01_platform_architecture.png[OpenShift Platform Architecture, align=center]
-
-image::diagrams/01_control_plane.png[Control Plane Responsibilities, 300, align=center]
-
 == Let's Go
 
 You have cluster admin access to a live OpenShift cluster. Let's make sure everything's working - click the commands below:
@@ -103,6 +99,8 @@ TIP: Highlighted command blocks are **clickable** - they switch to the Terminal 
 
 == Exploring the Platform
 
+image::diagrams/01_platform_architecture.png[OpenShift Platform Architecture, align=center]
+
 Your cluster is already running with monitoring, a container registry, ingress routing, and a web console - all built in. Let's see what's there.
 
 === Step 1: Access the Administrator Console
@@ -152,6 +150,8 @@ image::ocp-dashboard-overview.png[OpenShift Administrator Dashboard Overview]
 This single dashboard gives you cluster health, utilisation, inventory, and recent events - all in one view, with no setup required.
 
 == Platform Capabilities
+
+image::diagrams/01_control_plane.png[Control Plane Responsibilities, 300, align=center]
 
 Everything below - monitoring, a container registry, and ingress routing - was running before anyone logged in. Let's prove it.
 
