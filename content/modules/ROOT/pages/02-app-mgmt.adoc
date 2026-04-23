@@ -339,6 +339,8 @@ Roll back to the previous working version:
 oc rollout undo deployment/weathernow -n app-management
 ----
 
+NOTE: If you see pod status streaming in the terminal, press **Ctrl+C** to get your prompt back.
+
 Verify the original image is restored:
 
 [source,bash,role="execute"]
