@@ -38,11 +38,11 @@ Now create a VM using the console - the same cloud-style experience your teams g
 
 ==== Step 1: Open the Create Wizard
 
-1. In the OpenShift console, switch to the **Fleet Virtualization** perspective from the top-left dropdown
-2. Click the **Create** dropdown and select **From InstanceType**
+. In the OpenShift console, switch to the **Fleet Virtualization** perspective from the top-left dropdown
+. Click the **Create** dropdown and select **From InstanceType**
 +
 image::virt-create-dropdown.png[Create VirtualMachine dropdown showing From InstanceType option]
-3. Verify the **Project** dropdown at the top shows `vm-demo` - if not, search for it and select it now
+. Verify the **Project** dropdown at the top shows `vm-demo` - if not, search for it and select it now
 +
 image::virt-select-project.png[Project dropdown showing vm-demo search and selection]
 
@@ -238,14 +238,13 @@ Need another copy of a VM - for testing, dev environments, or scaling out? Clone
 
 ==== Step 1: Start the Clone
 
-1. On the **rhel9-vm** details page, click **Actions** -> **Clone**
-
+. On the **rhel9-vm** details page, click **Actions** -> **Clone**
++
 image::virt-actions-clone.png[Actions dropdown with Clone option highlighted]
-
-2. Change the name to `rhel9-vm-clone`
-3. Check the **Start VirtualMachine once created** checkbox
-4. Click **Clone**
-
+. Change the name to `rhel9-vm-clone`
+. Check the **Start VirtualMachine once created** checkbox
+. Click **Clone**
++
 image::virt-clone-config.png[Clone VirtualMachine dialog with name and configuration]
 
 ==== Step 2: Watch the Clone Progress
@@ -268,12 +267,11 @@ Every operations team has been burned by a patch that broke something. Snapshots
 
 ==== Step 1: Take a Snapshot
 
-1. Navigate to **rhel9-vm** (not the clone) and open its details page. Click **Actions** -> **Take snapshot**
-
+. Navigate to **rhel9-vm** (not the clone) and open its details page. Click **Actions** -> **Take snapshot**
++
 image::virt-actions-snapshot.png[Actions dropdown with Take snapshot option]
-
-2. Leave the default name (`rhel9-vm-snapshot`) and click **Save**
-
+. Leave the default name (`rhel9-vm-snapshot`) and click **Save**
++
 image::virt-snapshot-config.png[Take snapshot dialog with default name and disk selection]
 
 NOTE: The warning about `cloudinitdisk` not being included is expected - cloud-init only runs on first boot and doesn't need to be captured.
