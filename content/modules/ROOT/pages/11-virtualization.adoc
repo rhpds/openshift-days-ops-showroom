@@ -317,26 +317,32 @@ Now the VM has changed - a new file exists, a system file is gone. Let's restore
 
 ==== Step 4: Restore from Snapshot
 
-1. **Stop** the VM - click the **Stop** button (square icon) in the top-right action buttons
-
-2. Once the VM shows **Stopped**, go to the **Snapshots** tab, click the kebab menu (three dots) next to the snapshot, and select **Restore VirtualMachine from snapshot**
-
+. **Stop** the VM - click the **Stop** button (square icon) in the top-right action buttons
+. Once the VM shows **Stopped**, go to the **Snapshots** tab, click the kebab menu (three dots) next to the snapshot, and select **Restore VirtualMachine from snapshot**
++
 image::virt-snapshot-restore-menu.png[Snapshot kebab menu showing Restore VirtualMachine from snapshot option]
-
-3. Click **Restore** to confirm
-
+. Click **Restore** to confirm
++
 image::virt-restore-confirmation.png[Restore snapshot confirmation dialog]
+. **Start** the VM again by clicking the **Start** button (play icon)
 
-4. **Start** the VM again by clicking the **Start** button (play icon)
+Once the VM is running, get the login credentials again:
 
-Once the VM is running, connect to it again from the Terminal tab:
+[source,bash,role="execute"]
+----
+DATA=$(oc get vm rhel9-vm -n vm-demo -o jsonpath='{.spec.template.spec.volumes[?(@.name=="cloudinitdisk")].cloudInitNoCloud.userData}')
+echo "Username: $(echo "$DATA" | grep 'user:' | awk '{print $2}')"
+echo "Password: $(echo "$DATA" | grep 'password:' | awk '{print $2}')"
+----
+
+Connect to the VM console:
 
 [source,bash,role="execute"]
 ----
 virtctl console rhel9-vm -n vm-demo
 ----
 
-Log in with the same credentials, then verify the restore worked:
+Log in with the credentials above, then verify the restore worked:
 
 ----
 ls /home/rhel/important-data.txt
