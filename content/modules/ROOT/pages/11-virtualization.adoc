@@ -39,12 +39,12 @@ Now create a VM using the console - the same cloud-style experience your teams g
 ==== Step 1: Open the Create Wizard
 
 1. In the OpenShift console, switch to the **Fleet Virtualization** perspective from the top-left dropdown
-2. Verify the **Project** dropdown at the top shows `vm-demo` - if not, search for it and select it now
+2. Click the **Create** dropdown and select **From InstanceType**
++
+image::virt-create-dropdown.png[Create VirtualMachine dropdown showing From InstanceType option]
+3. Verify the **Project** dropdown at the top shows `vm-demo` - if not, search for it and select it now
 +
 image::virt-select-project.png[Project dropdown showing vm-demo search and selection]
-3. Click the **Create** dropdown and select **From InstanceType**
-
-image::virt-create-dropdown.png[Create VirtualMachine dropdown showing From InstanceType option]
 
 ==== Step 2: Select Boot Source and InstanceType
 
