@@ -267,6 +267,8 @@ done
 wait 2>/dev/null
 ----
 
+NOTE: If the output hangs, press **Ctrl+C** to get your prompt back.
+
 You'll see a mix of `403` (request reached the app) and `000` (connection dropped by HAProxy before reaching the app). The `000` responses prove the router is dropping connections beyond the concurrent limit.
 
 NOTE: The exact ratio of `403` to `000` responses will vary between runs depending on timing and system load.
