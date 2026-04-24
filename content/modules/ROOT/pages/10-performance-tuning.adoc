@@ -55,6 +55,8 @@ The app requested **2Gi memory** and **500m CPU**. That's a lot of cluster capac
 
 === Check What It Actually Uses
 
+TIP: If you were logged in as a different user in a previous module, log back in as admin. Console: Username `{openshift_cluster_admin_username}` / Password `{openshift_cluster_admin_password}`
+
 Wait for metrics to become available (~60 seconds after pod starts). While you wait, switch to the **OCP Console** tab and navigate to **Workloads -> Pods** (project: `performance-demo`). Click the pod name and look at the **Metrics** tab - you can watch CPU and memory graphs populate in real-time.
 
 image::perf-pod-metrics.png[Pod Metrics tab showing CPU and memory usage graphs]
