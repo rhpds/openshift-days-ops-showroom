@@ -385,7 +385,7 @@ Filter by severity (Critical, Error, Warning, Info, Debug):
 
 image::severity.png[Severity filter]
 
-Try it now: select **Infrastructure** logs, then filter by severity **Warning** or **Error**. These are the log entries that matter during an incident - pod evictions, OOM kills, certificate expiry warnings. If you've completed the **Application Management** module, switch to **Application** logs and select the `app-management` namespace to find your application's output.
+Try it now: select **Infrastructure** logs, then filter by severity **Warning** or **Error**. These are the log entries that matter during an incident - pod evictions, OOM kills, certificate expiry warnings.
 
 The histogram at the top shows log volume over time - spikes in the error count correlate with incidents. Click on a spike to zoom into that time window.
 
