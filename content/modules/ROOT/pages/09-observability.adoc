@@ -162,7 +162,9 @@ EOF
 echo "Crash-looping pod deployed - it will restart every few seconds"
 ----
 
-While the restarts accumulate, navigate to **Observe -> Alerting -> Alerting Rules** in the console and search for `HighPodRestartRate`:
+While the restarts accumulate, navigate to **Observe -> Alerting -> Alerting Rules** in the console and search for `HighPodRestartRate`.
+
+NOTE: It may take a minute or two for Prometheus to pick up the new rule. If you don't see it, refresh the page.
 
 image::alerting-rules-search.png[Alerting Rules showing custom HighPodRestartRate rule]
 
