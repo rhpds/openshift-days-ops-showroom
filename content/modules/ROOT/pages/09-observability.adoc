@@ -90,7 +90,7 @@ data:
 EOF
 ----
 
-You'll use user workload monitoring in the **Performance Tuning** module when HPA needs metrics to make scaling decisions. Any application that exposes a Prometheus `/metrics` endpoint can be scraped - you just create a `ServiceMonitor` pointing at it.
+Any application that exposes a Prometheus `/metrics` endpoint can be scraped by creating a `ServiceMonitor` pointing at it. This is how HPA gets custom metrics for scaling decisions.
 
 == Alerting with Alertmanager
 
