@@ -7,7 +7,7 @@
 **Format:** Hands-on OIDC identity provider configuration +
 **Audience:** Platform Engineers, Operations Teams, Security Administrators
 
-In the LDAP module you configured traditional directory-based authentication. In this module you'll deploy the **Red Hat build of Keycloak (RHBK)** and configure it as an OpenID Connect (OIDC) identity provider for OpenShift - the modern approach to enterprise SSO.
+OpenShift supports multiple identity providers - LDAP, OIDC, HTPasswd, GitHub, and more. In this module you'll deploy the **Red Hat build of Keycloak (RHBK)** and configure it as an OpenID Connect (OIDC) identity provider for OpenShift - the modern approach to enterprise SSO.
 
 You will:
 
@@ -239,9 +239,9 @@ oc login -u {openshift_cluster_admin_username} -p {openshift_cluster_admin_passw
 oc get groups
 ----
 
-You should see `ocp-developers` with `developer1` as a member - **created automatically** from the ID token. Compare this to LDAP where you had to run `oc adm groups sync` manually.
+You should see `ocp-developers` with `developer1` as a member - **created automatically** from the ID token. Unlike LDAP which requires manual `oc adm groups sync`, OIDC groups appear automatically.
 
-TIP: You can also see the auto-created groups in the console at **User Management > Groups** - compare this to the LDAP module where you had to run `oc adm groups sync` before groups appeared.
+TIP: You can also see the auto-created groups in the console at **User Management > Groups**. With OIDC, groups appear automatically - no manual sync step required.
 
 [source,bash,role="execute"]
 ----
@@ -304,7 +304,7 @@ oc auth can-i create deployment -n app-production
 
 Returns: `no` (view-only in production)
 
-This is the same RBAC pattern from the LDAP module - but the groups were created automatically from the OIDC token instead of manually synced.
+This is the standard RBAC pattern - users belong to groups, groups get RoleBindings. With OIDC, the groups are created automatically from the ID token instead of requiring manual sync.
 
 **Restore admin access:**
 
