@@ -250,9 +250,7 @@ You can also watch via CLI:
 oc get hpa demo-app -w
 ----
 
-Watch the `REPLICAS` column - it will increase as CPU usage rises above 50%. This takes 1-2 minutes.
-
-Press `Ctrl+C` when you see replicas increase (typically to 2-4 pods).
+Watch the `REPLICAS` column and `TARGETS` column. The HPA may have already scaled up by the time you run this — if you see 2-4 replicas and CPU near 50%, the autoscaler has already responded. Press `Ctrl+C` to continue.
 
 Verify pods scaled:
 
