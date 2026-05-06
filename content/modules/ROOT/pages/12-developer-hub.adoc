@@ -150,7 +150,7 @@ image::rhdh-pod-volumes.png[Pod volumes showing ConfigMaps mounted into the RHDH
 
 === Step 7: Trace the Configuration
 
-Back in the terminal, figure out how RHDH connects to the cluster. Start with the Backstage Custom Resource - this is the single source of truth for the deployment:
+Back in the terminal, let's trace how RHDH is configured. Start with the Backstage Custom Resource - this is the single source of truth for the deployment:
 
 [source,bash,role="execute"]
 ----
