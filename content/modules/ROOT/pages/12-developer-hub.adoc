@@ -144,7 +144,7 @@ You'll see two pods:
 * `backstage-developer-hub` - the main application
 * `backstage-psql-developer-hub` - PostgreSQL database storing catalog data and template history
 
-Click on the `backstage-developer-hub` pod and look at the **Details** tab. Scroll down to see the environment variables and mounted volumes - you'll see the ConfigMaps and Secrets that configure RHDH.
+Click on the `backstage-developer-hub` pod (it will have a random suffix like `backstage-developer-hub-fcdd8d5df-2qf4b`) and look at the **Details** tab. Scroll down to see the environment variables and mounted volumes - you'll see the ConfigMaps and Secrets that configure RHDH.
 
 === Step 7: Trace the Configuration
 
