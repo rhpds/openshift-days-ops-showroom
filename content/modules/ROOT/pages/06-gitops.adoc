@@ -215,7 +215,7 @@ oc get networkpolicy -n gitops-managed-project
 
 All four resources were deployed from a single Git path. On a fleet of 10 clusters, you would point each cluster's ArgoCD at the same repository and every cluster would get this identical configuration automatically.
 
-TIP: In the OpenShift console, navigate to **Home -> Projects** and select `gitops-managed-project`. You can see the ResourceQuota and LimitRange under the project details.
+TIP: In the OpenShift console, navigate to **Home -> Projects** and select `gitops-managed-project`. You can see the ResourceQuota under the **Overview** tab.
 
 == Drift Detection & Self-Healing
 
