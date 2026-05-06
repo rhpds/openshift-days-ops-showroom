@@ -88,10 +88,16 @@ This is what replaces the _"who owns this workload?"_ question. Every service ha
 The catalog isn't just a list - it's a searchable, filterable inventory. Try using the filters on the left sidebar. If you don't see the filter options, click the filter icon or expand your browser window wider.
 
 * **Owner** dropdown - select `payments-team`. The catalog narrows to just their service. _"The security team needs a list of everything the payments team runs."_ Done in two clicks.
-* Clear the owner filter, then try **Tags** - search for `pci`. You'll find `payments-platform` tagged for PCI compliance. _"Which services fall under PCI audit scope?"_ One filter.
-* Try **Lifecycle** - filter for `development`. You'll see `order-tracker` - the only service not yet in production.
 
 image::rhdh-catalog-filtered-payments.png[Catalog filtered by payments-team showing PCI-tagged service]
+
+* Clear the owner filter, then try **Tags** - search for `pci`. You'll find `payments-platform` tagged for PCI compliance. _"Which services fall under PCI audit scope?"_ One filter.
+
+image::rhdh-filter-tags-pci.png[Tags filter with pci selected]
+
+* Try **Lifecycle** - filter for `development`. You'll see `order-tracker` - the only service not yet in production.
+
+image::rhdh-filter-lifecycle-development.png[Lifecycle filter showing development selected]
 
 In a real organization with hundreds of services, these filters are how you answer questions that used to require searching through namespaces, Slack threads, or tribal knowledge.
 
@@ -107,7 +113,7 @@ You should see 3 pods running - `payments-api`, `payments-processor`, and `payme
 
 **This is the key.** A developer clicks their service in the catalog and sees exactly what's running - pod count, restart history, resource usage - without `oc` access, without opening a ticket, without messaging you. You didn't have to do anything for this to work. The platform team configured it once, and every service with the right labels gets this for free.
 
-Try clicking on **weather-app** - you'll see all 5 weather microservice pods.
+Try clicking on **weather-app** and then the **Kubernetes** tab - you'll see all 5 weather microservice pods.
 
 === Step 5: See What Errors Look Like
 
