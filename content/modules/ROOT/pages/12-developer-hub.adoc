@@ -157,30 +157,37 @@ Back in the terminal, figure out how RHDH connects to the cluster. Start with th
 oc get backstage developer-hub -n backstage -o yaml | grep -A5 "dynamicPlugins\|extraEnvs\|extraFiles\|appConfig"
 ----
 
-You can see four key configuration points. Follow each one:
+This shows you four key configuration points:
 
-**What plugins are enabled?**
+* `appConfig` → the ConfigMap `app-config-rhdh` containing the RHDH application config (auth, cluster connection, catalog locations)
+* `dynamicPluginsConfigMapName` → the ConfigMap `dynamic-plugins-rhdh` that controls which plugins are enabled
+* `extraEnvs` → the Secret `rhdh-kubernetes-plugin-token` injected as an environment variable (the service account token RHDH uses to talk to the cluster)
+* `extraFiles` → the ConfigMap `pre-built-catalog` mounted as a file (the catalog entries and software template)
+
+**What plugins are enabled?** Check the dynamic plugins ConfigMap:
 
 [source,bash,role="execute"]
 ----
 oc get configmap dynamic-plugins-rhdh -n backstage -o jsonpath='{.data.dynamic-plugins\.yaml}' | grep -A1 "package:"
 ----
 
-**How does RHDH authenticate to the cluster?**
+You should see the Kubernetes backend and frontend plugins (show pod data), Topology plugin (visual map), and scaffolder modules (power the software templates). The quickstart plugin is disabled - that's the setup wizard we don't need.
+
+**How does RHDH authenticate to the cluster?** Check the app-config:
 
 [source,bash,role="execute"]
 ----
 oc get configmap app-config-rhdh -n backstage -o jsonpath='{.data.app-config-rhdh\.yaml}' | grep -A2 "authProvider\|serviceAccountToken"
 ----
 
-It uses a service account token stored in a Secret. Check what permissions that service account has:
+It uses `authProvider: serviceAccount` with a token stored in `${K8S_PLUGIN_SA_TOKEN}` (from the Secret we saw above). Check what permissions that service account has:
 
 [source,bash,role="execute"]
 ----
 oc get clusterrolebindings -o custom-columns='BINDING:.metadata.name,ROLE:.roleRef.name' | grep rhdh-
 ----
 
-You should see `cluster-reader` (for viewing pods) and `rhdh-scaffolder` (for creating namespaces via templates). This is the least-privilege model - RHDH can read cluster state and create namespaces, but nothing more.
+The two that matter are `rhdh-cluster-reader` (can view pods across the cluster) and `rhdh-scaffolder-binding` (can create namespaces for templates). Ignore the `rhdh-operator` lines - those are the operator's own permissions. This is least-privilege: RHDH can read cluster state and create namespaces, but nothing more.
 
 === Step 8: Understand the Label Contract
 
