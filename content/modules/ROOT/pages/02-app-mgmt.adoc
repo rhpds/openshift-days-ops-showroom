@@ -5,7 +5,7 @@
 
 === Module Overview
 
-**Duration:** 35 minutes +
+**Duration:** 40 minutes +
 **Format:** Hands-on +
 **Audience:** Platform Engineers, Operations Teams
 
@@ -20,6 +20,7 @@ By the end of this module, you will be able to:
 * Scale horizontally and observe the behaviour
 * Understand OpenShift self-healing (pod recreation)
 * Configure liveness and readiness probes
+* Use PodDisruptionBudgets to protect availability during maintenance
 
 == Deploy & Inspect
 
@@ -363,6 +364,123 @@ NOTE: This may take a minute to complete. Only press **Ctrl+C** if it has been r
 
 The deployment is back to the working version. In production, `oc rollout undo` is often the fastest way to recover from a bad release - faster than fixing the code and redeploying.
 
+== Pod Disruption Budgets
+
+A PodDisruptionBudget (PDB) tells OpenShift: _"always keep at least N pods running, even during maintenance."_ When you drain a node for an upgrade or repair, the eviction API checks PDBs before removing pods. If evicting a pod would drop below the minimum, the drain blocks until it's safe.
+
+This matters to you because a misconfigured PDB is the #1 cause of stalled cluster upgrades - the upgrade process drains nodes one at a time, and a single bad PDB can block the entire upgrade indefinitely.
+
+=== Create a PDB
+
+Your weathernow deployment is running 3 replicas. Create a PDB that requires at least 2 pods to stay available at all times:
+
+[source,bash,role="execute"]
+----
+cat <<'EOF' | oc apply -f -
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: weathernow
+  namespace: app-management
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: weathernow
+EOF
+----
+
+Check the PDB:
+
+[source,bash,role="execute"]
+----
+oc get pdb weathernow -n app-management
+----
+
+You should see:
+
+----
+NAME         MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
+weathernow   2               N/A               1                     5s
+----
+
+`ALLOWED DISRUPTIONS: 1` means one pod can be safely evicted right now (3 running - 2 minimum = 1 spare).
+
+=== See the PDB in Action
+
+Delete a pod and watch the PDB counter:
+
+[source,bash,role="execute"]
+----
+oc delete pod $(oc get pods -n app-management -l app=weathernow -o jsonpath='{.items[0].metadata.name}') -n app-management
+----
+
+[source,bash,role="execute"]
+----
+oc get pdb weathernow -n app-management
+----
+
+`ALLOWED DISRUPTIONS` briefly drops to `0` while the replacement starts. Wait a few seconds and check again:
+
+[source,bash,role="execute"]
+----
+sleep 10 && oc get pdb weathernow -n app-management
+----
+
+Back to `1` - the replacement pod is ready and the budget has room again.
+
+=== Break It: Block a Node Drain
+
+Now simulate the most common PDB problem in production - setting `minAvailable` equal to the replica count. This means _every single pod must be running at all times_, which sounds safe but makes maintenance impossible.
+
+[source,bash,role="execute"]
+----
+oc patch pdb weathernow -n app-management --type=merge -p '{"spec":{"minAvailable":3}}'
+----
+
+[source,bash,role="execute"]
+----
+oc get pdb weathernow -n app-management
+----
+
+`ALLOWED DISRUPTIONS: 0` - no pod can be evicted. Now try to drain the node, simulating what happens during a cluster upgrade:
+
+[source,bash,role="execute"]
+----
+NODE=$(oc get pod -n app-management -l app=weathernow -o jsonpath='{.items[0].spec.nodeName}')
+echo "Draining node: $NODE"
+oc adm drain $NODE --pod-selector=app=weathernow --delete-emptydir-data --ignore-daemonsets --timeout=10s 2>&1 || true
+echo "---"
+echo "Uncordoning node..."
+oc adm uncordon $NODE
+----
+
+The drain fails:
+
+----
+Cannot evict pod as it would violate the pod's disruption budget.
+----
+
+This is exactly what blocks cluster upgrades. The OpenShift upgrade controller tries to drain each node, hits this PDB, and waits forever. The command automatically uncordons the node at the end so scheduling is restored.
+
+=== Fix the PDB
+
+Set `minAvailable` back to 2 - this allows one pod at a time to be evicted during maintenance:
+
+[source,bash,role="execute"]
+----
+oc patch pdb weathernow -n app-management --type=merge -p '{"spec":{"minAvailable":2}}'
+----
+
+[source,bash,role="execute"]
+----
+oc get pdb weathernow -n app-management
+----
+
+`ALLOWED DISRUPTIONS: 1` - node drains will work again.
+
+**Takeaway:** When a cluster upgrade stalls, run `oc get pdb -A` and look for `ALLOWED DISRUPTIONS: 0`. If `minAvailable` equals the replica count, lower it or switch to `maxUnavailable: 1`. A PDB that blocks all evictions doesn't protect your app - it blocks your entire cluster from being maintained.
+
 == Cleanup & Summary
 
 === Summary
@@ -376,6 +494,7 @@ You completed the core application lifecycle on OpenShift:
 * **Self-heal** - delete a pod, OpenShift replaces it in seconds
 * **Health checks** - probes ensure only healthy pods receive traffic
 * **Rollback** - `oc rollout undo` reverts a bad deployment instantly
+* **PDB** - `minAvailable` protects availability during drains; misconfigured PDBs block upgrades
 
 **Key commands:**
 
@@ -387,7 +506,7 @@ oc logs <pod-name>                             # Check logs
 oc create route edge myapp --service=myapp     # Expose with TLS
 oc scale deployment myapp --replicas=N         # Scale
 oc rollout undo deployment/myapp               # Rollback
-oc rollout status deployment/myapp             # Watch rollout
+oc get pdb -A                                  # Check disruption budgets
 ----
 
 === Cleanup
