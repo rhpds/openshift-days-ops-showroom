@@ -245,7 +245,7 @@ Output: `100` - the manual change took effect.
 
 Go back to the ArgoCD UI. The `managed-project` application now shows **OutOfSync**. ArgoCD detected that the live cluster state no longer matches what's defined in Git.
 
-Click the tile to open the application. In the resource tree, the **ResourceQuota** node is highlighted in yellow - that's the resource that drifted:
+Click the tile to open the application. In the resource tree, **compute-quota** is highlighted in yellow - that's the resource that drifted:
 
 image::gitops-resource-tree-outofsync.png[ArgoCD resource tree showing OutOfSync status with compute-quota highlighted]
 
