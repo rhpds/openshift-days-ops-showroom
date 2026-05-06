@@ -1,4 +1,4 @@
-= Platform Engineering - Red Hat Developer Hub
+= Developer Hub - Portal Operations
 
 **Duration:** 30 minutes +
 **Format:** Guided exploration + Hands-on
