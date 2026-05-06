@@ -141,7 +141,7 @@ EOF
 
 **Watch ArgoCD sync:**
 
-Switch to the ArgoCD UI. You may need to click the reload button on the **ArgoCD** tab to see the new application. You may see other applications on the dashboard - these are managed by the platform. To see only your workshop application, use the **PROJECTS** filter on the left sidebar and select **workshop**:
+Switch to the ArgoCD UI. You will need to reload the **ArgoCD** tab to see the new application. You may see other applications on the dashboard - these are managed by the platform. To see only your workshop application, use the **PROJECTS** filter on the left sidebar and select **workshop**:
 
 image::gitops-project-filter.png[ArgoCD PROJECTS filter dropdown showing default and workshop options]
 
