@@ -374,6 +374,8 @@ oc get servicemonitor -n backstage
 
 === Query RHDH Metrics
 
+NOTE: It takes 1-2 minutes for Prometheus to discover the new ServiceMonitor and start scraping. If you see "No datapoints found", wait a minute and click **Run Queries** again.
+
 Navigate to the **OCP Console** > **Observe** > **Metrics**. Enter this query and click **Run Queries**:
 
 [source,promql,role="copypaste"]
