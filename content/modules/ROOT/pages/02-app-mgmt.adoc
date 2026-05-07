@@ -224,14 +224,14 @@ oc patch deployment weathernow -n app-management --type=json -p='[
 
 NOTE: The patch triggers a new rollout. If you see pod status streaming in the terminal, press **Ctrl+C** to get your prompt back.
 
-Watch the rollout - it will stall because the new pods never become ready:
+Watch the rollout - **this is expected to fail**. The new pods will never become ready because the probe is pointing at the wrong port:
 
 [source,bash,role="execute"]
 ----
 oc rollout status deployment/weathernow -n app-management --timeout=30s || true
 ----
 
-NOTE: If you see `Waiting for deployment "weathernow" rollout to finish: 0 of 1 updated replicas are available...` hanging, press **Ctrl+C** to exit and continue.
+You should see `error: timed out waiting for the condition` after 30 seconds. That's the correct outcome - the rollout stalled because the readiness probe is failing. If it's still running, press **Ctrl+C** to exit and continue.
 
 Check the pods:
 
