@@ -436,12 +436,12 @@ Install the Loki Operator from the Software Catalog - this is the same process f
 1. Navigate to **Ecosystem -> Software Catalog**
 2. Search for **Loki Operator**
 3. Click the **Loki Operator** tile (select the one labeled **Red Hat**, not snapshot-lightspeed)
-
++
 image::obs-loki-operator-details.png[Loki Operator details with Install button highlighted]
-
++
 4. Click **Install**
 5. On the install configuration page, leave all defaults (channel, namespace, approval) and click **Install**
-
++
 image::obs-loki-install-config.png[Loki Operator install configuration page]
 
 You'll see the "Installing Operator" confirmation:

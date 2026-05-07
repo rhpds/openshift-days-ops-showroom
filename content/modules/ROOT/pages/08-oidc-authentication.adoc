@@ -279,6 +279,7 @@ Test permissions from the terminal using developer1's token:
 1. In the OCP Console (logged in as developer1), click your username (top-right) → **Copy login command** → click **rhbk** → **Display Token**
 +
 image::oidc-copy-login-command.png[User menu showing Copy login command option]
++
 2. Copy the `oc login --token=...` command and paste it in the terminal
 
 Verify you are logged in as developer1:
