@@ -244,6 +244,8 @@ image::rhdh-template-completed.png[Template completed successfully]
 
 **This is the golden path.** A developer filled in a form. The template created a namespace, deployed two services, and labeled everything for Developer Hub discovery - all following patterns your platform team defined. No tickets, no manual namespace creation, no "can you label this for me", no drift from standards.
 
+NOTE: In production, templates typically commit to a Git repository and sync via ArgoCD rather than deploying directly to the cluster. This gives you an audit trail and drift detection. For this workshop, we deploy directly to keep the focus on what RHDH does rather than the full GitOps pipeline.
+
 === Step 10: See the Result Immediately
 
 Back in the terminal, verify what the template created:
@@ -357,6 +359,61 @@ Two different failure modes, two different diagnosis paths:
 
 The first is an ops fix (correct the label). The second is a dev team issue (tell them what's wrong and let them fix their code). Knowing the difference saves you from chasing problems that aren't yours.
 
+== Monitor Developer Hub
+
+RHDH exposes Prometheus metrics by default - catalog entity counts, API request latency, memory usage, and background task health. As the admin responsible for keeping the portal running, you should be scraping these.
+
+=== Enable Monitoring
+
+The RHDH operator has a built-in monitoring toggle that creates a `ServiceMonitor` for Prometheus:
+
+[source,bash,role="execute"]
+----
+oc patch backstage developer-hub -n backstage --type=merge -p '{"spec":{"monitoring":{"enabled":true}}}'
+----
+
+This doesn't restart the pod - it just tells the operator to create a ServiceMonitor so Prometheus starts scraping the metrics endpoint that RHDH already exposes.
+
+NOTE: This requires user workload monitoring to be enabled on the cluster (`enableUserWorkload: true` in `cluster-monitoring-config`). It's pre-configured on your workshop cluster. On your own cluster, see link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/monitoring/enabling-monitoring-for-user-defined-projects[Enabling monitoring for user-defined projects].
+
+Verify the ServiceMonitor was created:
+
+[source,bash,role="execute"]
+----
+oc get servicemonitor -n backstage
+----
+
+=== Query RHDH Metrics
+
+Navigate to the **OCP Console** > **Observe** > **Metrics**. Enter this query and click **Run Queries**:
+
+[source,promql,role="copypaste"]
+----
+catalog_entities_count{namespace="backstage"}
+----
+
+You should see the catalog entity counts broken down by kind - the same components, templates, and groups you explored in the catalog earlier, now visible as metrics.
+
+Try another query to see API traffic:
+
+[source,promql,role="copypaste"]
+----
+sum(rate(http_server_duration_count{namespace="backstage"}[5m]))
+----
+
+This shows the request rate to RHDH - if this drops to zero, the portal is down. If it spikes, something is hammering the API.
+
+TIP: These are the same metrics Prometheus collects for any workload with a ServiceMonitor. RHDH is just another workload being monitored by the built-in Prometheus stack.
+
+=== Disable Monitoring
+
+Clean up by disabling the monitoring toggle:
+
+[source,bash,role="execute"]
+----
+oc patch backstage developer-hub -n backstage --type=merge -p '{"spec":{"monitoring":{"enabled":false}}}'
+----
+
 == What You Learned
 
 [cols="1,2"]
@@ -374,6 +431,9 @@ The first is an ops fix (correct the label). The second is a dev team issue (tel
 
 |**Diagnosed two different failures**
 |Label mismatch = ops fix. Crashlooping pod = dev team issue. Knowing the difference saves you time
+
+|**Enabled RHDH monitoring**
+|One toggle exposes catalog and API metrics to Prometheus - same observability stack, one more workload
 |===
 
 == Going Further
@@ -385,6 +445,8 @@ This module showed you RHDH from an ops perspective - understanding the tool you
 * **CI/CD Plugins** - Tekton pipeline runs and ArgoCD sync status visible directly in the catalog
 * **TechDocs** - documentation lives alongside the code and renders in the portal
 * **More Software Templates** - golden paths for deploying applications, creating pipelines, and provisioning infrastructure
+
+TIP: Interested in building templates, configuring plugins, or platform engineering with Developer Hub? Check out **OpenShift Days: Dev Track** or ask your proctor about setting one up.
 
 == Cleanup
 
