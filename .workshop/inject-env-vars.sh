@@ -31,6 +31,7 @@ echo "  MODULE_ENABLE_APPMGMT=${MODULE_ENABLE_APPMGMT:-true}"
 echo "  MODULE_ENABLE_INGRESS=${MODULE_ENABLE_INGRESS:-true}"
 echo "  MODULE_ENABLE_NETSEC=${MODULE_ENABLE_NETSEC:-true}"
 echo "  MODULE_ENABLE_DEBUGGING=${MODULE_ENABLE_DEBUGGING:-true}"
+echo "  MODULE_ENABLE_GITOPS=${MODULE_ENABLE_GITOPS:-true}"
 echo "Module settings (identity & access):"
 echo "  MODULE_ENABLE_LDAP=${MODULE_ENABLE_LDAP:-true}"
 echo "  MODULE_ENABLE_OIDC=${MODULE_ENABLE_OIDC:-true}"
@@ -57,6 +58,7 @@ ATTRS="${ATTRS}    module_enable_appmgmt: '${MODULE_ENABLE_APPMGMT:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_ingress: '${MODULE_ENABLE_INGRESS:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_netsec: '${MODULE_ENABLE_NETSEC:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_debugging: '${MODULE_ENABLE_DEBUGGING:-true}'"$'\n'
+ATTRS="${ATTRS}    module_enable_gitops: '${MODULE_ENABLE_GITOPS:-true}'"$'\n'
 # Identity & Access
 ATTRS="${ATTRS}    module_enable_ldap: '${MODULE_ENABLE_LDAP:-true}'"$'\n'
 ATTRS="${ATTRS}    module_enable_oidc: '${MODULE_ENABLE_OIDC:-true}'"$'\n'
