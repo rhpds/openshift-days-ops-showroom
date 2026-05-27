@@ -177,6 +177,8 @@ This panel shows:
 
 This is where you'll spend most of your time as an admin - checking that resources match their desired state and investigating when they don't.
 
+Click the **X** in the top-right corner to return to the `managed-project` application overview.
+
 ==== Explore the Application Details
 
 Click the **Details** button in the top toolbar. This shows the application configuration:
