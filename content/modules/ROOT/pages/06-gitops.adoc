@@ -132,27 +132,25 @@ spec:
     repoURL: 'https://github.com/rhpds/openshift-days-ops-showroom/'
     targetRevision: main
   project: workshop
-  syncPolicy:
-    automated:
-      prune: false
-      selfHeal: false
 EOF
 ----
 
-**Watch ArgoCD sync:**
+**Sync the Application:**
 
 Switch to the ArgoCD UI. You will need to reload the **ArgoCD** tab to see the new application. You may see other applications on the dashboard - these are managed by the platform. To see only your workshop application, use the **PROJECTS** filter on the left sidebar and select **workshop**:
 
 image::gitops-project-filter.png[ArgoCD PROJECTS filter dropdown showing default and workshop options]
 
-You should now see only the `managed-project` application tile:
+You should now see only the `managed-project` application tile. It will show **OutOfSync** because ArgoCD has not applied the resources to the cluster yet.
+
+Click on the tile, then click the **Sync** button in the top toolbar, then click **Synchronize** in the dialog that appears. ArgoCD will apply all four resources from Git to your cluster.
+
+Once the sync completes, the application should show:
 
 image::gitops-dashboard-synced.png[ArgoCD dashboard filtered by workshop project showing managed-project as Healthy and Synced]
 
 * **Green heart** = Healthy
 * **Green circle with tick** = Synced
-
-If it shows "OutOfSync", click the tile, then click **Sync** → **Synchronize**.
 
 ==== Explore the Application in ArgoCD
 
@@ -301,7 +299,7 @@ In the previous step, you had to manually resync. In production, you want ArgoCD
 [source,bash,role="execute"]
 ----
 oc patch application.argoproj.io managed-project -n openshift-gitops \
-  --type=merge -p '{"spec":{"syncPolicy":{"automated":{"selfHeal":true}}}}'
+  --type=merge -p '{"spec":{"syncPolicy":{"automated":{"selfHeal":true,"prune":false}}}}'
 ----
 
 **Test it - make another manual change:**
