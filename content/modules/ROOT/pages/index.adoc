@@ -1,7 +1,7 @@
 = Setup & Overview
 :page-toclevels: 1
 
-**Duration:** 35 minutes +
+**Duration:** 15-20 minutes +
 **Format:** Hands-on demonstration
 
 == Let's Go
@@ -120,6 +120,8 @@ You can access the console in two ways:
 {openshift_cluster_console_url}[window=blank]
 
 NOTE: ctrl + click on the URL to open URLs in a new tab.
+
+TIP: If you see an authentication error, click **Try Again** or reload the tab at the top and try again.
 
 Administrator login credentials:
 
@@ -382,7 +384,9 @@ This shows the underlying compute instances that OpenShift is managing.
 
 To add another worker node, simply scale the MachineSet:
 
-[source,bash,role="copypaste"]
+WARNING: Do not run this command - it is shown as an example only. This workshop environment does not have spare hosts available for scaling.
+
+[source,bash]
 ----
 # Example - scales a zone from 0 to 1 worker
 oc scale machineset.machine.openshift.io <machineset-name> --replicas=1 -n openshift-machine-api
