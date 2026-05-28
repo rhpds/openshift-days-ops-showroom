@@ -66,9 +66,43 @@ helm_repo_ready() {
   helm repo update "${HELM_REPO_NAME}"
 }
 
+cluster_ingress_domain() {
+  oc get ingresses.config/cluster -o jsonpath='{.spec.domain}' 2>/dev/null
+}
+
+vault_route_host() {
+  if [[ -n "${VAULT_ROUTE_HOST:-}" ]]; then
+    echo "${VAULT_ROUTE_HOST}"
+    return
+  fi
+  local domain
+  domain="$(cluster_ingress_domain)"
+  [[ -n "${domain}" ]] || die "Could not read cluster ingress domain (oc get ingresses.config/cluster)"
+  echo "vault.apps.${domain}"
+}
+
+route_host_ok() {
+  local host
+  host="$(oc get route "${RELEASE}" -n "${NAMESPACE}" -o jsonpath='{.spec.host}' 2>/dev/null || true)"
+  [[ -n "${host}" && "${host}" != "chart-example.local" ]]
+}
+
 vault_ready() {
   oc get pods -n "${NAMESPACE}" -l "app.kubernetes.io/name=vault,component=server" \
-    -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q Running
+    -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q Running \
+    && route_host_ok
+}
+
+helm_install_vault() {
+  local route_host
+  route_host="$(vault_route_host)"
+  log "OpenShift Route host: ${route_host}"
+  helm upgrade --install "${RELEASE}" "${CHART}" \
+    --namespace "${NAMESPACE}" \
+    --values "${VALUES_FILE}" \
+    --set-string "server.route.host=${route_host}" \
+    --wait \
+    --timeout 10m
 }
 
 print_access_info() {
@@ -79,17 +113,18 @@ print_access_info() {
   oc get pods,svc,route -n "${NAMESPACE}" 2>/dev/null || true
   log ""
   local route_host
-  route_host="$(oc get route -n "${NAMESPACE}" -l "app.kubernetes.io/name=vault" \
-    -o jsonpath='{.items[0].spec.host}' 2>/dev/null || true)"
-  if [[ -n "${route_host}" ]]; then
+  route_host="$(oc get route "${RELEASE}" -n "${NAMESPACE}" \
+    -o jsonpath='{.spec.host}' 2>/dev/null || true)"
+  if [[ -n "${route_host}" && "${route_host}" != "chart-example.local" ]]; then
     log "Vault UI (OpenShift route): https://${route_host}/"
+    log "Health check: curl -ks \"https://${route_host}/v1/sys/health\" | head -3"
   else
     log "Port-forward UI: oc port-forward svc/${RELEASE} -n ${NAMESPACE} 8200:8200"
     log "Then open: http://127.0.0.1:8200/"
   fi
   log ""
   log "Dev mode root token (lab only): root"
-  log "CLI: export VAULT_ADDR=http://127.0.0.1:8200 VAULT_TOKEN=root  # after port-forward"
+  log "CLI (via route): export VAULT_ADDR=\"https://${route_host}\" VAULT_TOKEN=root"
   log "Docs: https://developer.hashicorp.com/vault/docs/platform/k8s/helm"
 }
 
@@ -97,7 +132,7 @@ main() {
   check_prereqs
 
   if vault_ready; then
-    log "Vault server already running in namespace ${NAMESPACE}"
+    log "Vault is already running with a valid route in namespace ${NAMESPACE}"
     print_access_info
     exit 0
   fi
@@ -109,11 +144,7 @@ main() {
   helm_repo_ready
 
   log "Installing ${CHART} (release: ${RELEASE})..."
-  helm upgrade --install "${RELEASE}" "${CHART}" \
-    --namespace "${NAMESPACE}" \
-    --values "${VALUES_FILE}" \
-    --wait \
-    --timeout 10m
+  helm_install_vault
 
   log "Waiting for Vault server pod..."
   oc wait --for=condition=Ready pod \
