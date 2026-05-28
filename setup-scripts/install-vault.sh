@@ -14,17 +14,49 @@ CHART="${VAULT_CHART:-hashicorp/vault}"
 VALUES_FILE="${VAULT_VALUES_FILE:-${SCRIPT_DIR}/vault-values-openshift-lab.yaml}"
 HELM_REPO_NAME="${VAULT_HELM_REPO_NAME:-hashicorp}"
 HELM_REPO_URL="${VAULT_HELM_REPO_URL:-https://helm.releases.hashicorp.com}"
+HELM_VERSION="${HELM_VERSION:-v3.16.3}"
+HELM_INSTALL_DIR="${HELM_INSTALL_DIR:-${HOME}/.local/bin}"
 
 log() { echo "[VAULT] $*"; }
 die() { echo "[VAULT] ERROR: $*" >&2; exit 1; }
 
 command_exists() { command -v "$1" >/dev/null 2>&1; }
 
+ensure_helm() {
+  if command_exists helm && helm version --short 2>/dev/null | grep -q '^v3'; then
+    return 0
+  fi
+
+  local os arch tarball dest
+  os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+  arch="$(uname -m)"
+  case "${arch}" in
+    x86_64) arch="amd64" ;;
+    aarch64|arm64) arch="arm64" ;;
+    *) die "Unsupported architecture for Helm install: ${arch}" ;;
+  esac
+
+  mkdir -p "${HELM_INSTALL_DIR}"
+  dest="${HELM_INSTALL_DIR}/helm"
+  tarball="helm-${HELM_VERSION}-${os}-${arch}.tar.gz"
+
+  log "Helm not found; installing ${HELM_VERSION} to ${dest}..."
+  curl -fsSL "https://get.helm.sh/${tarball}" -o "/tmp/${tarball}"
+  tar -xzf "/tmp/${tarball}" -C /tmp
+  mv -f "/tmp/${os}-${arch}/helm" "${dest}"
+  chmod +x "${dest}"
+  rm -rf "/tmp/${tarball}" "/tmp/${os}-${arch}"
+
+  export PATH="${HELM_INSTALL_DIR}:${PATH}"
+  command_exists helm || die "Helm install failed"
+  log "Helm installed: $(helm version --short)"
+}
+
 check_prereqs() {
   command_exists oc || die "oc not found in PATH"
   oc whoami >/dev/null 2>&1 || die "Not logged in to OpenShift (run oc login)"
-  command_exists helm || die "helm 3.6+ not found in PATH"
-  helm version --short 2>/dev/null | grep -q '^v3' || die "Helm 3.x required"
+  command_exists curl || die "curl not found in PATH (required to install Helm)"
+  ensure_helm
   [[ -f "${VALUES_FILE}" ]] || die "Values file not found: ${VALUES_FILE}"
   log "Using values: ${VALUES_FILE}"
 }
