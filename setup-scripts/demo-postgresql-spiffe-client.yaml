@@ -1,0 +1,144 @@
+# PostgreSQL client with SPIFFE mTLS (Roadshow-ZTWIM deploy/postgresql-spiffe-client.yaml).
+# Prerequisites: configure-ztwim-lab.sh and demo-postgresql-spiffe.yaml deployed.
+# Apply: ./configure-ztwim-postgresql-lab.sh  OR  oc apply -f demo-postgresql-spiffe-client.yaml
+# Reference: https://github.com/SeanRickerd/Roadshow-ZTWIM
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: postgresql-spiffe-client
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: postgresql-spiffe-client
+  namespace: postgresql-spiffe-client
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: spiffe-helper
+  namespace: postgresql-spiffe-client
+data:
+  helper.conf: |
+    # SPIRE agent unix socket path
+    agent_address = "/spiffe-workload-api/spire-agent.sock"
+
+    # 
+    cmd = ""
+
+    # Query for configuration reloading
+    cmd_args = ""
+
+    # Directory to store certificates (must match with the ssl settings in postgresql.conf)
+    cert_dir = "/opt/postgresql-certs"
+
+    # No renew signal is used in this example
+    renew_signal = ""
+
+    # Certificate, key and bundle names must match those configured in postgresql.conf
+    svid_file_name = "svid.pem"
+    svid_key_file_name = "svid.key"
+    svid_bundle_file_name = "svid_bundle.pem"
+---
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: postgresql-spiffe-client
+spec:
+  className: zero-trust-workload-identity-manager-spire
+  dnsNameTemplates:
+    - postgresql_spiffe
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: postgresql-spiffe-client
+  podSelector:
+    matchLabels:
+      app: postgresql-spiffe-client
+  spiffeIDTemplate: 'spiffe://{{ .TrustDomain }}/ns/{{ .PodMeta.Namespace }}/sa/{{ .PodSpec.ServiceAccountName }}'
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: postgresql-spiffe-client
+  namespace: postgresql-spiffe-client
+  labels:
+    app: postgresql-spiffe-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgresql-spiffe-client
+  template:
+    metadata:
+      labels:
+        app: postgresql-spiffe-client
+    spec:
+      restartPolicy: Always
+      serviceAccountName: postgresql-spiffe-client
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        fsGroup: 26
+      containers:
+        - name: postgresql-spiffe-client
+          image: 'registry.redhat.io/rhel9/postgresql-16:latest'
+          command:
+            - /bin/bash
+            - '-c'
+            - sleep infinity
+          resources: {}
+          volumeMounts:
+            - name: postgresql-certs
+              mountPath: /opt/postgresql-certs
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+        - name: spiffe-helper
+          image: 'registry.redhat.io/zero-trust-workload-identity-manager/spiffe-helper-rhel9:v0.10.0'
+          args:
+            - '-config'
+            - /etc/spiffe-helper/helper.conf
+          resources: {}
+          volumeMounts:
+            - name: spiffe-workload-api
+              readOnly: true
+              mountPath: /spiffe-workload-api
+            - name: postgresql-certs
+              mountPath: /opt/postgresql-certs
+            - name: spiffe-helper
+              mountPath: /etc/spiffe-helper
+          securityContext:
+            runAsUser: 26
+            capabilities:
+              drop:
+                - ALL
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      serviceAccount: postgresql-spiffe-client
+      volumes:
+        - name: spiffe-workload-api
+          csi:
+            driver: csi.spiffe.io
+            readOnly: true
+        - name: postgresql-certs
+          emptyDir:
+            medium: Memory
+        - name: spiffe-helper
+          configMap:
+            name: spiffe-helper
+            defaultMode: 420
+      dnsPolicy: ClusterFirst
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
