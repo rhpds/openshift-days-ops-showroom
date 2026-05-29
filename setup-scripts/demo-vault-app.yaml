@@ -1,47 +1,52 @@
-# Demo app: reads a secret from Vault via the Agent Injector (workshop lab).
-# Prerequisites: Vault running in namespace vault (dev mode), Kubernetes auth configured.
+# Demo app from the Vault-on-Kubernetes hands-on guide (Agent Injector).
+# Prerequisites: Vault in namespace vault (dev mode), configure-vault-lab.sh completed.
 # Apply: oc apply -f demo-vault-app.yaml
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: demo-vault-app
+# Reference: https://medium.com/@muppedaanvesh/a-hand-on-guide-to-vault-in-kubernetes-%EF%B8%8F-1daf73f331bd
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: demo-app
-  namespace: demo-vault-app
+  name: vault-serviceaccount
+  namespace: vault
+  labels:
+    app: read-vault-secret
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: demo-app
-  namespace: demo-vault-app
+  name: vault-test
+  namespace: vault
   labels:
-    app: demo-app
+    app: read-vault-secret
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: demo-app
+      app: read-vault-secret
   template:
     metadata:
       labels:
-        app: demo-app
+        app: read-vault-secret
       annotations:
         vault.hashicorp.com/agent-inject: "true"
-        vault.hashicorp.com/role: "demo-app"
-        vault.hashicorp.com/agent-inject-secret-config: "secret/data/demo-app/config"
-        vault.hashicorp.com/agent-inject-template-config: |
-          {{- with secret "secret/data/demo-app/config" -}}
-          API_KEY={{ .Data.data.api_key }}
-          DB_PASSWORD={{ .Data.data.db_password }}
-          {{- end }}
+        vault.hashicorp.com/agent-inject-status: "update"
+        vault.hashicorp.com/role: "vault-role"
         vault.hashicorp.com/agent-inject-address: "http://vault.vault.svc:8200"
+        vault.hashicorp.com/agent-inject-secret-login: "secret/login"
+        vault.hashicorp.com/agent-inject-template-login: |
+          {{- with secret "secret/login" -}}
+          pattoken={{ .Data.data.pattoken }}
+          {{- end }}
+        vault.hashicorp.com/agent-inject-secret-my-first-secret: "secret/my-first-secret"
+        vault.hashicorp.com/agent-inject-template-my-first-secret: |
+          {{- with secret "secret/my-first-secret" -}}
+          username={{ .Data.data.username }}
+          password={{ .Data.data.password }}
+          {{- end }}
     spec:
-      serviceAccountName: demo-app
+      serviceAccountName: vault-serviceaccount
       containers:
-        - name: app
-          image: registry.access.redhat.com/ubi9/ubi-minimal
-          command: ["sleep", "infinity"]
+        - name: nginx
+          image: registry.access.redhat.com/ubi9/nginx-124:latest
+          ports:
+            - containerPort: 8080

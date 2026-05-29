@@ -1,0 +1,70 @@
+# Workshop app: ingests credentials from the Vault Kubernetes secrets engine.
+# Prerequisites:
+#   - Vault Kubernetes secrets engine enabled and configured (UI lab steps)
+#   - Vault role my-vault-app-role (generate entire Kubernetes object chain)
+#   - Kubernetes auth role my-vault-app (run configure-vault-k8s-chain-auth.sh)
+# Apply: oc apply -f demo-vault-k8s-chain-app.yaml
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: my-vault-app-namespace
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-vault-app
+  namespace: my-vault-app-namespace
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-vault-app
+  namespace: my-vault-app-namespace
+  labels:
+    app: my-vault-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-vault-app
+  template:
+    metadata:
+      labels:
+        app: my-vault-app
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "my-vault-app"
+        vault.hashicorp.com/agent-inject-address: "http://vault.vault.svc:8200"
+        vault.hashicorp.com/agent-inject-secret-k8s-creds: "kubernetes/creds/my-vault-app-role"
+        vault.hashicorp.com/agent-inject-template-k8s-creds: |
+          {{- with secret "kubernetes/creds/my-vault-app-role" "kubernetes_namespace=my-vault-app-namespace" -}}
+          SERVICE_ACCOUNT_NAME={{ .Data.service_account_name }}
+          SERVICE_ACCOUNT_NAMESPACE={{ .Data.service_account_namespace }}
+          SERVICE_ACCOUNT_TOKEN={{ .Data.service_account_token }}
+          {{- end }}
+    spec:
+      serviceAccountName: my-vault-app
+      containers:
+        - name: app
+          image: registry.access.redhat.com/ubi9/ubi-minimal
+          command:
+            - /bin/sh
+            - -ec
+            - |
+              echo "Waiting for Vault Agent to render the Kubernetes credential chain..."
+              for i in $(seq 1 120); do
+                test -f /vault/secrets/k8s-creds && break
+                sleep 2
+              done
+              test -f /vault/secrets/k8s-creds || { echo "Timed out waiting for /vault/secrets/k8s-creds"; exit 1; }
+              echo "--- Vault Kubernetes secrets engine credentials ---"
+              sed 's/SERVICE_ACCOUNT_TOKEN=.*/SERVICE_ACCOUNT_TOKEN=***redacted***/' /vault/secrets/k8s-creds
+              . /vault/secrets/k8s-creds
+              echo "Calling Kubernetes API as ${SERVICE_ACCOUNT_NAME} in ${SERVICE_ACCOUNT_NAMESPACE}..."
+              curl -sSk -H "Authorization: Bearer ${SERVICE_ACCOUNT_TOKEN}" \
+                "https://kubernetes.default.svc/api/v1/namespaces/${SERVICE_ACCOUNT_NAMESPACE}/pods?limit=5" \
+                | head -c 800
+              echo ""
+              echo "Credential chain ingested successfully."
+              sleep infinity
