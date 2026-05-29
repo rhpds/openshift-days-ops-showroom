@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Workshop Vault configuration aligned with:
-# https://medium.com/@muppedaanvesh/a-hand-on-guide-to-vault-in-kubernetes-%EF%B8%8F-1daf73f331bd
 set -euo pipefail
 
 export VAULT_ADDR="${VAULT_ADDR:-$(oc get route vault -n vault -o jsonpath='https://{.spec.host}')}"
