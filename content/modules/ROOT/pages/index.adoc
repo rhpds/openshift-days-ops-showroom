@@ -334,7 +334,7 @@ image::compute-nodes-menu.png[Compute menu showing Nodes option]
 +
 2. Click on any node
 3. The **Overview** tab shows you the node's health at a glance:
-   - **Status** - the box at the top shows the overall node status, key issues (like CPU or memory overcommit warnings), and any active alerts. On this workshop cluster you'll see several alerts — this is normal with many operators installed. The overcommit warnings mean the total **limits** of all pods exceed the node's capacity, but look at the Utilization section below to see that actual usage is well within capacity.
+   - **Status** - the box at the top shows the node's health in three parts: the overall status (Ready/Not Ready), resource warnings for CPU and memory overcommit (with clickable values showing the actual numbers), and firing alerts like `KubeCPUOvercommit` or `PodDisruptionBudgetAtLimit` with descriptions and timestamps. On this workshop cluster you'll see several warnings and alerts — this is normal with many operators installed. The overcommit warnings mean the total **limits** of all pods exceed the node's capacity, but look at the Utilization section below to see that actual usage is well within capacity.
    - **Utilization** - CPU, Memory, Filesystem, and Network over time. Compare "available" to "total limit" — that tells you the real capacity story, not the theoretical limits.
    - **Pod count** - how many pods are running on this node.
 4. Click the **Pods** tab to see every pod on that node with its CPU and memory usage.
