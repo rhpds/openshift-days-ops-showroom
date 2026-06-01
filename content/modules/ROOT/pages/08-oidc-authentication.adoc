@@ -3,7 +3,7 @@
 
 == Module Overview
 
-**Duration:** 40 minutes +
+**Duration:** 15-20 minutes +
 **Format:** Hands-on OIDC identity provider configuration +
 **Audience:** Platform Engineers, Operations Teams, Security Administrators
 
@@ -220,11 +220,11 @@ image::oidc-login-selector.png[OpenShift login page showing htpasswd and rhbk]
 
 [NOTE]
 ====
-You will likely see an **Authentication error** page:
+You may see an **Authentication error** page:
 
 image::oidc-auth-error.png[Authentication error after OIDC login]
 
-This is expected - RBAC has not been configured yet, so `developer1` has no permissions to access the console. Click the **reload button** (circular arrow) next to the OCP Console tab to reload the page.
+Click the **reload button** (circular arrow) next to the OCP Console tab to reload the page.
 ====
 
 Now check what happened - the groups synced automatically. Back in the terminal:

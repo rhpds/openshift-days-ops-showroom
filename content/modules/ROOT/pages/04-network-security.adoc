@@ -1,7 +1,7 @@
 = Network Security
 :page-toclevels: 1
 
-**Duration:** 30 minutes +
+**Duration:** 10-15 minutes +
 **Format:** Hands-on network security configuration
 
 == The Scenario

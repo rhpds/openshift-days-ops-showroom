@@ -1,6 +1,6 @@
 = Developer Hub - Portal Operations
 
-**Duration:** 30 minutes +
+**Duration:** 25-30 minutes +
 **Format:** Guided exploration + Hands-on
 
 == The Problem
@@ -100,9 +100,11 @@ image::rhdh-payments-kubernetes-3pods.png[Kubernetes tab showing 3 pods for paym
 
 You should see 3 pods running - `payments-api`, `payments-processor`, and `payments-gateway` - with their status, restarts, and age. This data is live from the cluster.
 
+NOTE: You may see "pods with errors" flagged at the top — this is Developer Hub reporting any pods with a restart count of 1 or more. On a workshop cluster this is normal (pods may have restarted during initial provisioning) and doesn't indicate an actual problem.
+
 **This is the key.** A developer clicks their service in the catalog and sees exactly what's running - pod count, restart history, resource usage - without `oc` access, without opening a ticket, without messaging you. You didn't have to do anything for this to work. The platform team configured it once, and every service with the right labels gets this for free.
 
-Try clicking on **weather-app** and then the **Kubernetes** tab - you'll see all 5 weather microservice pods.
+Go back to the **Catalog** tab and click on **weather-app**, then select the **Kubernetes** tab - you'll see all 5 weather microservice pods.
 
 === Step 5: See What Errors Look Like
 
@@ -114,7 +116,7 @@ You'll see an **Error Reporting** section at the top - the `inventory-db-migrato
 
 This is what a developer sees when something is broken - and what they'd show you in a ticket. Instead of _"my app is broken, can you look?"_ they can tell you _"inventory-db-migrator is crashlooping with a database connection error."_ That's a much better starting point for troubleshooting.
 
-Now click on **order-tracker**. Notice the Kubernetes tab shows nothing - this service is registered in the catalog but hasn't been deployed yet.
+Go back to the **Catalog** tab and click on **order-tracker**. Notice the Kubernetes tab shows nothing - this service is registered in the catalog but hasn't been deployed yet.
 
 image::rhdh-order-tracker-empty.png[order-tracker Kubernetes tab showing no resources]
 
@@ -201,7 +203,7 @@ One of the biggest values of RHDH for an ops team is that it handles requests yo
 
 === Step 9: Use the Software Template
 
-In the **Developer Hub** tab, scroll down on the Home page to **Explore Templates**. You'll see the **Deploy a New Service** template - this was built by the platform team to let developers provision their own namespaces following approved patterns.
+In the **Developer Hub** tab, click **Home** and then scroll down on the Home page to **Explore Templates**. You'll see the **Deploy a New Service** template - this was built by the platform team to let developers provision their own namespaces following approved patterns.
 
 image::rhdh-explore-templates.png[Explore Templates section on the home page]
 
@@ -273,7 +275,7 @@ oc patch deployment payments-gateway -n payments-team --type=json \
   -p '[{"op":"replace","path":"/spec/template/metadata/labels/backstage.io~1kubernetes-id","value":"payments-gateway"}]'
 ----
 
-Go to **Developer Hub** > **payments-platform** > **Kubernetes** tab. You should see only **2 pods** instead of 3.
+Go to **Developer Hub** > **Catalog** > **payments-platform** > **Kubernetes** tab. You should see only **2 pods** instead of 3.
 
 image::rhdh-payments-broken-2pods.png[payments-platform showing only 2 pods]
 
@@ -294,9 +296,16 @@ oc patch deployment payments-gateway -n payments-team --type=json \
   -p '[{"op":"replace","path":"/spec/template/metadata/labels/backstage.io~1kubernetes-id","value":"payments-platform"}]'
 ----
 
-Check the **payments-platform** Kubernetes tab again - all 3 pods should be back.
+Go to **Developer Hub** > **Catalog** > **payments-platform** > **Kubernetes** tab - all 3 pods should be back.
 
 image::rhdh-payments-fixed-3pods.png[payments-platform restored to 3 pods after fix]
+
+TIP: If you still see "pods with errors" due to previous restart counts, restart the deployments to clear them:
+
+[source,bash,role="execute"]
+----
+oc rollout restart deployment/payments-api deployment/payments-processor deployment/payments-gateway -n payments-team
+----
 
 === Ticket 2: "inventory-system shows errors in Developer Hub"
 
@@ -327,7 +336,14 @@ Delete the broken deployment to clear the error:
 oc delete deployment inventory-db-migrator -n inventory-team
 ----
 
-Check the **inventory-system** Kubernetes tab in Developer Hub - the error reporting section should be gone, and you should see 3 healthy pods.
+Go to **Developer Hub** > **Catalog** > **inventory-system** > **Kubernetes** tab - the crashlooping `inventory-db-migrator` pod should be gone, and you should see 3 running pods.
+
+TIP: If you still see "pods with errors" in the Error Reporting section, this is because Developer Hub flags any pod with a restart count of 1 or more. These restarts are from the initial cluster provisioning, not from the exercise. To clear them, restart the deployments to create fresh pods:
+
+[source,bash,role="execute"]
+----
+oc rollout restart deployment/inventory-api deployment/inventory-db-sync deployment/inventory-worker -n inventory-team
+----
 
 === What You Practiced
 

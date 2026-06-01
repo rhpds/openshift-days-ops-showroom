@@ -5,7 +5,7 @@
 
 === Module Overview
 
-**Duration:** 20-25 minutes +
+**Duration:** 10-15 minutes +
 **Format:** Hands-on +
 **Audience:** Platform Engineers, Operations Teams, SRE
 
