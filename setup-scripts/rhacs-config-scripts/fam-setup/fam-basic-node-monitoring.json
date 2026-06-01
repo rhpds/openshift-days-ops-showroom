@@ -1,0 +1,50 @@
+{
+    "policies": [
+        {
+            "id": "15aeb057-cd3a-4f2a-9af6-b6bc79f85e5e",
+            "name": "fam-basic-node-monitoring",
+            "description": "Monitors /etc/passwd and /etc/sudoers for unauthorized ownership changes or modifications. Detects privilege escalation attempts via chown or other file alterations.",
+            "rationale": "Ownership changes to /etc/passwd or /etc/sudoers can indicate privilege escalation or persistence attacks. These files must remain root-owned; any chown or modification should be investigated.",
+            "remediation": "Investigate the process and container (if applicable) that triggered the violation. Review node logs and process trees for suspicious activity. Revert any unauthorized changes (e.g., restore from backup or correct user/group/permissions). If a container breakout is suspected, isolate the workload, scan for malware, and apply stricter volume mount policies. Update notifiers for faster alerting and consider adding exclusions for known legitimate processes if false positives occur.",
+            "disabled": false,
+            "categories": [
+                "Anomalous Activity"
+            ],
+            "lifecycleStages": [
+                "RUNTIME"
+            ],
+            "eventSource": "NODE_EVENT",
+            "exclusions": [],
+            "scope": [],
+            "severity": "HIGH_SEVERITY",
+            "enforcementActions": [],
+            "notifiers": [],
+            "SORTName": "",
+            "SORTLifecycleStage": "",
+            "SORTEnforcement": false,
+            "policyVersion": "1.1",
+            "policySections": [
+                {
+                    "sectionName": "Rule 1",
+                    "policyGroups": [
+                        {
+                            "fieldName": "Actual Path",
+                            "booleanOperator": "OR",
+                            "negate": false,
+                            "values": [
+                                {
+                                    "value": "/etc/passwd"
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "mitreAttackVectors": [],
+            "criteriaLocked": false,
+            "mitreVectorsLocked": false,
+            "isDefault": false,
+            "source": "IMPERATIVE"
+        }
+    ]
+}
