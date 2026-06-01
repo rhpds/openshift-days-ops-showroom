@@ -171,7 +171,7 @@ Click on the rule to see its details. After about 2-3 minutes (once the pod has 
 
 image::alerting-rule-detail.png[HighPodRestartRate rule detail showing expression and active alerts]
 
-Now switch to the **Alerts** tab. Filter by **Alert State: Firing** - you should see `HighPodRestartRate`. Click into the alert and scroll down to the **Description** at the bottom to see more detail — you'll see `crashloop-test` as the source pod:
+Now navigate to **Alerting → Alerts** - you should see `HighPodRestartRate`. Click into the alert and scroll down to the **Description** at the bottom to see more detail — you'll see `crashloop-test` as the source pod:
 
 image::alerts-firing.png[Alerts tab showing currently firing alerts with severity and state]
 
