@@ -1,0 +1,269 @@
+# PostgreSQL server with SPIFFE mTLS (Roadshow-ZTWIM deploy/postgresql-spiffe.yaml).
+# Prerequisites: configure-ztwim-lab.sh completed.
+# Apply: ./configure-ztwim-postgresql-lab.sh  OR  oc apply -f demo-postgresql-spiffe.yaml
+# Reference: https://github.com/SeanRickerd/Roadshow-ZTWIM
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: postgresql-spiffe
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: postgresql-spiffe
+  namespace: postgresql-spiffe
+---
+apiVersion: spire.spiffe.io/v1alpha1
+kind: ClusterSPIFFEID
+metadata:
+  name: postgresql-spiffe
+spec:
+  className: zero-trust-workload-identity-manager-spire
+  dnsNameTemplates:
+    - postgresql-spiffe.postgresql-spiffe.svc
+  namespaceSelector:
+    matchLabels:
+      kubernetes.io/metadata.name: postgresql-spiffe
+  podSelector:
+    matchLabels:
+      app: postgresql-spiffe
+  spiffeIDTemplate: 'spiffe://{{ .TrustDomain }}/ns/{{ .PodMeta.Namespace }}/sa/{{ .PodSpec.ServiceAccountName }}'
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: postgres-config
+  namespace: postgresql-spiffe
+data:
+  pg_hba.conf: |
+    # TYPE      DATABASE        USER            ADDRESS                 METHOD
+    local       all             all                                     trust
+    host        postgres        postgres        127.0.0.1/32            trust
+    hostnossl   postgres        postgres        127.0.0.1/32            trust
+    hostnossl   all             all             0.0.0.0/0               reject
+    hostssl     all             all             0.0.0.0/0               cert
+  postgresql.conf: |
+    listen_addresses '*'
+    ssl = on
+    ssl_cert_file = '/opt/postgresql-certs/svid.pem'
+    ssl_key_file = '/opt/postgresql-certs/svid.key'
+    ssl_ca_file = '/opt/postgresql-certs/svid_bundle.pem'
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: postgresql-init-db
+  namespace: postgresql-spiffe
+data:
+  initdb.sh: |
+    # Copy configuration files
+    cp /opt/pg_hba/pg_hba.conf /var/lib/pgsql/data/userdata
+    # Create postgresql resouces
+    psql -U postgres <<!!EOF
+        CREATE DATABASE $SPIFFE_DATABASE;
+        CREATE USER $SPIFFE_USER WITH encrypted password '$SPIFFE_PASSWORD';
+        GRANT ALL privileges ON database $SPIFFE_DATABASE TO $SPIFFE_USER;
+        \c $SPIFFE_DATABASE;
+        CREATE TABLE test_table (
+          id bigserial primary key,
+          name VARCHAR(255) NOT NULL,
+          text VARCHAR(255) NOT NULL
+        );
+        GRANT ALL privileges ON table test_table TO $SPIFFE_USER;
+        GRANT ALL privileges ON sequence test_table_id_seq TO $SPIFFE_USER;
+    !!EOF
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: spiffe-helper
+  namespace: postgresql-spiffe
+data:
+  helper.conf: |
+    # SPIRE agent unix socket path
+    agent_address = "/spiffe-workload-api/spire-agent.sock"
+
+    # psql binary path
+    cmd = "/usr/bin/psql"
+
+    # Query for configuration reloading
+    cmd_args = "-U postgres -h 127.0.0.1 -c \"SELECT pg_reload_conf();\""
+
+    # Directory to store certificates (must match with the ssl settings in postgresql.conf)
+    cert_dir = "/opt/postgresql-certs"
+
+    # No renew signal is used in this example
+    renew_signal = ""
+
+    # Certificate, key and bundle names must match those configured in postgresql.conf
+    svid_file_name = "svid.pem"
+    svid_key_file_name = "svid.key"
+    svid_bundle_file_name = "svid_bundle.pem"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: postgresql-spiffe
+  namespace: postgresql-spiffe
+spec:
+  ipFamilies:
+    - IPv4
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+  internalTrafficPolicy: Cluster
+  type: ClusterIP
+  ipFamilyPolicy: SingleStack
+  sessionAffinity: None
+  selector:
+    app: postgresql-spiffe
+status:
+  loadBalancer: {}
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: postgresql-spiffe
+  namespace: postgresql-spiffe
+  labels:
+    app: postgresql-spiffe
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgresql-spiffe
+  template:
+    metadata:
+      labels:
+        app: postgresql-spiffe
+    spec:
+      restartPolicy: Always
+      serviceAccountName: postgresql-spiffe
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsUser: 26
+        fsGroup: 26
+      initContainers:
+        - name: spiffe-helper-init
+          image: 'quay.io/ablock/spiffe-helper-postgresql:latest'
+          args:
+            - '-config'
+            - /etc/spiffe-helper/helper.conf
+            - '-daemon-mode=false'
+          resources: {}
+          volumeMounts:
+            - name: spiffe-workload-api
+              readOnly: true
+              mountPath: /spiffe-workload-api
+            - name: postgresql-certs
+              mountPath: /opt/postgresql-certs
+            - name: spiffe-helper
+              mountPath: /etc/spiffe-helper
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      containers:
+        - resources: {}
+          terminationMessagePath: /dev/termination-log
+          name: postgresql-spiffe
+          env:
+            - name: POSTGRESQL_USER
+              value: user
+            - name: POSTGRESQL_PASSWORD
+              value: wearenotusingthissoIdontworryaboutit
+            - name: SPIFFE_USER
+              value: postgresql_spiffe
+            - name: SPIFFE_PASSWORD
+              value: somealsonotusedpassword
+            - name: SPIFFE_DATABASE
+              value: testdb
+            - name: POSTGRESQL_DATABASE
+              value: sampledb
+          ports:
+            - name: postgresql
+              containerPort: 5432
+              protocol: TCP
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: postgresql-certs
+              mountPath: /opt/postgresql-certs
+            - name: pg-hba
+              mountPath: /opt/pg_hba
+            - name: postgresql-init-db
+              mountPath: /opt/app-root/src/postgresql-init
+            - name: postgres-config
+              mountPath: /opt/app-root/src/postgresql-cfg
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+          terminationMessagePolicy: File
+          image: 'registry.redhat.io/rhel9/postgresql-16:latest'
+        - name: spiffe-helper
+          image: 'quay.io/ablock/spiffe-helper-postgresql:latest'
+          args:
+            - '-config'
+            - /etc/spiffe-helper/helper.conf
+          resources: {}
+          volumeMounts:
+            - name: spiffe-workload-api
+              readOnly: true
+              mountPath: /spiffe-workload-api
+            - name: postgresql-certs
+              mountPath: /opt/postgresql-certs
+            - name: spiffe-helper
+              mountPath: /etc/spiffe-helper
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+          securityContext:
+            runAsUser: 26
+            capabilities:
+              drop:
+                - ALL
+      serviceAccount: postgresql-spiffe
+      volumes:
+        - name: spiffe-workload-api
+          csi:
+            driver: csi.spiffe.io
+            readOnly: true
+        - name: postgresql-certs
+          emptyDir:
+            medium: Memory
+        - name: spiffe-helper
+          configMap:
+            name: spiffe-helper
+            defaultMode: 420
+        - name: postgresql-init-db
+          configMap:
+            name: postgresql-init-db
+            defaultMode: 420
+        - name: pg-hba
+          configMap:
+            name: postgres-config
+            items:
+              - key: pg_hba.conf
+                path: pg_hba.conf
+            defaultMode: 420
+        - name: postgres-config
+          configMap:
+            name: postgres-config
+            items:
+              - key: postgresql.conf
+                path: postgresql.conf
+            defaultMode: 420
+      dnsPolicy: ClusterFirst
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 25%
+      maxSurge: 25%
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600

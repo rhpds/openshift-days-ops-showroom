@@ -2,7 +2,7 @@
 
 == Module Overview
 
-**Duration:** 20 minutes +
+**Duration:** 45 minutes +
 **Format:** Hands-on lab +
 **Audience:** Security Engineers, Platform Engineers, IT Operations
 
@@ -10,79 +10,176 @@
 
 By the end of this module, you will:
 
-* Install the Red Hat Zero Trust Workload Identity Manager (ZTWIM) operator
-* Understand how ZTWIM deploys SPIFFE/SPIRE workload identity on OpenShift
+* Install the Red Hat Zero Trust Workload Identity Manager (ZTWIM) operator and SPIRE components
+* Deploy PostgreSQL with SPIFFE-issued certificates for mutual TLS (mTLS)
+* Connect a client workload using certificate-based authentication (no passwords)
+* Verify that connections without valid SPIFFE certificates are rejected
 
-== About Zero Trust Workload Identity Manager
+== Why cryptographic workload identity?
+
+Password-based database authentication creates persistent credential theft targets. Compromised passwords enable lateral movement, and stolen credentials remain valid until manually rotated. Zero-trust principles require cryptographic proof of workload identity, not just network proximity or static secrets.
 
 The Zero Trust Workload Identity Manager is an OpenShift Day-2 operator (provided by Red Hat) that automates SPIFFE/SPIRE components: `spire-server`, `spire-agent`, `spiffe-csi-driver`, and `oidc-discovery-provider`. It issues short-lived, verifiable workload identities instead of long-lived credentials.
 
-Project reference: https://github.com/openshift/zero-trust-workload-identity-manager[zero-trust-workload-identity-manager on GitHub]
+Project reference: link:https://github.com/openshift/zero-trust-workload-identity-manager[zero-trust-workload-identity-manager on GitHub^]
 
-== Install the operator
+This lab follows the link:https://github.com/SeanRickerd/Roadshow-ZTWIM[Roadshow-ZTWIM PostgreSQL SPIFFE mTLS exercise^].
 
-Your cluster already exposes this operator in OperatorHub. Use the console (recommended) or the CLI.
-
-=== Option A — OpenShift console (recommended)
-
-Use the *OpenShift Console* tab in the workshop panel (or open the console in a separate window).
+== Install ZTWIM and SPIRE
 
 .Procedure
-. Go to *Ecosystem* → *Operators* → *OperatorHub*.
-. Search for *Zero Trust Workload Identity Manager*.
-. Open the operator tile (provider: *Red Hat*) and click *Install*.
-. On the install screen, use these settings:
+. Clone the repo and run the installer from the bastion:
 +
-[cols="1,2"]
-|===
-| *Update channel* | `stable-v1` (version 1.0.1)
-| *Installation mode* | *All namespaces on the cluster* (default)
-| *Installed Namespace* | `zero-trust-workload-identity-manager` (create if prompted)
-| *Update approval* | *Automatic*
-|===
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+git clone https://github.com/mfosterrox/openshift-days-ops-showroom.git
+cd openshift-days-ops-showroom/setup-scripts
+./configure-ztwim-lab.sh
+----
+
+== Verify ZTWIM installation
+
+Confirm the operator and SPIRE components are running:
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc get pods -n openshift-zero-trust-workload-identity-manager
+oc get pods -n openshift-zero-trust-workload-identity-manager -l app.kubernetes.io/name=spire-server
+oc get pods -n openshift-zero-trust-workload-identity-manager -l app.kubernetes.io/name=spire-agent
+oc get pods -n openshift-zero-trust-workload-identity-manager -l app.kubernetes.io/name=spire-spiffe-csi-driver
+oc get csidriver csi.spiffe.io
+oc get crd clusterspiffeids.spire.spiffe.io
+----
+
+== Deploy PostgreSQL with SPIFFE integration
+
+.Procedure
+. Run the deployment script from `setup-scripts`:
 +
-. Click *Install* and wait until the install succeeds (typically a few minutes).
-. Go to *Ecosystem* → *Installed Operators*, select project `zero-trust-workload-identity-manager`, and confirm the operator shows *Succeeded*.
-+
-Provided APIs include `ZeroTrustWorkloadIdentityManager`, `SpireServer`, `SpireAgent`, `SpiffeCSIDriver`, `SpireOIDCDiscoveryProvider`, and SPIRE cluster resources (`ClusterSPIFFEID`, and others).
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+cd openshift-days-ops-showroom/setup-scripts
+./configure-ztwim-postgresql-lab.sh
+----
 
-=== Option B — CLI subscription (same as the console)
-
-If you prefer the terminal, this matches the console install (catalog subscription only — no local image build):
+=== Verify deployments
 
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/setup-scripts/install-ztwim-operator.sh)
+oc get pods -n postgresql-spiffe
+oc get pods -n postgresql-spiffe-client
 ----
 
-=== Option C — Build from upstream (advanced)
+Both pods should show `2/2 Running`.
 
-For clusters *without* the Red Hat OperatorHub package, use the full installer that builds the operator bundle from GitHub:
+== Inspect SPIFFE certificates
+
+SPIFFE certificates are mounted at `/opt/postgresql-certs/` by the spiffe-helper sidecar.
+
+=== Server certificate
 
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/setup-scripts/install-ztwim.sh)
+oc rsh -n postgresql-spiffe -c postgresql-spiffe deployment/postgresql-spiffe \
+  cat /opt/postgresql-certs/svid.pem | openssl x509 -noout -text
 ----
 
-[NOTE]
-====
-Option C requires `podman`, `git`, and egress to GitHub and `ghcr.io`. Workshop clusters with OperatorHub should use Option A or B.
-====
+Key fields to examine:
 
-== Verify the installation
+* *Subject CN*: `postgresql-spiffe.postgresql-spiffe.svc` (server hostname)
+* *Issuer*: SPIRE CA (`CN=redhat.com`)
+* *Validity*: short-lived (approximately 1 hour)
+* *SAN URI*: `spiffe://<trust-domain>/ns/postgresql-spiffe/sa/postgresql-spiffe`
+
+=== Client certificate
 
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
-oc get csv,pods -n zero-trust-workload-identity-manager
+oc rsh -n postgresql-spiffe-client -c postgresql-spiffe-client deployment/postgresql-spiffe-client \
+  cat /opt/postgresql-certs/svid.pem | openssl x509 -noout -text
 ----
 
-You should see a ClusterServiceVersion in phase `Succeeded` and the operator manager pod running.
+The client certificate CN is `postgresql_spiffe`, which matches the PostgreSQL database user created by the initialization script. PostgreSQL maps the certificate CN directly to the database username during certificate authentication.
 
-To list custom resource definitions exposed by the operator:
+== Establish an mTLS connection
+
+Connect to PostgreSQL using mutual TLS with SPIFFE certificates and no password.
 
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
-oc api-resources | grep -E 'spire|zerotrust|spiffe'
+oc rsh -n postgresql-spiffe-client -c postgresql-spiffe-client deployment/postgresql-spiffe-client \
+  psql "host=postgresql-spiffe.postgresql-spiffe.svc port=5432 user=postgresql_spiffe dbname=testdb sslmode=verify-full sslcert=/opt/postgresql-certs/svid.pem sslkey=/opt/postgresql-certs/svid.key sslrootcert=/opt/postgresql-certs/svid_bundle.pem" \
+  -c "SELECT current_user, current_database();"
 ----
 
-**Great job!** Continue to the next module when you are ready.
+Expected output:
+
+[source,text]
+----
+   current_user    | current_database
+-------------------+------------------
+ postgresql_spiffe | testdb
+(1 row)
+----
+
+The connection authenticated using certificates only. No password was required.
+
+=== Connection string parameters
+
+* `sslmode=verify-full` — strictest mode; verifies server certificate, hostname, and requires a client certificate
+* `sslcert` / `sslkey` — client SPIFFE certificate and private key
+* `sslrootcert` — CA bundle for verifying the server certificate
+* `user=postgresql_spiffe` — must match the client certificate CN
+
+== Verify certificate-based authentication
+
+=== Insert and query test data
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc rsh -n postgresql-spiffe-client -c postgresql-spiffe-client deployment/postgresql-spiffe-client \
+  psql "host=postgresql-spiffe.postgresql-spiffe.svc port=5432 user=postgresql_spiffe dbname=testdb sslmode=verify-full sslcert=/opt/postgresql-certs/svid.pem sslkey=/opt/postgresql-certs/svid.key sslrootcert=/opt/postgresql-certs/svid_bundle.pem" <<'SQL'
+INSERT INTO test_table (name, text)
+VALUES ('spiffe-test', 'Authenticated with certificates!');
+SELECT * FROM test_table;
+SQL
+----
+
+=== Connection without a certificate (should fail)
+
+Attempting to connect without a client certificate proves that certificate auth is enforced:
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc rsh -n postgresql-spiffe-client -c postgresql-spiffe-client deployment/postgresql-spiffe-client \
+  psql "host=postgresql-spiffe.postgresql-spiffe.svc port=5432 user=postgresql_spiffe dbname=testdb sslmode=require" \
+  2>&1 | head -5
+----
+
+The connection should fail with an error indicating a valid client certificate is required. PostgreSQL `pg_hba.conf` is configured for `cert` authentication with no password fallback.
+
+== What you learned
+
+* **ZTWIM** automates SPIFFE/SPIRE on OpenShift, issuing short-lived workload identities bound to Kubernetes namespace and service account.
+* **ClusterSPIFFEID** resources define which certificates each workload receives.
+* **mTLS with SPIFFE** replaces static database passwords with cryptographic proof of identity on both client and server.
+* **Automatic rotation** via spiffe-helper sidecars keeps certificates fresh without manual intervention.
+
+== Clean up
+
+Remove the PostgreSQL demo workloads:
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+cd openshift-days-ops-showroom/setup-scripts
+./uninstall-ztwim-lab.sh
+----
+
+To also remove SPIRE custom resources and the ZTWIM operator:
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+ZTWIM_FULL_UNINSTALL=true ./uninstall-ztwim-lab.sh
+----
+
+**Great job!** You installed ZTWIM, deployed PostgreSQL with SPIFFE mTLS, and verified certificate-based authentication. Continue when you are ready for the next module.
