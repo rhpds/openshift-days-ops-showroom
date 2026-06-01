@@ -58,38 +58,30 @@ This section uses a test application. Run the following to ensure the project an
 
 [source,bash,role="execute"]
 ----
-# Wait for namespace to be fully removed if it's still terminating from a previous module
-while oc get namespace app-management 2>/dev/null | grep -q Terminating; do
-  echo "Waiting for app-management namespace to finish deleting..."
-  sleep 5
-done
-oc new-project app-management 2>/dev/null || oc project app-management
-----
-
-[source,bash,role="execute"]
-----
-oc get deployment weathernow -n app-management 2>/dev/null || oc new-app --name=weathernow --image=registry.access.redhat.com/ubi9/httpd-24
+oc new-project ingress-demo 2>/dev/null || oc project ingress-demo && \
+oc get deployment test-app -n ingress-demo 2>/dev/null || \
+oc new-app --name=test-app --image=registry.access.redhat.com/ubi9/httpd-24 -n ingress-demo
 ----
 
 NOTE: If you see pod status streaming in the terminal, press **Ctrl+C** to get your prompt back.
 
 [source,bash,role="execute"]
 ----
-oc create route edge weathernow --service=weathernow 2>/dev/null || echo "Route already exists"
+oc create route edge test-app --service=test-app 2>/dev/null || echo "Route already exists"
 ----
 
 Wait for the pod to be ready:
 
 [source,bash,role="execute"]
 ----
-oc rollout status deployment/weathernow -n app-management --timeout=60s
+oc rollout status deployment/test-app -n ingress-demo --timeout=60s
 ----
 
 NOTE: This may take a minute to complete. Only press **Ctrl+C** if it has been running for more than 5 minutes.
 
-Now let's examine its networking. In the **OCP Console**, navigate to **Networking -> Routes** (project: `app-management`). You'll see the `weathernow` route with its status, clickable URL, and target service:
+Now let's examine its networking. In the **OCP Console**, navigate to **Networking -> Routes** (project: `ingress-demo`). You'll see the `test-app` route with its status, clickable URL, and target service:
 
-image::ingress-images/ingress-weathernow-route.png[Weathernow route in the console]
+image::ingress-images/ingress-weathernow-route.png[Test app route in the console]
 
 Click the route name to see the full details including TLS settings and router information:
 
@@ -99,7 +91,7 @@ image::ingress-images/ingress-route-details.png[Weathernow route details showing
 
 [source,bash,role="execute"]
 ----
-oc get route weathernow -o yaml
+oc get route test-app -o yaml
 ----
 
 Key route fields:
@@ -114,12 +106,12 @@ Test with HTTPS (edge TLS):
 
 [source,bash,role="execute"]
 ----
-curl -sk https://$(oc get route weathernow -o jsonpath='{.spec.host}') | head -5
+curl -sk https://$(oc get route test-app -o jsonpath='{.spec.host}') | head -5
 ----
 
 This request flows: **Client -> Ingress Controller -> Service -> Pod**
 
-You should see HTML returned from the web server (the default RHEL test page).
+You should see HTML returned from the web server (the default Apache test page).
 
 == TLS Termination Strategies
 
@@ -148,7 +140,7 @@ View the TLS settings on the edge route:
 
 [source,bash,role="execute"]
 ----
-oc get route weathernow -o jsonpath='{.spec.tls}' | jq . 2>/dev/null || oc get route weathernow -o jsonpath='{.spec.tls}' | python3 -m json.tool
+oc get route test-app -o jsonpath='{.spec.tls}' | jq . 2>/dev/null || oc get route test-app -o jsonpath='{.spec.tls}' | python3 -m json.tool
 ----
 
 Edge termination means:
@@ -184,21 +176,21 @@ Test the current HTTP behavior:
 
 [source,bash,role="execute"]
 ----
-curl -sk -o /dev/null -w "HTTP request: %{http_code}\n" "http://$(oc get route weathernow -o jsonpath='{.spec.host}')"
+curl -sk -o /dev/null -w "HTTP request: %{http_code}\n" "http://$(oc get route test-app -o jsonpath='{.spec.host}')"
 ----
 
 Now enable the redirect:
 
 [source,bash,role="execute"]
 ----
-oc patch route weathernow -n app-management --type=merge \
+oc patch route test-app -n ingress-demo --type=merge \
   -p '{"spec":{"tls":{"insecureEdgeTerminationPolicy":"Redirect"}}}'
 ----
 
 [source,bash,role="execute"]
 ----
 sleep 3
-ROUTE_HOST=$(oc get route weathernow -o jsonpath='{.spec.host}')
+ROUTE_HOST=$(oc get route test-app -o jsonpath='{.spec.host}')
 echo "HTTP request (should 302 redirect):"
 curl -sk -o /dev/null -w "  Status: %{http_code} → %{redirect_url}\n" "http://$ROUTE_HOST"
 echo "Following the redirect:"
@@ -221,21 +213,21 @@ Check the current response headers - you should see `No HSTS header` because we 
 
 [source,bash,role="execute"]
 ----
-curl -sk -D - "https://$(oc get route weathernow -o jsonpath='{.spec.host}')" 2>&1 | grep -i strict || echo "No HSTS header"
+curl -sk -D - "https://$(oc get route test-app -o jsonpath='{.spec.host}')" 2>&1 | grep -i strict || echo "No HSTS header"
 ----
 
 Now apply HSTS:
 
 [source,bash,role="execute"]
 ----
-oc annotate route weathernow -n app-management \
+oc annotate route test-app -n ingress-demo \
   haproxy.router.openshift.io/hsts_header="max-age=31536000;includeSubDomains" --overwrite
 ----
 
 [source,bash,role="execute"]
 ----
 sleep 3
-curl -sk -D - "https://$(oc get route weathernow -o jsonpath='{.spec.host}')" 2>&1 | grep -i strict
+curl -sk -D - "https://$(oc get route test-app -o jsonpath='{.spec.host}')" 2>&1 | grep -i strict
 ----
 
 The `strict-transport-security` header is now in every response. Browsers that see this will refuse to use HTTP for this domain for one year (`max-age=31536000`).
@@ -246,7 +238,7 @@ Apply rate limiting to restrict concurrent connections:
 
 [source,bash,role="execute"]
 ----
-oc annotate route weathernow -n app-management \
+oc annotate route test-app -n ingress-demo \
   haproxy.router.openshift.io/rate-limit-connections=true \
   haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp=2 \
   haproxy.router.openshift.io/rate-limit-connections.rate-http=10 \
@@ -258,7 +250,7 @@ The annotations are set - but do they actually work? Let's prove it. Send 20 con
 [source,bash,role="execute"]
 ----
 echo "=== With rate limiting (max 2 concurrent) ==="
-ROUTE_HOST=$(oc get route weathernow -o jsonpath='{.spec.host}')
+ROUTE_HOST=$(oc get route test-app -o jsonpath='{.spec.host}')
 sleep 5
 RESULTS=""
 for i in $(seq 1 20); do
@@ -277,7 +269,7 @@ Now remove rate limiting and try the same test:
 
 [source,bash,role="execute"]
 ----
-oc annotate route weathernow -n app-management \
+oc annotate route test-app -n ingress-demo \
   haproxy.router.openshift.io/rate-limit-connections- \
   haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp- \
   haproxy.router.openshift.io/rate-limit-connections.rate-http-
@@ -288,7 +280,7 @@ oc annotate route weathernow -n app-management \
 echo "=== Without rate limiting ==="
 sleep 5
 for i in $(seq 1 20); do
-  curl -sk -o /dev/null -w "%{http_code}\n" "https://$(oc get route weathernow -o jsonpath='{.spec.host}')" &
+  curl -sk -o /dev/null -w "%{http_code}\n" "https://$(oc get route test-app -o jsonpath='{.spec.host}')" &
 done
 wait 2>/dev/null
 ----
@@ -327,12 +319,12 @@ image::ingress-images/ingress-operator-conditions.png[Ingress operator condition
 [source,bash,role="execute"]
 ----
 # Remove annotations and reset route
-oc annotate route weathernow -n app-management \
+oc annotate route test-app -n ingress-demo \
   haproxy.router.openshift.io/hsts_header- \
   haproxy.router.openshift.io/rate-limit-connections- \
   haproxy.router.openshift.io/rate-limit-connections.concurrent-tcp- \
   haproxy.router.openshift.io/rate-limit-connections.rate-http- 2>/dev/null
-oc patch route weathernow -n app-management --type=merge \
+oc patch route test-app -n ingress-demo --type=merge \
   -p '{"spec":{"tls":{"insecureEdgeTerminationPolicy":""}}}' 2>/dev/null
 echo "Cleanup complete"
 ----
