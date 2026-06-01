@@ -130,7 +130,7 @@ You should see `1/1 Running`.
 
 **Diagnose**
 
-The pod keeps starting and crashing. In the **OCP Console**, click the `weather-api` pod, then the **Logs** tab. The log viewer shows the error message with real-time streaming. If the pod has restarted, use the **Container** dropdown to select the previous container's logs.
+The pod keeps starting and crashing. In the **OCP Console**, click the `weather-api` pod, then the **Logs** tab. The log viewer shows the error message with real-time streaming. If the pod has restarted, use the container dropdown on the left (highlighted in red below) to select the previous container's logs.
 
 image::debugging-api-logs.png[weather-api pod Logs tab showing missing config file error]
 
