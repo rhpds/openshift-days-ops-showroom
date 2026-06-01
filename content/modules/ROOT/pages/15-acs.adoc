@@ -221,7 +221,6 @@ This view shows you the details of the check for the production cluster. As you 
 oc get image.config.openshift.io cluster -o jsonpath='{.spec.registrySources.allowedRegistries}' |
 ----
 
-
 image::https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcHI1ZGQwYWNnd3doY2s4MDNpenZ1MWlzeDlqNWhyNzF5c2JveWNybSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/xTQXENNW77nUsNVmV4/giphy.gif[Fun celebration, link=self, window=blank, width=400]
 
 **Great job!** Compliance reporting can be a pain. RHACS and OpenShift want to make it easy for your teams to pass audits and compliance checks across regional barriers.
@@ -294,51 +293,6 @@ spec:
 EOF
 ----
 +
-While you are at it, let's apply the fam-basic-deploy-monitoring policy to the cluster.
-+
-[source,bash,subs="+macros,+attributes",role=execute]
-----
-oc apply -f - <<EOF
----
-apiVersion: config.stackrox.io/v1alpha1
-kind: SecurityPolicy
-metadata:
-  name: fam-basic-deploy-monitoring
-  namespace: stackrox
-spec:
-  policyName: fam-basic-deploy-monitoring
-  description: Monitors deployments for changes to critical files such as /etc/passwd. Detects modifications at deployment time which may indicate image tampering or unauthorized changes to base images.
-  rationale: Modifications to system files like /etc/passwd during deployment can indicate that an image was tampered with or that there is a security misconfiguration. Monitoring for such occurrences reduces the risk of privilege escalation and persistent threats entering production.
-  remediation: Review the affected deployment and container image for unauthorized or unexpected changes to system files. Rebuild the image from a trusted source if necessary, and investigate any deployment pipelines or automation that could have introduced the modification.
-  categories:
-    - Anomalous Activity
-  lifecycleStages:
-    - RUNTIME
-  eventSource: DEPLOYMENT_EVENT
-  severity: HIGH_SEVERITY
-  enforcementActions: []
-  policySections:
-    - sectionName: Rule 1
-      policyGroups:
-        - fieldName: Effective Path
-          booleanOperator: OR
-          negate: false
-          values:
-            - value: /etc/passwd
-    - sectionName: Rule 2
-      policyGroups:
-        - fieldName: Actual Path
-          booleanOperator: OR
-          negate: false
-          values:
-            - value: /etc/passwd
-  mitreAttackVectors: []
-  criteriaLocked: false
-  mitreVectorsLocked: false
-  isDefault: false
-EOF
-----
-+
 ====
 Next, you will use `tmux` to watch OpenShift events while running the test so you can see how RHACS enforces the policy at runtime.
 ====
@@ -386,7 +340,7 @@ oc exec -n patient-portal $POD -i --tty -- /bin/sh
 ----
 apk update
 ----
-
++
 . Examine the output and expect to see that the package manager attempts to perform an update operation:
 +
 [source,texinfo,subs="attributes"]
@@ -413,37 +367,16 @@ LAST SEEN   TYPE      REASON                 OBJECT                           ME
 50s         Normal    SuccessfulCreate       replicaset/frontend-8667d5c56b   Created pod: frontend-8667d5c56b-s6dph
 50s         Warning   StackRox enforcement   deployment/frontend              A pod (frontend-8667d5c56b-f9fcj) violated StackRox policy "Alpine Linux Package Manager Execution - Enforce" and was killed
 ----
-
 +
 [INFO] 
 ====
 After a few seconds, you can see the pod is deleted and recreated. In your tmux shell pane, note that your shell session has terminated and that you are returned to the Bastion VM command line.
 ====
-
++
 . Exit the tmux session and return to the bastion host terminal:
 .. If you are still inside the container shell, type `exit` to exit the container.
 .. Press `Ctrl+C` to stop the `watch` command running in the tmux pane.
 .. Type `exit` or `Ctrl-D` to exit the tmux session and return to the bastion host terminal.
-+
-. Now, let's try to get passwords from the filesystem.
-+
-[source,sh,role=execute]
-----
-POD=$(oc get pod -n patient-portal -l app=frontend -o jsonpath="{.items[0].metadata.name}")
-oc exec -n patient-portal $POD -i --tty -- /bin/sh
-----
-. Then run the following command
-----
-touch /etc/passwd
-----
-+
-*Output:*
-+
-[source,texinfo,subs="attributes"]
-----
-/home/fritz $ touch /etc/passwd
-touch: /etc/passwd: Permission denied
-----
 +
 [INFO]
 ====
@@ -480,12 +413,14 @@ If configured properly, each violation record should be pushed to a Security Inf
 +
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
+cd ~/demo-applications
 oc delete -f k8s-deployment-manifests/emojivoto --recursive
 oc delete -f k8s-deployment-manifests/apache-struts --recursive
 oc delete -f k8s-deployment-manifests/dvwa --recursive
 oc delete -f k8s-deployment-manifests/log4shell --recursive
 oc delete -f skupper-demo/ --recursive
 ----
+
 image::https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3ODhkZThkZXVxb2twdHloazAzc2VhNWJpeWowenRpeTJoczY3MTAyZyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/RIjVnmAtOD4l4c2Ert/giphy.gif[Fun celebration, link=self, window=blank, width=400]
 
 **Great job!** Thanks for playing along and checking out the RHACS basics. You're ready to move on to the next module in the left navigation when you are ready.
