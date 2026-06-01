@@ -73,7 +73,7 @@ You should see one pod in `Running` status - the same pod you just saw in the To
 
 === Inspect Your Application
 
-Before moving on, get familiar with the two most important diagnostic commands. These work on any pod in any namespace. You can also see this information in the console — navigate to **Workloads → Topology** (project: `app-management`), click the workload node, then click the pod name in the side panel on the right to open the pod detail view with **Details**, **Events**, and **Logs** tabs. The console log viewer supports real-time streaming, text search, and downloading.
+Before moving on, get familiar with the two most important diagnostic commands. These work on any pod in any namespace. You can also see this in the console — you should already have the Topology view open from the previous step. Click the workload node, then click the pod name in the side panel on the right to open the pod detail view with **Details**, **Events**, and **Logs** tabs. The console log viewer supports real-time streaming, text search, and downloading.
 
 image::app-mgmt-pod-details.png[Pod detail page showing Overview with Events and resource usage]
 
