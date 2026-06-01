@@ -1,7 +1,7 @@
 = OpenShift Virtualization
 :page-toclevels: 1
 
-**Duration:** 35 minutes
+**Duration:** 20-25 minutes
 
 == The Scenario
 
@@ -300,7 +300,7 @@ Now connect to the VM console:
 virtctl console rhel9-vm -n vm-demo
 ----
 
-Log in with the credentials above, then run these commands inside the VM to make changes we can verify after restore:
+After connecting, press **Enter** to get the login prompt. Log in with the credentials above, then run these commands inside the VM to make changes we can verify after restore:
 
 ----
 touch /home/rhel/important-data.txt
@@ -340,9 +340,9 @@ Connect to the VM console:
 virtctl console rhel9-vm -n vm-demo
 ----
 
-NOTE: You may see boot output (kernel messages, systemd services) scrolling. Wait for the `rhel9-vm login:` prompt to appear, then press **Enter** if needed.
+NOTE: You may see boot output (kernel messages, systemd services) scrolling. Wait for the `rhel9-vm login:` prompt to appear, then press **Enter** if needed. If you can't scroll back to see the credentials from the previous command, press `Ctrl+]` to exit the console, reload the Terminal tab, and run the credentials command again.
 
-Log in with the credentials above, then verify the restore worked:
+Log in with the credentials, then verify the restore worked:
 
 ----
 ls /home/rhel/important-data.txt

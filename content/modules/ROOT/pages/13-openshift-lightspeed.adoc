@@ -3,7 +3,7 @@
 
 == Module Overview
 
-**Duration:** 10 minutes +
+**Duration:** 15-20 minutes +
 **Format:** Hands-on AI assistant exploration +
 **Audience:** Platform Engineers, Developers, Operations Teams
 
@@ -35,7 +35,7 @@ oc get csv -n openshift-lightspeed | grep lightspeed
 
 You should see the operator in `Succeeded` phase.
 
-You can also verify in the console by navigating to *Ecosystem* → *Installed Operators* and switching to the `openshift-lightspeed` namespace:
+You can also verify in the console by navigating to *Ecosystem* → *Installed Operators*. Make sure to toggle on **Show default projects** in the project dropdown, then select the `openshift-lightspeed` namespace:
 
 image::ols-operator-installed.png[OpenShift Lightspeed Operator Installed]
 
@@ -190,7 +190,7 @@ oc describe pod broken-pod -n lightspeed-demo
 
 The same information we retrieved through the command line can also be requested from OpenShift Lightspeed. If you recall, when configuring the OLSConfig, we set `introspectionEnabled` to `true`. This means OpenShift Lightspeed can access resources within the cluster.
 
-In the OpenShift Lightspeed interface, click the *X* in the top right corner to clear the chat. Now you can ask something like:
+In the OpenShift Lightspeed interface, click the **trash can icon** (top right corner of the chat panel, on the left side) to clear the conversation. Now you can ask something like:
 
 [quote]
 Show me the pods in the lightspeed-demo namespace
