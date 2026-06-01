@@ -227,7 +227,7 @@ image::oidc-auth-error.png[Authentication error after OIDC login]
 Click the **reload button** (circular arrow) next to the OCP Console tab to reload the page.
 ====
 
-Now check what happened - the groups synced automatically. Back in the terminal:
+Now check what happened — when `developer1` logged in, their Keycloak group membership was included in the ID token. OpenShift reads the token and creates the groups automatically, no manual `oc adm groups sync` required. Back in the terminal:
 
 [source,bash,role="execute",subs="attributes"]
 ----
