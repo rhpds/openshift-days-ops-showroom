@@ -92,13 +92,14 @@ You can also check via CLI:
 oc describe pod -l app=weather-frontend -n debug-lab | tail -10
 ----
 
-Look at the **Events** section. You should see:
+Look at the **Events** section. You should see errors like:
 
 ----
-Warning  Failed   Back-off pulling image "registry.access.redhat.com/ubi9/httpd-24:9.9"
+Warning  Failed   Failed to pull image "registry.access.redhat.com/ubi9/httpd-24:9.9": ... manifest unknown
+Warning  Failed   Error: ImagePullBackOff
 ----
 
-The image tag `9.9` doesn't exist. Let's confirm the image reference:
+The image tag `9.9` doesn't exist — the registry can't find it. Let's confirm the image reference:
 
 [source,bash,role="execute"]
 ----
