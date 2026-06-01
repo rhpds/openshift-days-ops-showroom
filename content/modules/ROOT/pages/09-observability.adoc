@@ -1,7 +1,7 @@
 = Observability & Logging
 :page-toclevels: 1
 
-**Duration:** 55 minutes +
+**Duration:** 35-40 minutes +
 **Format:** Hands-on observability configuration
 
 == The Scenario
@@ -78,6 +78,7 @@ NOTE: This is already enabled on your workshop cluster - you don't need to run t
 
 [source,bash,role="copypaste"]
 ----
+# Do not run - already configured on this cluster
 oc apply -f - <<EOF
 apiVersion: v1
 kind: ConfigMap
@@ -162,9 +163,7 @@ EOF
 echo "Crash-looping pod deployed - it will restart every few seconds"
 ----
 
-While the restarts accumulate, navigate to **Observe -> Alerting -> Alerting Rules** in the console and search for `HighPodRestartRate`.
-
-NOTE: It may take a minute or two for Prometheus to pick up the new rule. If you don't see it, refresh the page. You may also need to click **Clear all filters** or remove any existing filter chips (click the **x** on them) before the rule appears in the search results.
+While the restarts accumulate, navigate to **Observe -> Alerting -> Alerting Rules** in the console and search for `HighPodRestartRate`. It may take a minute or two for Prometheus to pick up the new rule. If you don't see it, refresh the page and click **Clear all filters** or remove any existing filter chips (click the **x** on them) before searching.
 
 image::alerting-rules-search.png[Alerting Rules showing custom HighPodRestartRate rule]
 
@@ -172,7 +171,7 @@ Click on the rule to see its details. After about 2-3 minutes (once the pod has 
 
 image::alerting-rule-detail.png[HighPodRestartRate rule detail showing expression and active alerts]
 
-Now switch to the **Alerts** tab. Filter by **Alert State: Firing** - you should see `HighPodRestartRate` with `crashloop-test` as the source pod:
+Now switch to the **Alerts** tab. Filter by **Alert State: Firing** - you should see `HighPodRestartRate`. Click into the alert and scroll down to the **Description** at the bottom to see more detail — you'll see `crashloop-test` as the source pod:
 
 image::alerts-firing.png[Alerts tab showing currently firing alerts with severity and state]
 
@@ -293,11 +292,19 @@ image::obs-loki-installing.png[Loki Operator installing confirmation]
 
 ==== Remaining Operators
 
-You've seen how OperatorHub works. The remaining operators use the same process - let's script them:
+You've seen how OperatorHub works. The remaining operators use the same process - let's script them. This will take a couple of minutes to complete:
 
 [source,bash,role="execute"]
 ----
 bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/09-observability/install-operators.sh)
+----
+
+Verify all operators are installed:
+
+[source,bash,role="execute"]
+----
+oc get csv -n openshift-logging --no-headers | grep -i logging && \
+oc get csv -n openshift-operators --no-headers | grep -iE 'tempo|opentelemetry|observability'
 ----
 
 === Configure Log Storage (Loki + S3)
@@ -371,7 +378,7 @@ bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showr
 
 === Enable the Logging UI
 
-The UIPlugin adds the **Observe -> Logs** view to the OpenShift console:
+The UIPlugin adds the **Observe -> Logs** view to the OpenShift console. Run the command below to enable it — it may take a few minutes to appear:
 
 [source,bash,role="execute"]
 ----

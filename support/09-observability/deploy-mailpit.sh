@@ -1,6 +1,18 @@
 #!/bin/bash
 # Deploy Mailpit - lightweight mail server for alert notification demo
-cat <<'EOF' | oc apply -f -
+# Falls back to Docker Hub if Quay is unavailable
+QUAY_IMAGE="quay.io/openshift-workshop-applications/mailpit:v1.29.7"
+FALLBACK_IMAGE="ghcr.io/axllent/mailpit:v1.29.7"
+
+if curl -s --max-time 5 -o /dev/null -w "%{http_code}" https://quay.io/v2/ 2>/dev/null | grep -qE '^(200|401)$'; then
+  MAILPIT_IMAGE="${QUAY_IMAGE}"
+  echo "Using Quay.io image"
+else
+  MAILPIT_IMAGE="${FALLBACK_IMAGE}"
+  echo "Quay.io unavailable — falling back to GitHub Container Registry"
+fi
+
+cat <<EOF | oc apply -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,7 +30,7 @@ spec:
     spec:
       containers:
       - name: mailpit
-        image: quay.io/openshift-workshop-applications/mailpit:v1.29.7
+        image: ${MAILPIT_IMAGE}
         ports:
         - containerPort: 8025
           name: web

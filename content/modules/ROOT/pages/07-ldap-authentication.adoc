@@ -1,7 +1,7 @@
 = Identity & Users
 :page-toclevels: 1
 
-**Duration:** 45 minutes +
+**Duration:** 15-20 minutes +
 **Format:** Hands-on identity provider configuration
 
 == The Scenario
@@ -162,6 +162,14 @@ NOTE: This may take a minute or two to complete. Only press **Ctrl+C** if it has
 If you reload the **OCP Console** tab and log out, you'll now see both identity providers on the login page:
 
 image::ldap-login-selector.png[OpenShift login page showing htpasswd and ldap identity providers]
+
+NOTE: We won't be logging into the console as the LDAP users in this workshop. Please log back in using **htpasswd** so you can continue investigating as admin.
+
+[cols="1,1"]
+|===
+| *Username:* | {openshift_cluster_admin_username}
+| *Password:* | {openshift_cluster_admin_password}
+|===
 
 First, capture the API server URL for login commands:
 
@@ -356,6 +364,7 @@ You should see no `app-` projects - normaluser1 isn't in any project-specific gr
 ----
 oc login -u fancyuser1 -p 'Op#nSh1ft' $OCP_SERVER --insecure-skip-tls-verify
 oc whoami
+oc get projects
 ----
 
 Now you see **all projects** in the cluster:
