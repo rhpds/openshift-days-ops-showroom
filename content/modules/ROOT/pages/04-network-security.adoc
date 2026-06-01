@@ -21,7 +21,7 @@ OpenShift uses **OVN-Kubernetes** as its network plugin (the only supported opti
 oc get network.config cluster -o yaml
 ----
 
-TIP: You can also view this in the console at **Administration > Cluster Settings > Configuration > Network** for a formatted view of cluster and service network CIDRs.
+TIP: You can also view this in the console at **Administration → Cluster Settings → Configuration**, search for "Network" and select **Network** (`config.openshift.io`) for a formatted view of cluster and service network CIDRs.
 
 Key fields:
 
