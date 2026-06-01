@@ -248,7 +248,7 @@ TIP: You can also see the auto-created groups in the console at **User Managemen
 oc get user developer1 -o yaml
 ----
 
-In the output, look at the `identities` section — it shows the identity provider (`rhbk`) and the identifier of the user. The user was created automatically on first login.
+In the output, look at the `identities` section — it shows the identity provider (`rhbk`) and the identifier of the user. The user was created automatically on first login. Notice `groups: null` — group membership isn't stored on the User object. It's on the Group objects that were auto-created from the OIDC token (you verified these in the previous step). Next we'll assign RBAC roles to those groups.
 
 == Configure RBAC
 
