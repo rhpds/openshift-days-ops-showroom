@@ -322,9 +322,7 @@ monitoring   4.20.x    True        False         False      3h
 
 == Summary
 
-**Installation:** You learned how OpenShift can be installed using full stack automation (IPI, Agent-based, Assisted Installer) or pre-existing infrastructure (UPI) across public cloud, private cloud, bare metal, and specialized platforms.
-
-**Verification:** You verified this cluster is production-ready by checking ClusterOperators, update channels, MachineConfigPools, networking, storage provisioning, and etcd health.
+**What you verified:** ClusterOperators health, cluster version and update channels, node configuration (MachineConfigPools), networking (deploy, route, connectivity), storage provisioning (PVC binding), and etcd health (member status, fsync latency). These are the same checks you'd run after an installation, after an upgrade, or when something feels off.
 
 **Key takeaway:** `oc get clusteroperators` is your primary health check. All operators showing `True False False` means a healthy cluster ready for workloads.
 
