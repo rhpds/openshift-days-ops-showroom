@@ -324,7 +324,7 @@ monitoring   4.20.x    True        False         False      3h
 
 **What you verified:** ClusterOperators health, cluster version and update channels, node configuration (MachineConfigPools), networking (deploy, route, connectivity), storage provisioning (PVC binding), and etcd health (member status, fsync latency). These are the same checks you'd run after an installation, after an upgrade, or when something feels off.
 
-**Key takeaway:** `oc get clusteroperators` is your primary health check. All operators showing `True False False` means a healthy cluster ready for workloads. Beyond that, ensure the monitoring operator is healthy and verify etcd health — these two underpin everything else on the platform.
+**Key takeaway:** `oc get clusteroperators` is your primary health check. All operators showing `True False False` means a healthy cluster ready for workloads. Beyond that, ensure the monitoring operator is healthy and verify etcd health.
 
 === Additional Resources
 
