@@ -65,6 +65,7 @@ hcp-emea
 . Verify that is on the *clusters* space for the hosted cluster namespace
 . Select *managed* for the `Cluster Set`
 . Next, select the release image *OpenShift 4.21.0* (or whatever the current 4.21.x release image is).
+. Select *ocs-external-storagecluster-ceph-rbd* for the Etcd Storage Class
 . Select *Single replica* for both the *Controller availability policy* and the *Infrastructure availability policy*.
 . Under Additional Labels enter *location=emea*
 +
@@ -265,7 +266,7 @@ image::03-app-gitops-2.png[link=self, window=blank, width=100%, App ACM GitOps]
 . Under *Label expressions* click *Add label expression* and select the following
 * *Label:* name
 * *Operator:* equals any of
-* *Values:* aws-us, local-cluster, emea-cluster
+* *Values:* managed-hcp, hcp-emea
 . Uncheck the *Set a limit on the number of clusters selected*.
 +
 [IMPORTANT]
