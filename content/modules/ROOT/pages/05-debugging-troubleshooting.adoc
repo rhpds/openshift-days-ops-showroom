@@ -81,7 +81,7 @@ NOTE: You might notice `weather-cache` is missing from the pod list - that's one
 
 **Diagnose**
 
-In the **OCP Console**, click on the `weather-frontend` pod. The **Events** tab at the bottom shows the error with colour-coded severity - you'll see the image pull failure immediately.
+In the **OCP Console**, click on the `weather-frontend` pod. Click the **Events** tab at the top to see the error with colour-coded severity - you'll see the image pull failure immediately.
 
 image::debugging-frontend-events.png[weather-frontend pod Events tab showing ImagePullBackOff error]
 
