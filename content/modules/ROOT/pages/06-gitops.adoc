@@ -9,6 +9,8 @@
 **Format:** Hands-on +
 **Audience:** Platform Engineers, Operations Teams, SRE
 
+include::partial$console-access.adoc[]
+
 As an OpenShift administrator managing multiple clusters, you need every cluster configured the same way - same quotas, same network policies, same security baselines. Making these changes manually on each cluster is slow, error-prone, and impossible to audit.
 
 GitOps solves this by treating cluster configuration as code in a Git repository. If you're familiar with Infrastructure as Code (IaC), GitOps is a way to manage IaC for your clusters. A tool called ArgoCD continuously watches that repository and ensures every cluster matches the desired state. If someone makes a manual change, ArgoCD detects the drift and can automatically fix it.

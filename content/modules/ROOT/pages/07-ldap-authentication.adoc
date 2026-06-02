@@ -4,6 +4,8 @@
 **Duration:** 15-20 minutes +
 **Format:** Hands-on identity provider configuration
 
+include::partial$console-access.adoc[]
+
 == The Scenario
 
 Your cluster is running with an HTPasswd admin account - fine for initial setup, but production needs real identity management. In this module you'll integrate an LDAP directory, sync groups into OpenShift, configure RBAC so different teams get different access, and test it by logging in as actual users.

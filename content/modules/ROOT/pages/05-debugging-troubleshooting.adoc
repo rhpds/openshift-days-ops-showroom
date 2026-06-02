@@ -9,6 +9,8 @@
 **Format:** Hands-on Lab - Real Problem Solving +
 **Audience:** IT Operations, SRE, Platform Engineers
 
+include::partial$console-access.adoc[]
+
 Your cluster is running a weather application made up of several microservices. Some of them have just broken. Your job is to diagnose and fix each one - these are the same kinds of issues that generate real support tickets.
 
 === Learning Objectives
@@ -45,7 +47,7 @@ First, create the namespace and deploy the intentionally broken applications:
 
 [source,bash,role="execute"]
 ----
-oc create namespace debug-lab 2>/dev/null || true
+oc create namespace debug-lab 2>/dev/null || true && \
 oc apply -f https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/broken-apps.yaml
 ----
 
@@ -53,14 +55,15 @@ oc apply -f https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/
 
 Six microservices have been deployed with intentional misconfigurations. Let's triage the damage.
 
-Switch to the **OCP Console** tab and navigate to **Workloads -> Pods** (select project `debug-lab` from the dropdown). You'll immediately see colour-coded status indicators:
+Switch to the **OCP Console** tab and navigate to **Workloads -> Pods** (select project `debug-lab` from the dropdown). You'll immediately see which pods have issues - error states like `CrashLoopBackOff` and `ImagePullBackOff` are flagged with a red exclamation mark:
 
 image::broken-pods-triage.png[Pod list showing multiple failure states - ImagePullBackOff CrashLoopBackOff and CreateContainerConfigError]
 
-* **Red** - `weather-frontend` in `ImagePullBackOff`, `weather-api` in `CrashLoopBackOff`
-* **Yellow** - `weather-backend` in `CreateContainerConfigError`
-* **Green** - `weather-proxy` shows `Running` (but has a hidden issue)
-* **Missing** - `weather-cache` doesn't appear at all
+* `weather-frontend` - `ImagePullBackOff` (red indicator)
+* `weather-api` - `CrashLoopBackOff` (red indicator)
+* `weather-backend` - `CreateContainerConfigError`
+* `weather-proxy` - `Running` (but has a hidden issue)
+* `weather-cache` - doesn't appear at all
 
 This is how real incident triage works - visual scanning of pod status to quickly identify what needs attention.
 
@@ -81,7 +84,7 @@ NOTE: You might notice `weather-cache` is missing from the pod list - that's one
 
 **Diagnose**
 
-In the **OCP Console**, click on the `weather-frontend` pod. The **Events** tab at the bottom shows the error with colour-coded severity - you'll see the image pull failure immediately.
+In the **OCP Console**, click on the `weather-frontend` pod. Click the **Events** tab at the top to see the error with colour-coded severity - you'll see the image pull failure immediately.
 
 image::debugging-frontend-events.png[weather-frontend pod Events tab showing ImagePullBackOff error]
 
@@ -99,7 +102,7 @@ Warning  Failed   Failed to pull image "registry.access.redhat.com/ubi9/httpd-24
 Warning  Failed   Error: ImagePullBackOff
 ----
 
-The image tag `9.9` doesn't exist — the registry can't find it. Let's confirm the image reference:
+The image tag `9.9` doesn't exist - the registry can't find it. Let's confirm the image reference:
 
 [source,bash,role="execute"]
 ----
@@ -163,7 +166,7 @@ oc create configmap weather-api-config --from-literal=config.yaml="port: 8080" -
 oc patch deployment weather-api -n debug-lab --type=json -p='[
   {"op":"add","path":"/spec/template/spec/volumes","value":[{"name":"config","configMap":{"name":"weather-api-config"}}]},
   {"op":"add","path":"/spec/template/spec/containers/0/volumeMounts","value":[{"name":"config","mountPath":"/etc/weather"}]},
-  {"op":"replace","path":"/spec/template/spec/containers/0/command","value":["/bin/sh","-c","cat /etc/weather/config.yaml && echo Config loaded successfully && sleep 3600"]}
+  {"op":"remove","path":"/spec/template/spec/containers/0/command"}
 ]'
 ----
 
