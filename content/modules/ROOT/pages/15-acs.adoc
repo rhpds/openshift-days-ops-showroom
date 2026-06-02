@@ -144,13 +144,13 @@ image::acs-security-02.png[Create scan schedule dialog, link=self, window=blank,
 . Next, fill in the form with the following information:
 * *Name*:
 +
-[source,sh,subs="attributes",role=execute]
+[source,sh,subs="attributes",role="copypaste"]
 ----
 acs-catch-all
 ----
 * *Description*:
 +
-[source,sh,subs="attributes",role=execute]
+[source,sh,subs="attributes",role="copypaste"]
 ----
 Daily compliance scan for all profiles covering CIS, E8, Moderate, NERC-CIP, PCI-DSS, and STIG standards.
 ----
