@@ -4,6 +4,8 @@
 **Duration:** 10 minutes +
 **Format:** Hands-on verification
 
+include::partial$console-access.adoc[]
+
 == What You're Checking
 
 These are the same checks you'd run after an installation, after an upgrade, or when something feels off - ClusterOperators, node config, networking, storage, and etcd health.

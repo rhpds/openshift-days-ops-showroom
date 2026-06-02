@@ -4,6 +4,8 @@
 **Duration:** 35-40 minutes +
 **Format:** Hands-on observability configuration
 
+include::partial$console-access.adoc[]
+
 == The Scenario
 
 Something's wrong with your cluster. How do you know? Where do you look? If you can't answer that in 30 seconds, your observability stack isn't ready for production.

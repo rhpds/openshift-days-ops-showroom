@@ -9,6 +9,8 @@
 **Format:** Hands-on +
 **Audience:** Platform Engineers, Operations Teams
 
+include::partial$console-access.adoc[]
+
 In this module, you'll deploy an application, expose it to the outside world, scale it for capacity, see how OpenShift self-heals when things fail, and configure health checks. This is the core ops workflow for managing workloads on OpenShift.
 
 === Learning Objectives

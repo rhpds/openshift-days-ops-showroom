@@ -4,6 +4,8 @@
 **Duration:** 25 minutes +
 **Format:** Hands-on ingress configuration
 
+include::partial$console-access.adoc[]
+
 == The Scenario
 
 Your apps are deployed and running - but how does external traffic actually reach them? In this module you'll examine the Ingress Controller, create routes with TLS, and then protect them: rate limiting under load, HTTP-to-HTTPS enforcement, and security headers. You'll prove each one works by testing before and after.

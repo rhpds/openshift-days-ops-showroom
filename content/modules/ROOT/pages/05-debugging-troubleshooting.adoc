@@ -9,6 +9,8 @@
 **Format:** Hands-on Lab - Real Problem Solving +
 **Audience:** IT Operations, SRE, Platform Engineers
 
+include::partial$console-access.adoc[]
+
 Your cluster is running a weather application made up of several microservices. Some of them have just broken. Your job is to diagnose and fix each one - these are the same kinds of issues that generate real support tickets.
 
 === Learning Objectives

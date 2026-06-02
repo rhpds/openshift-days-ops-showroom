@@ -8,6 +8,8 @@
 **Duration:** 15-20 minutes +
 **Audience:** Platform Engineers, SRE, Operations Teams
 
+include::partial$console-access.adoc[]
+
 **The Challenge:** Your applications are experiencing performance issues - pods crashing from resource exhaustion, slow response times under load, and unclear capacity planning.
 
 **In this module:** You'll diagnose and fix real performance problems using OpenShift's autoscaling and monitoring tools.

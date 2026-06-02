@@ -3,6 +3,8 @@
 
 **Duration:** 20-25 minutes
 
+include::partial$console-access.adoc[]
+
 == The Scenario
 
 Some workloads can't be containerized yet - databases, middleware, Windows services. OpenShift Virtualization lets you run those VMs alongside containers on the same platform using KubeVirt (CNCF project, built on RHEL KVM). Same scheduler, same networking, same monitoring, same RBAC, same `oc` commands.

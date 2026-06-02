@@ -3,6 +3,8 @@
 **Duration:** 25-30 minutes +
 **Format:** Guided exploration + Hands-on
 
+include::partial$console-access.adoc[]
+
 == The Problem
 
 How many times a week does someone message you: _"Is my app running?"_ or _"Can you create me a namespace?"_

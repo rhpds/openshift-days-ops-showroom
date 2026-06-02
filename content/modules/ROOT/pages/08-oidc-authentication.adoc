@@ -7,6 +7,8 @@
 **Format:** Hands-on OIDC identity provider configuration +
 **Audience:** Platform Engineers, Operations Teams, Security Administrators
 
+include::partial$console-access.adoc[]
+
 OpenShift supports multiple identity providers - LDAP, OIDC, HTPasswd, GitHub, and more. In this module you'll deploy the **Red Hat build of Keycloak (RHBK)** and configure it as an OpenID Connect (OIDC) identity provider for OpenShift - the modern approach to enterprise SSO.
 
 You will:
