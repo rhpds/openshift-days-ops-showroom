@@ -12,7 +12,7 @@ image::diagrams/03_ingress.png[OpenShift Ingress Load Balancer Flow, align=cente
 
 == Ingress Controller & Load Balancing
 
-The **Ingress Controller** (HAProxy by default, though other ingress controllers can be used) handles HTTP/S traffic entering the cluster.
+The **Ingress Controller** (HAProxy by default, though other ingress controllers can be used) can handle HTTP/S traffic entering the cluster.
 
 === View Ingress Controller Configuration
 
