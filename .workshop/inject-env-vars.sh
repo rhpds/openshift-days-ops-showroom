@@ -102,6 +102,9 @@ ATTRS="${ATTRS}    console_url: 'https://console-openshift-console.${ROUTE_SUBDO
 ATTRS="${ATTRS}    rhacs_url: 'https://central-stackrox.${ROUTE_SUBDOMAIN:-}'"$'\n'
 ATTRS="${ATTRS}    rhacs_admin_username: 'admin'"$'\n'
 ATTRS="${ATTRS}    rhacs_admin_password: '${ADMIN_PASSWORD:-}'"$'\n'
+ATTRS="${ATTRS}    acs_route: 'https://central-stackrox.${ROUTE_SUBDOMAIN:-}'"$'\n'
+ATTRS="${ATTRS}    acs_portal_username: 'admin'"$'\n'
+ATTRS="${ATTRS}    acs_portal_password: '${ADMIN_PASSWORD:-}'"$'\n'
 ATTRS="${ATTRS}    argocd_url: 'https://openshift-gitops-server-openshift-gitops.${ROUTE_SUBDOMAIN:-}'"$'\n'
 ATTRS="${ATTRS}    devhub_url: 'https://backstage-developer-hub-backstage.${ROUTE_SUBDOMAIN:-}'"$'\n'
 
