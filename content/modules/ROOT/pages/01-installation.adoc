@@ -326,6 +326,35 @@ monitoring   4.20.x    True        False         False      3h
 
 **Key takeaway:** `oc get clusteroperators` is your primary health check. All operators showing `True False False` means a healthy cluster ready for workloads. Beyond that, ensure the monitoring operator is healthy and verify etcd health.
 
+== How OpenShift Gets Installed
+
+This module focused on verifying a running cluster, but admins often get asked how clusters are built. Here is a brief overview of the installation methods available:
+
+[cols="1,2,1"]
+|===
+|Method |Description |Best For
+
+|**Assisted Installer**
+|Web-based wizard with pre-flight validations and smart defaults. Generates a discovery ISO that handles provisioning automatically.
+|Cloud, on-prem, first-time installs
+
+|**Agent-based Installer**
+|Offline version of the Assisted Installer. Generates a bootable ISO containing everything needed to deploy, no external services required.
+|Disconnected/air-gapped environments
+
+|**IPI (Installer-Provisioned Infrastructure)**
+|The `openshift-install` binary provisions compute, network, and storage automatically using cloud or BMC APIs.
+|Cloud platforms (AWS, Azure, GCP), bare metal with BMC
+
+|**UPI (User-Provisioned Infrastructure)**
+|You provision the infrastructure yourself, then run the installer to deploy OpenShift on top. Maximum control and customization.
+|Existing infrastructure, custom networking, compliance requirements
+|===
+
+**How the bootstrap process works:** Every OpenShift install starts with a temporary bootstrap node that runs the control plane components long enough to bring up the permanent control plane. Once the permanent control plane is running, the bootstrap node is removed. Each node boots from an Ignition config, a machine configuration file that tells RHCOS (Red Hat Enterprise Linux CoreOS) how to configure itself, what services to run, and where to find the cluster.
+
+For full details, see the link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/installation_overview/index[Installation Overview, window=blank].
+
 === Additional Resources
 
 * **Installing OpenShift:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/installation_overview/index[Installation Documentation, window=blank]
