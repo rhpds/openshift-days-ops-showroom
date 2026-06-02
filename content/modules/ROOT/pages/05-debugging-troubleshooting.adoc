@@ -57,10 +57,11 @@ Switch to the **OCP Console** tab and navigate to **Workloads -> Pods** (select 
 
 image::broken-pods-triage.png[Pod list showing multiple failure states - ImagePullBackOff CrashLoopBackOff and CreateContainerConfigError]
 
-* **Red** - `weather-frontend` in `ImagePullBackOff`, `weather-api` in `CrashLoopBackOff`
-* **Yellow** - `weather-backend` in `CreateContainerConfigError`
-* **Green** - `weather-proxy` shows `Running` (but has a hidden issue)
-* **Missing** - `weather-cache` doesn't appear at all
+* `weather-frontend` — `ImagePullBackOff` (red indicator)
+* `weather-api` — `CrashLoopBackOff` (red indicator)
+* `weather-backend` — `CreateContainerConfigError`
+* `weather-proxy` — `Running` (but has a hidden issue)
+* `weather-cache` — doesn't appear at all
 
 This is how real incident triage works - visual scanning of pod status to quickly identify what needs attention.
 
