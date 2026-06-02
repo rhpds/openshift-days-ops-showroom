@@ -53,7 +53,7 @@ oc apply -f https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/
 
 Six microservices have been deployed with intentional misconfigurations. Let's triage the damage.
 
-Switch to the **OCP Console** tab and navigate to **Workloads -> Pods** (select project `debug-lab` from the dropdown). You'll immediately see colour-coded status indicators:
+Switch to the **OCP Console** tab and navigate to **Workloads -> Pods** (select project `debug-lab` from the dropdown). You'll immediately see which pods have issues — error states like `CrashLoopBackOff` and `ImagePullBackOff` are flagged with a red exclamation mark:
 
 image::broken-pods-triage.png[Pod list showing multiple failure states - ImagePullBackOff CrashLoopBackOff and CreateContainerConfigError]
 
