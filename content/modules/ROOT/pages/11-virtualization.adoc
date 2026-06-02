@@ -93,6 +93,15 @@ The **Guest login credentials** are displayed at the top of the console - use th
 
 image::virt-console-creds.png[VNC console with guest credentials shown at top]
 
+You can also retrieve the credentials via CLI:
+
+[source,bash,role="execute"]
+----
+DATA=$(oc get vm rhel9-vm -n vm-demo -o jsonpath='{.spec.template.spec.volumes[?(@.name=="cloudinitdisk")].cloudInitNoCloud.userData}')
+echo "Username: $(echo "$DATA" | grep 'user:' | awk '{print $2}')"
+echo "Password: $(echo "$DATA" | grep 'password:' | awk '{print $2}')"
+----
+
 Pick a size, pick a boot image, deploy. No YAML needed.
 
 === It's Just a Pod
