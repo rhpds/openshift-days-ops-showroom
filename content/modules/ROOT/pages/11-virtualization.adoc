@@ -318,7 +318,7 @@ sudo hostnamectl set-hostname broken-vm
 cat /etc/hostname
 ----
 
-You should see the hostname change from `rhel9-vm` to `broken-vm`. When done, click the **reload button** on the Terminal tab to exit the console and return to your normal terminal.
+You should see the hostname change from `rhel9-vm` to `broken-vm`. When done, press **Ctrl+5** to exit the console, or click the **reload button** on the Terminal tab to return to your normal terminal.
 
 Now the VM has changed - a new file exists and the hostname has been modified. Let's restore to the snapshot and prove both changes are reverted.
 
