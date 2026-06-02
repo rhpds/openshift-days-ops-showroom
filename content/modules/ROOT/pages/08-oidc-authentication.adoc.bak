@@ -229,7 +229,7 @@ image::oidc-auth-error.png[Authentication error after OIDC login]
 Click the **reload button** (circular arrow) next to the OCP Console tab to reload the page.
 ====
 
-Now check what happened - when `developer1` logged in, their Keycloak group membership was included in the ID token. OpenShift reads the token and creates the groups automatically, no manual `oc adm groups sync` required. Back in the terminal:
+Now check what happened — when `developer1` logged in, their Keycloak group membership was included in the ID token. OpenShift reads the token and creates the groups automatically, no manual `oc adm groups sync` required. Back in the terminal:
 
 [source,bash,role="execute",subs="attributes"]
 ----
@@ -250,7 +250,7 @@ TIP: You can also see the auto-created groups in the console at **User Managemen
 oc get user developer1 -o yaml
 ----
 
-In the output, look at the `identities` section - it shows the identity provider (`rhbk`) and the identifier of the user. The user was created automatically on first login. Notice `groups: null` - group membership isn't stored on the User object. It's on the Group objects that were auto-created from the OIDC token (as you saw from `oc get groups` above). Next we'll assign RBAC roles to those groups.
+In the output, look at the `identities` section — it shows the identity provider (`rhbk`) and the identifier of the user. The user was created automatically on first login. Notice `groups: null` — group membership isn't stored on the User object. It's on the Group objects that were auto-created from the OIDC token (as you saw from `oc get groups` above). Next we'll assign RBAC roles to those groups.
 
 == Configure RBAC
 
@@ -274,7 +274,7 @@ oc adm policy add-role-to-group edit ocp-developers -n app-development
 oc adm policy add-role-to-group view ocp-developers -n app-production
 ----
 
-NOTE: You may see `Warning: Group 'ocp-admins' not found` or similar - this is normal. OIDC groups are only created in OpenShift when a user from that group logs in. Only `developer1` has logged in so far, so only `ocp-developers` exists. The role bindings are still created and will take effect when those users log in.
+NOTE: You may see `Warning: Group 'ocp-admins' not found` or similar — this is normal. OIDC groups are only created in OpenShift when a user from that group logs in. Only `developer1` has logged in so far, so only `ocp-developers` exists. The role bindings are still created and will take effect when those users log in.
 
 Now verify - reload the **OCP Console** tab. Since developer1 is already logged in via OIDC, the console should now show the projects they have access to. You should see **Application Development** and **Application Production** in the project list.
 

@@ -102,7 +102,7 @@ image::rhdh-payments-kubernetes-3pods.png[Kubernetes tab showing 3 pods for paym
 
 You should see 3 pods running - `payments-api`, `payments-processor`, and `payments-gateway` - with their status, restarts, and age. This data is live from the cluster.
 
-NOTE: You may see "pods with errors" flagged at the top - this is Developer Hub reporting any pods with a restart count of 1 or more. On a workshop cluster this is normal (pods may have restarted during initial provisioning) and doesn't indicate an actual problem.
+NOTE: You may see "pods with errors" flagged at the top — this is Developer Hub reporting any pods with a restart count of 1 or more. On a workshop cluster this is normal (pods may have restarted during initial provisioning) and doesn't indicate an actual problem.
 
 **This is the key.** A developer clicks their service in the catalog and sees exactly what's running - pod count, restart history, resource usage - without `oc` access, without opening a ticket, without messaging you. You didn't have to do anything for this to work. The platform team configured it once, and every service with the right labels gets this for free.
 

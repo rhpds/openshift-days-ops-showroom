@@ -55,15 +55,15 @@ oc apply -f https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/
 
 Six microservices have been deployed with intentional misconfigurations. Let's triage the damage.
 
-Switch to the **OCP Console** tab and navigate to **Workloads -> Pods** (select project `debug-lab` from the dropdown). You'll immediately see which pods have issues - error states like `CrashLoopBackOff` and `ImagePullBackOff` are flagged with a red exclamation mark:
+Switch to the **OCP Console** tab and navigate to **Workloads -> Pods** (select project `debug-lab` from the dropdown). You'll immediately see which pods have issues — error states like `CrashLoopBackOff` and `ImagePullBackOff` are flagged with a red exclamation mark:
 
 image::broken-pods-triage.png[Pod list showing multiple failure states - ImagePullBackOff CrashLoopBackOff and CreateContainerConfigError]
 
-* `weather-frontend` - `ImagePullBackOff` (red indicator)
-* `weather-api` - `CrashLoopBackOff` (red indicator)
-* `weather-backend` - `CreateContainerConfigError`
-* `weather-proxy` - `Running` (but has a hidden issue)
-* `weather-cache` - doesn't appear at all
+* `weather-frontend` — `ImagePullBackOff` (red indicator)
+* `weather-api` — `CrashLoopBackOff` (red indicator)
+* `weather-backend` — `CreateContainerConfigError`
+* `weather-proxy` — `Running` (but has a hidden issue)
+* `weather-cache` — doesn't appear at all
 
 This is how real incident triage works - visual scanning of pod status to quickly identify what needs attention.
 
@@ -102,7 +102,7 @@ Warning  Failed   Failed to pull image "registry.access.redhat.com/ubi9/httpd-24
 Warning  Failed   Error: ImagePullBackOff
 ----
 
-The image tag `9.9` doesn't exist - the registry can't find it. Let's confirm the image reference:
+The image tag `9.9` doesn't exist — the registry can't find it. Let's confirm the image reference:
 
 [source,bash,role="execute"]
 ----

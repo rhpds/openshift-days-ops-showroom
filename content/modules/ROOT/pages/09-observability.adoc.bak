@@ -173,7 +173,7 @@ Click on the rule to see its details. After about 2-3 minutes (once the pod has 
 
 image::alerting-rule-detail.png[HighPodRestartRate rule detail showing expression and active alerts]
 
-Now navigate to **Alerting → Alerts** - you should see `HighPodRestartRate`. Click into the alert and click the **Description** at the bottom to see more detail - you'll see `crashloop-test` as the source pod:
+Now navigate to **Alerting → Alerts** - you should see `HighPodRestartRate`. Click into the alert and click the **Description** at the bottom to see more detail — you'll see `crashloop-test` as the source pod:
 
 image::alerts-firing.png[Alerts tab showing currently firing alerts with severity and state]
 
@@ -380,7 +380,7 @@ bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showr
 
 === Enable the Logging UI
 
-The UIPlugin adds the **Observe -> Logs** view to the OpenShift console. Run the command below to enable it - it may take a few minutes to appear:
+The UIPlugin adds the **Observe -> Logs** view to the OpenShift console. Run the command below to enable it — it may take a few minutes to appear:
 
 [source,bash,role="execute"]
 ----
@@ -443,7 +443,7 @@ image::severity.png[Severity filter]
 
 Try it now: select **Infrastructure** logs, then filter by severity **Warning** or **Error**. These are the log entries that matter during an incident - pod evictions, OOM kills, certificate expiry warnings.
 
-Click **Show Histogram** (highlighted in red below) in the top right to display log volume over time. Spikes in the error count correlate with incidents - click on a spike to zoom into that time window.
+Click **Show Histogram** (highlighted in red below) in the top right to display log volume over time. Spikes in the error count correlate with incidents — click on a spike to zoom into that time window.
 
 image::histogram.png[Log histogram]
 
