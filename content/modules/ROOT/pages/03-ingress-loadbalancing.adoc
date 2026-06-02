@@ -291,7 +291,7 @@ All `403` - every request reaches the app (the httpd default page returns 403, w
 
 === Ingress Controller Scaling
 
-The ingress controller can be scaled by changing `spec.replicas` on the IngressController CR. On cloud platforms with LoadBalancer services, adding replicas puts more routers behind the external load balancer for higher throughput.
+The ingress controller can be scaled by changing `spec.replicas` on the IngressController CR. Adding replicas puts more routers behind the external ingress load balancer for higher throughput.
 
 On this compact cluster, one router per node is already the maximum - scaling up would leave pods Pending (anti-affinity prevents two routers on the same node), and scaling down would drop traffic on the node that loses its router.
 
