@@ -4,6 +4,8 @@
 **Duration:** 15-20 minutes +
 **Format:** Hands-on demonstration
 
+include::partial$console-access.adoc[]
+
 == Let's Go
 
 You have cluster admin access to a live OpenShift cluster. Let's make sure everything's working - click the commands below:
