@@ -50,6 +50,21 @@ spec:
     tls:
       caName: loki-s3-ca            # CA cert for NooBaa's S3 endpoint
   storageClassName: ${DEFAULT_SC}    # uses the cluster's default storage class
+  template:
+    compactor:
+      replicas: 1
+    distributor:
+      replicas: 1
+    gateway:
+      replicas: 1
+    indexGateway:
+      replicas: 1
+    ingester:
+      replicas: 1
+    querier:
+      replicas: 1
+    queryFrontend:
+      replicas: 1
   limits:
     global:
       ingestion:

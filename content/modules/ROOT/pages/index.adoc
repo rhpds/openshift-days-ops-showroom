@@ -160,7 +160,7 @@ Everything below - monitoring, a container registry, and ingress routing - was r
 
 Nobody installed Prometheus on this cluster. It's already running.
 
-==== Explore Prometheus (CLI)
+**Explore Prometheus (CLI)**
 
 [source,bash,role="execute"]
 ----
@@ -177,7 +177,7 @@ prometheus-operator-admission-webhook-c9f987dd7-h4jtc   1/1     Running   0     
 prometheus-operator-bb6c949f9-6rpnl                     2/2     Running   0          66m
 ----
 
-==== Access Metrics (Console)
+**Access Metrics (Console)**
 
 1. In the Console, navigate to **Observe → Dashboards**
 2. Click the dropdown labeled **Dashboard** (it may show "API Performance" by default)
@@ -192,7 +192,7 @@ image::observe-cluster-metrics-dashboard.png[Kubernetes Cluster Metrics Dashboar
 
 **No configuration required.** This is built-in.
 
-==== Query Prometheus (Advanced)
+**Query Prometheus (Advanced)**
 
 1. Navigate to **Observe → Metrics**
 2. Try this PromQL query:
@@ -235,7 +235,9 @@ node-ca-5lh4f                                      1/1     Running   0          
 
 Already running - with authentication, HA replicas, and storage configured. Nobody installed it.
 
-==== View Image Streams
+**View Image Streams**
+
+Image streams are OpenShift's way of pointing to container images without hardcoding registry URLs. When an image updates, your builds and deployments can automatically pick up the change.
 
 [source,bash,role="execute"]
 ----
@@ -275,7 +277,7 @@ openshift-console          downloads             downloads-openshift-console.app
 
 Routes give you HAProxy-based ingress with automatic TLS certs and DNS. OpenShift also supports standard Kubernetes `Ingress` resources if you prefer.
 
-==== Try It: Deploy and Expose in 30 Seconds
+**Try It: Deploy and Expose in 30 Seconds**
 
 How fast can you go from nothing to a running app with a public URL? Three commands:
 
@@ -324,7 +326,7 @@ control-plane-cluster-xxxxx-3   Ready    control-plane,master,worker   20h   v1.
 
 NOTE: Node names and count vary by deployment. Production clusters typically have separate control plane and worker nodes. This workshop uses a compact topology where all nodes serve both roles.
 
-==== Check Node Details (Console)
+**Check Node Details (Console)**
 
 1. Navigate to **Compute → Nodes**
 +
@@ -332,7 +334,7 @@ image::compute-nodes-menu.png[Compute menu showing Nodes option]
 +
 2. Click on any node
 3. The **Overview** tab immediately shows you:
-   - **Active alerts** - you'll likely see alerts like `KubeCPUOvercommit` or `KubeMemoryOvercommit` at the top. These fire when the **total CPU/memory limits** of all pods on the node exceed the node's capacity. This means if every pod tried to burst to its maximum simultaneously, the node couldn't handle it and would throttle pods.
+   - **Status** - shows whether the node is healthy and flags any issues. On this workshop cluster you'll see overcommit warnings for CPU and memory - this means pod **limits** exceed the node's capacity, but that doesn't mean the node is in trouble. Check the **Utilization** section below to see actual usage vs available capacity. If actual usage is well within capacity, the overcommit is fine. You'll also see firing alerts - on a workshop cluster with many operators installed, this is expected.
 +
 However, look at the **Utilization graphs** below - actual CPU and memory usage is well within capacity. The difference is important: **requests** (what's guaranteed) fit on the node, **limits** (what pods are allowed to burst to) don't. In practice, all pods bursting at once rarely happens, especially in a workshop environment. In production, you'd either right-size your limits, add nodes, or accept the overcommit if your workloads don't burst together.
    - **Utilization graphs** - CPU, Memory, Filesystem, and Network over time. Compare "available" to actual usage - that tells you the real capacity story, not the theoretical limits.
@@ -343,9 +345,9 @@ Active alerts, utilization graphs, and per-pod resource usage are all in one con
 
 image::nodes-console-view.png[Nodes Console View]
 
-==== Infrastructure Management
+=== Infrastructure Management
 
-==== MachineSets - Automated Infrastructure Scaling
+**MachineSets - Automated Infrastructure Scaling**
 
 OpenShift uses **MachineSets** to automate infrastructure scaling. On cloud platforms (AWS, Azure, GCP), MachineSets manage worker nodes across availability zones - you can scale up by changing a replica count rather than manually provisioning machines.
 
@@ -380,7 +382,7 @@ oc get machines.machine.openshift.io -n openshift-machine-api
 
 This shows the underlying compute instances that OpenShift is managing.
 
-==== Scaling Workers
+=== Scaling Workers
 
 To add another worker node, simply scale the MachineSet:
 
@@ -412,7 +414,7 @@ NAME      VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
 version   4.x       True        False         32m     Cluster version is 4.x
 ----
 
-==== View Available Upgrades (Console)
+**View Available Upgrades (Console)**
 
 1. Navigate to **Administration → Cluster Settings**
 +
@@ -442,7 +444,7 @@ oc get packagemanifests -n openshift-marketplace | wc -l
 
 Hundreds of operators ready to install - a mix of Red Hat, certified partner, and community options.
 
-==== Explore Software Catalog (Console)
+**Explore Software Catalog (Console)**
 
 1. Navigate to **Ecosystem → Software Catalog**
 2. You may need to select a project from the dropdown - if one is not already selected, choose **default**

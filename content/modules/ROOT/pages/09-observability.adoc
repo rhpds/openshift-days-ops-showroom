@@ -4,6 +4,8 @@
 **Duration:** 35-40 minutes +
 **Format:** Hands-on observability configuration
 
+include::partial$console-access.adoc[]
+
 == The Scenario
 
 Something's wrong with your cluster. How do you know? Where do you look? If you can't answer that in 30 seconds, your observability stack isn't ready for production.
@@ -171,7 +173,7 @@ Click on the rule to see its details. After about 2-3 minutes (once the pod has 
 
 image::alerting-rule-detail.png[HighPodRestartRate rule detail showing expression and active alerts]
 
-Now switch to the **Alerts** tab. Filter by **Alert State: Firing** - you should see `HighPodRestartRate`. Click into the alert and scroll down to the **Description** at the bottom to see more detail — you'll see `crashloop-test` as the source pod:
+Now navigate to **Alerting → Alerts** - you should see `HighPodRestartRate`. Click into the alert and click the **Description** at the bottom to see more detail - you'll see `crashloop-test` as the source pod:
 
 image::alerts-firing.png[Alerts tab showing currently firing alerts with severity and state]
 
@@ -188,7 +190,7 @@ Your alert fired - but who got notified? Right now, nobody. Alertmanager has rec
 
 In production, that means an overnight incident goes unnoticed until someone checks the console in the morning. Let's fix that by wiring up email notifications.
 
-==== Deploy a Mail Server
+**Deploy a Mail Server**
 
 Deploy Mailpit - a lightweight mail server that catches emails and shows them in a web inbox. This simulates what an internal mail relay does in production:
 
@@ -197,7 +199,7 @@ Deploy Mailpit - a lightweight mail server that catches emails and shows them in
 bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/09-observability/deploy-mailpit.sh)
 ----
 
-==== Configure Alertmanager
+**Configure Alertmanager**
 
 Now configure Alertmanager to send emails through Mailpit. This routes warning alerts to `ops-team@example.com` and critical alerts to `oncall@example.com`:
 
@@ -219,7 +221,7 @@ Click on any email to see the full alert details - alert name, namespace, severi
 
 In production, you would replace `mailpit.alert-demo.svc:1025` with your organization's SMTP relay and use real email addresses. Alertmanager also supports Slack, PagerDuty, and webhooks using the same routing structure - see link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/monitoring/managing-alerts#sending-notifications-to-external-systems_managing-alerts[Sending notifications to external systems, window=blank].
 
-==== Restore Alertmanager
+**Restore Alertmanager**
 
 Reset Alertmanager to its default configuration and clean up:
 
@@ -273,7 +275,7 @@ EOF
 
 Install the Loki Operator from the Software Catalog - this is the same process for any operator in OperatorHub.
 
-==== Loki Operator (log storage)
+**Loki Operator (log storage)**
 
 1. Navigate to **Ecosystem -> Software Catalog**
 2. Search for **Loki Operator**
@@ -290,7 +292,7 @@ You'll see the "Installing Operator" confirmation:
 
 image::obs-loki-installing.png[Loki Operator installing confirmation]
 
-==== Remaining Operators
+**Remaining Operators**
 
 You've seen how OperatorHub works. The remaining operators use the same process - let's script them. This will take a couple of minutes to complete:
 
@@ -378,7 +380,7 @@ bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showr
 
 === Enable the Logging UI
 
-The UIPlugin adds the **Observe -> Logs** view to the OpenShift console. Run the command below to enable it — it may take a few minutes to appear:
+The UIPlugin adds the **Observe -> Logs** view to the OpenShift console. Run the command below to enable it - it may take a few minutes to appear:
 
 [source,bash,role="execute"]
 ----
@@ -421,9 +423,9 @@ Click **Refresh** to reload the console with the new Logs view. This may log you
 * Username: `{openshift_cluster_admin_username}`
 * Password: `{openshift_cluster_admin_password}`
 
-Navigate to **Observe -> Logs** in the console. You'll see three log types:
+Navigate to **Observe -> Logs** in the console. Use the log type dropdown (highlighted in red below) to switch between three log types:
 
-image::observe-logs-view.png[Observe Logs view showing infrastructure logs with severity filter]
+image::observe-logs-view.png[Observe Logs view with log type dropdown highlighted]
 
 * **Application** - Logs from user workloads
 * **Infrastructure** - Logs from OpenShift components
@@ -441,7 +443,7 @@ image::severity.png[Severity filter]
 
 Try it now: select **Infrastructure** logs, then filter by severity **Warning** or **Error**. These are the log entries that matter during an incident - pod evictions, OOM kills, certificate expiry warnings.
 
-The histogram at the top shows log volume over time - spikes in the error count correlate with incidents. Click on a spike to zoom into that time window.
+Click **Show Histogram** (highlighted in red below) in the top right to display log volume over time. Spikes in the error count correlate with incidents - click on a spike to zoom into that time window.
 
 image::histogram.png[Log histogram]
 

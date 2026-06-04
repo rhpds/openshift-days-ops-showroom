@@ -3,6 +3,8 @@
 
 **Duration:** 20-25 minutes
 
+include::partial$console-access.adoc[]
+
 == The Scenario
 
 Some workloads can't be containerized yet - databases, middleware, Windows services. OpenShift Virtualization lets you run those VMs alongside containers on the same platform using KubeVirt (CNCF project, built on RHEL KVM). Same scheduler, same networking, same monitoring, same RBAC, same `oc` commands.
@@ -36,7 +38,7 @@ oc new-project vm-demo
 
 Now create a VM using the console - the same cloud-style experience your teams get in AWS or Azure.
 
-==== Step 1: Open the Create Wizard
+**Step 1: Open the Create Wizard**
 
 . In the OpenShift console, switch to the **Fleet Virtualization** perspective from the top-left dropdown
 . Click the **Create** dropdown and select **From InstanceType**
@@ -46,7 +48,7 @@ image::virt-create-dropdown.png[Create VirtualMachine dropdown showing From Inst
 +
 image::virt-select-project.png[Project dropdown showing vm-demo search and selection]
 
-==== Step 2: Select Boot Source and InstanceType
+**Step 2: Select Boot Source and InstanceType**
 
 1. At the top of the wizard, select the **Red Hat Enterprise Linux 9** boot source from the volume list
 2. Under **Select InstanceType**, choose **Red Hat provided** -> **General Purpose** -> **medium: 1 CPUs, 4 GiB Memory**
@@ -66,7 +68,7 @@ OpenShift Virtualization provides **InstanceTypes** - predefined compute profile
 
 image::virt-create-wizard.png[VM creation wizard showing InstanceType selection and VM details]
 
-==== Step 3: Configure and Create
+**Step 3: Configure and Create**
 
 In the **VirtualMachine details** section:
 
@@ -79,7 +81,7 @@ The VM details page opens. You'll see the status change from **Provisioning** to
 
 image::virt-provisioning.png[VM details page showing Provisioning status]
 
-==== Step 4: Access the VM Console
+**Step 4: Access the VM Console**
 
 Once the VM is running, click the **Console** tab. You'll see the VNC console with the VM's boot output:
 
@@ -92,6 +94,15 @@ image::virt-open-web-console.png[Open web console link]
 The **Guest login credentials** are displayed at the top of the console - use these to log in:
 
 image::virt-console-creds.png[VNC console with guest credentials shown at top]
+
+You can also retrieve the credentials via CLI:
+
+[source,bash,role="execute"]
+----
+DATA=$(oc get vm rhel9-vm -n vm-demo -o jsonpath='{.spec.template.spec.volumes[?(@.name=="cloudinitdisk")].cloudInitNoCloud.userData}')
+echo "Username: $(echo "$DATA" | grep 'user:' | awk '{print $2}')"
+echo "Password: $(echo "$DATA" | grep 'password:' | awk '{print $2}')"
+----
 
 Pick a size, pick a boot image, deploy. No YAML needed.
 
@@ -184,7 +195,7 @@ For VMs running web applications (Apache, IIS, Tomcat), you'd create a Service o
 
 This is the feature that makes OpenShift Virtualization production-ready. When you need to patch a node, upgrade the OS, or replace hardware, you drain the node. Containers reschedule automatically, and VMs live migrate automatically too. `oc adm drain` handles both. Zero downtime during maintenance windows.
 
-==== Step 1: Prepare for Migration
+**Step 1: Prepare for Migration**
 
 Live migration requires compatible CPU features on the source and target nodes. Workshop clusters can have mixed Intel and AMD nodes in the pool - VMs can only migrate between nodes with the same CPU vendor because the CPU instruction sets are incompatible. This script detects your VM's CPU vendor and pins it to the vendor with 2+ nodes so there's a valid migration target:
 
@@ -197,7 +208,7 @@ NOTE: This may take a minute if the VM needs to be moved to a different node. Wa
 
 NOTE: In production, you'd ensure homogeneous CPU hardware in your cluster or use a specific CPU model in the VM's spec. This is a common operational consideration for any KubeVirt/OpenShift Virtualization deployment.
 
-==== Step 2: Note the Current Node
+**Step 2: Note the Current Node**
 
 Check which node the VM is on before migration:
 
@@ -206,7 +217,7 @@ Check which node the VM is on before migration:
 oc get vmi rhel9-vm -n vm-demo -o jsonpath='Node: {.status.nodeName}' && echo ""
 ----
 
-==== Step 3: Trigger the Migration
+**Step 3: Trigger the Migration**
 
 . On the VM details page, click the **Actions** dropdown in the top-right corner
 . Hover over **Migration** to expand the submenu
@@ -217,7 +228,7 @@ image::virt-actions-migrate.png[Actions dropdown showing Migration submenu with 
 +
 image::virt-migrate-auto-node.png[Migration dialog with Automatically selected Node option]
 
-==== Step 4: Watch the Migration
+**Step 4: Watch the Migration**
 
 The VM status changes to **Migrating** while the live migration is in progress:
 
@@ -236,7 +247,7 @@ The VM moved while still running. No downtime, no reconnection needed.
 
 Need another copy of a VM - for testing, dev environments, or scaling out? Clone it. This creates a full copy of the VM's disk and configuration.
 
-==== Step 1: Start the Clone
+**Step 1: Start the Clone**
 
 . On the **rhel9-vm** details page, click **Actions** -> **Clone**
 +
@@ -247,7 +258,7 @@ image::virt-actions-clone.png[Actions dropdown with Clone option highlighted]
 +
 image::virt-clone-config.png[Clone VirtualMachine dialog with name and configuration]
 
-==== Step 2: Watch the Clone Progress
+**Step 2: Watch the Clone Progress**
 
 The dialog shows the clone progress: **Request sent** -> **In process** -> **Created**:
 
@@ -265,7 +276,7 @@ IMPORTANT: Click back to **rhel9-vm** in the left sidebar before continuing. The
 
 Every operations team has been burned by a patch that broke something. Snapshots give you a safety net - capture the VM's disk and configuration before a change, and roll back in seconds if it goes wrong.
 
-==== Step 1: Take a Snapshot
+**Step 1: Take a Snapshot**
 
 . Navigate to **rhel9-vm** (not the clone) and open its details page. Click **Actions** -> **Take snapshot**
 +
@@ -276,13 +287,13 @@ image::virt-snapshot-config.png[Take snapshot dialog with default name and disk 
 
 NOTE: The warning about `cloudinitdisk` not being included is expected - cloud-init only runs on first boot and doesn't need to be captured.
 
-==== Step 2: Verify the Snapshot
+**Step 2: Verify the Snapshot**
 
 Click the **Snapshots** tab. The snapshot shows **Ready** status once complete:
 
 image::virt-snapshot-ready.png[Snapshots tab showing rhel9-vm-snapshot with Ready status]
 
-==== Step 3: Break Something
+**Step 3: Break Something**
 
 The snapshot is your safety net - let's prove it works by breaking the VM. First, get the VM login credentials:
 
@@ -309,11 +320,11 @@ sudo hostnamectl set-hostname broken-vm
 cat /etc/hostname
 ----
 
-You should see the hostname change from `rhel9-vm` to `broken-vm`. When done, click the **reload button** on the Terminal tab to exit the console and return to your normal terminal.
+You should see the hostname change from `rhel9-vm` to `broken-vm`. When done, press **Ctrl+5** to exit the console, or click the **reload button** on the Terminal tab to return to your normal terminal.
 
 Now the VM has changed - a new file exists and the hostname has been modified. Let's restore to the snapshot and prove both changes are reverted.
 
-==== Step 4: Restore from Snapshot
+**Step 4: Restore from Snapshot**
 
 . **Stop** the VM - click the **Stop** button (square icon) in the top-right action buttons
 . Once the VM shows **Stopped**, go to the **Snapshots** tab, click the kebab menu (three dots) next to the snapshot, and select **Restore VirtualMachine from snapshot**
