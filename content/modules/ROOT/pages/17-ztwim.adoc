@@ -1,0 +1,224 @@
+= Layered Zero Trust Pattern
+
+== Module Overview
+
+**Duration:** 45 minutes +
+**Format:** Hands-on lab +
+**Audience:** Security Engineers, Platform Engineers, IT Operations
+
+== Learning Objectives
+
+By the end of this module, you will:
+
+* Understand the https://validatedpatterns.io/patterns/layered-zero-trust/[Layered Zero Trust Validated Pattern^] architecture and its GitOps-driven deployment model
+* Deploy or verify the pattern on an OpenShift hub cluster using `pattern.sh`
+* Explore the `qtodo` multitier application secured with OIDC, Vault just-in-time credentials, and Zero Trust Workload Identity Manager (ZTWIM)
+* Confirm that a frontend application retrieves database credentials dynamically instead of using static secrets
+
+== Why layered zero trust?
+
+Traditional application stacks often store database passwords in Kubernetes Secrets or configuration files. Those credentials are long-lived, difficult to rotate, and attractive targets for lateral movement after a breach.
+
+The https://validatedpatterns.io/patterns/layered-zero-trust/[Layered Zero Trust Validated Pattern^] demonstrates a production-oriented approach: workloads authenticate with cryptographic identity, secrets are brokered on demand, and platform components are managed through OpenShift GitOps. Zero trust is applied in layers—identity, secrets, supply chain, and application access—not as a single product install.
+
+This module follows the upstream guides for https://validatedpatterns.io/patterns/layered-zero-trust/lzt-getting-started/[getting started^] and https://validatedpatterns.io/patterns/layered-zero-trust/lzt-secure-multitier/[securing multitiered applications^].
+
+== Pattern architecture
+
+The pattern provisions a hub cluster with GitOps-managed components, including:
+
+* *Red Hat Advanced Cluster Management (RHACM)* — multicluster management and governance
+* *OpenShift GitOps (Argo CD)* — Cluster Argo CD and Hub Argo CD instances that reconcile pattern components
+* *HashiCorp Vault* — central secret store with JWT-based authentication for workload access
+* *Zero Trust Workload Identity Manager (ZTWIM)* — SPIFFE/SPIRE-based workload identities
+* *Red Hat Build of Keycloak (RHBK)* — external identity provider for application login
+* *qtodo* — Quarkus frontend with PostgreSQL backend, demonstrating just-in-time (JIT) credential retrieval
+
+The `qtodo` use case replaces static database credentials with a secure JIT flow: the application obtains a ZTWIM-based identity, authenticates to Vault, and fetches PostgreSQL credentials at runtime.
+
+[IMPORTANT]
+====
+The pattern assumes none of its components were installed previously on the target cluster. If you are reusing a cluster, verify it does not already contain conflicting RHACM, GitOps, Vault, or ZTWIM installations before deploying.
+====
+
+== Deploy the Layered Zero Trust pattern
+
+[NOTE]
+====
+**Showroom environments:** The Layered Zero Trust pattern can take more than an hour to provision on a fresh cluster. Your workshop hub may already have the pattern installed. Run the verification steps in the next section first—if Argo CD applications report *Healthy*, skip to <<secure-multitiered-applications>>.
+====
+
+.Prerequisites
+
+* OpenShift Container Platform 4.20 or newer with a default `StorageClass` and publicly signed Ingress certificates
+* A GitHub account and personal access token with repository permissions (to fork and push)
+* Podman or Docker (used by `pattern.sh` provisioning containers)
+* Sufficient hub cluster resources for RHACM (for a single-node lab, start with at least 4 vCPUs, 16 GB RAM, and 120 GB storage)
+
+.Procedure
+. Fork the https://github.com/validatedpatterns/layered-zero-trust[`layered-zero-trust` repository^] on GitHub. You must use your fork because GitOps updates it during deployment.
+. Clone your fork and add the upstream remote from the bastion:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+git clone git@github.com:<your_username>/layered-zero-trust.git
+cd layered-zero-trust
+git remote add -f upstream git@github.com:validatedpatterns/layered-zero-trust.git
+git remote -v
+----
++
+. Create a local secrets file outside the repository (never commit credentials):
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+cp values-secret.yaml.template ~/values-secret-layered-zero-trust.yaml
+----
++
+Edit `~/values-secret-layered-zero-trust.yaml` with any required credentials for your environment.
++
+. Optional: create a feature branch and customize Helm values (`values-global.yaml`, `values-hub.yaml`, environment-specific files), then push to your fork.
+. Log in to the hub cluster and run the pattern installer:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc login --token=<retrieved_token> --server=https://api.<your_cluster>.<domain>:6443
+cd layered-zero-trust
+./pattern.sh make install
+----
+
+The script provisions pattern components and registers them with OpenShift GitOps on the hub cluster.
+
+== Verify the deployment
+
+After deployment completes, confirm GitOps is reconciling every component.
+
+The pattern installs two Argo CD instances on the hub:
+
+* *Cluster Argo CD* — deploys the App-of-Apps application `layered-zero-trust-hub`, which installs pattern components
+* *Hub Argo CD* — manages Cluster Argo CD and individual pattern components
+
+.Procedure
+. From the OpenShift web console, open the *Application Launcher* (nine-square icon) and locate the Argo CD instances.
+. Confirm the `layered-zero-trust-hub` application and its child applications report *Healthy* status.
+. From the bastion, verify key namespaces and workloads:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc get ns | egrep 'qtodo|keycloak|vault|openshift-zero-trust|openshift-gitops|open-cluster-management'
+oc get pods -n qtodo
+oc get pods -n keycloak-system
+oc get pods -n vault
+oc get pods -n openshift-zero-trust-workload-identity-manager
+----
+
+When Argo CD applications are healthy and core pods are `Running`, the pattern is ready for the application walkthrough.
+
+[[secure-multitiered-applications]]
+== Secure multitiered applications
+
+This use case demonstrates securing a common design pattern: a frontend application that persists data in a relational database. Instead of embedding database passwords in the application, the `qtodo` Quarkus app uses JIT credentials fetched from Vault using a ZTWIM-based workload identity.
+
+=== Application components
+
+* *qtodo* — Quarkus frontend protected by OpenID Connect (OIDC) through RHBK
+* *PostgreSQL (`qtodo-db`)* — database whose credentials are generated dynamically and stored in Vault
+* *RHBK (Keycloak)* — external identity store with provisioned users and OIDC clients
+* *HashiCorp Vault* — stores sensitive values and accepts JWT authentication from ZTWIM identities
+* *ZTWIM* — assigns a SPIFFE identity to `qtodo` so it can authenticate to Vault
+* *spiffe-helper* — sidecar that fetches JWT-based identities from the SPIFFE Workload API
+
+=== Explore the qtodo application
+
+.Procedure
+. In the OpenShift web console, navigate to *Home* → *Projects* and select the `qtodo` project.
+. Open *Workloads* → *Pods* and inspect the `qtodo` and `qtodo-db` pods.
++
+The `qtodo` pod uses init containers and sidecars—including `spiffe-helper`—to supply credentials required at startup and runtime.
++
+. From the bastion, list pod containers:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc get pods -n qtodo
+oc describe pod -n qtodo -l app=qtodo | egrep 'Init Containers:|Containers:|vault|spiffe'
+----
+
+=== Locate the application address
+
+.Procedure
+. In the `qtodo` project, open *Networking* → *Routes* and note the URL in the *Location* column.
+. Alternatively, print the route from the bastion:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+echo "https://$(oc get route qtodo -n qtodo -o jsonpath='{.spec.host}')/"
+----
++
+. Open the URL in a new browser tab. The RHBK login page should appear.
+
+=== Locate application credentials
+
+RHBK is provisioned with two default users: `qtodo-admin` and `qtodo-user`. Initial passwords are stored in the `keycloak-users` secret in the `keycloak-system` namespace.
+
+.Procedure
+. In the console, open the `keycloak-system` project, then *Workloads* → *Secrets* → `keycloak-users`, and click *Reveal values*.
+. Or decode credentials from the bastion:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc get secret keycloak-users -n keycloak-system \
+  -o go-template='{{range $k,$v := .data}}{{$k}}: {{$v | base64decode}}{{"\n"}}{{end}}'
+----
+
+=== Access the application
+
+.Procedure
+. Open the `qtodo` route URL from the previous section.
+. Sign in with one of the Keycloak users (`qtodo-admin` or `qtodo-user`) and the password from `keycloak-users`.
+. When prompted, change the temporary password and confirm the update.
+. After login, the `qtodo` to-do list application appears.
+
+=== Verify integration
+
+The application uses PostgreSQL for persistent storage. Confirm that JIT credentials from Vault enable read/write access to the database.
+
+.Procedure
+. In `qtodo`, add a new to-do item and remove an existing item.
+. Refresh the browser page and confirm the list persists.
++
+Successful persistence confirms that the Quarkus frontend connected to PostgreSQL using credentials sourced dynamically from Vault—not static secrets in the deployment manifest.
++
+. Optional: inspect Vault and ZTWIM integration from the bastion:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc get pods -n qtodo -o wide
+oc logs -n qtodo -l app=qtodo -c spiffe-helper --tail=20
+oc get clusterspiffeid -A 2>/dev/null | head -10
+----
+
+== What you learned
+
+* The https://validatedpatterns.io/patterns/layered-zero-trust/[Layered Zero Trust Validated Pattern^] combines GitOps, multicluster management, Vault, ZTWIM, and identity providers into a cohesive zero-trust platform.
+* *GitOps* (`pattern.sh` + Argo CD) is the control plane for installing and reconciling every pattern component on the hub cluster.
+* The *qtodo* application demonstrates *JIT credentials*: ZTWIM issues workload identity, Vault brokers database secrets, and the frontend never stores long-lived database passwords.
+* *OIDC through RHBK* secures user access to the application layer while ZTWIM and Vault secure service-to-service and data-layer access.
+
+== References
+
+* https://validatedpatterns.io/patterns/layered-zero-trust/lzt-getting-started/[Deploying the Layered Zero Trust pattern — Validated Patterns]
+* https://validatedpatterns.io/patterns/layered-zero-trust/lzt-secure-multitier/[Secure multitiered applications — Validated Patterns]
+* https://github.com/validatedpatterns/layered-zero-trust[layered-zero-trust GitHub repository]
+* https://github.com/openshift/zero-trust-workload-identity-manager[Zero Trust Workload Identity Manager on GitHub]
+
+== Clean up (optional)
+
+Removing the full pattern reverses many hub-level components. Only run cleanup on disposable lab clusters.
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+cd layered-zero-trust
+./pattern.sh make uninstall
+----
+
+**Great job!** You explored the Layered Zero Trust Validated Pattern and verified secure multitiered application access with OIDC, ZTWIM workload identity, and Vault JIT credentials. Continue when you are ready for the next topic in the workshop.

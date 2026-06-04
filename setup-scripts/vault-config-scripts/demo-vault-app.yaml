@@ -35,7 +35,7 @@ spec:
         vault.hashicorp.com/agent-inject-secret-login: "secret/login"
         vault.hashicorp.com/agent-inject-template-login: |
           {{- with secret "secret/login" -}}
-          pattoken={{ .Data.data.pattoken }}
+          rhos-token={{ index .Data.data "rhos-token" }}
           {{- end }}
         vault.hashicorp.com/agent-inject-secret-my-first-secret: "secret/my-first-secret"
         vault.hashicorp.com/agent-inject-template-my-first-secret: |
