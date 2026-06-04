@@ -517,8 +517,6 @@ oc get pdb -A                                  # Check disruption budgets
 
 === Cleanup
 
-NOTE: If the **Ingress & Load Balancing** module is part of your workshop, **skip this cleanup** - it reuses the `weathernow` application in the `app-management` namespace.
-
 [source,bash,role="execute"]
 ----
 oc delete namespace app-management --ignore-not-found

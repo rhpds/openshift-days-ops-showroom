@@ -498,8 +498,6 @@ The pattern is always the same: **check status → describe pod/replicaset → r
 
 === Cleanup
 
-NOTE: If the **Developer Hub** module is part of your workshop, **skip this cleanup** - it uses the weather app pods in `debug-lab` to demonstrate the Kubernetes plugin.
-
 [source,bash,role="execute"]
 ----
 oc delete namespace debug-lab --ignore-not-found --wait=false
