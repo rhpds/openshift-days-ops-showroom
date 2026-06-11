@@ -1,4 +1,4 @@
-// OpenShift Days - Ops Track
+// OpenShift Day - Ops Track
 // Navigation with catalog parameter conditionals
 //
 // Flow: Setup → Core Ops → Identity → Day 2 Ops → Advanced
