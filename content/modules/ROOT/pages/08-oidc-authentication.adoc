@@ -20,8 +20,6 @@ You will:
 
 The same concepts apply to Microsoft Entra ID, Okta, Google Workspace, and any OIDC provider - Keycloak just lets you see both sides of the integration.
 
-image::diagrams/07_08_rbac.png[OpenShift RBAC - Users Groups and Role Bindings, align=center]
-
 == Deploy Keycloak
 
 === Step 1: Install the RHBK Operator
@@ -253,6 +251,9 @@ oc get user developer1 -o yaml
 In the output, look at the `identities` section - it shows the identity provider (`rhbk`) and the identifier of the user. The user was created automatically on first login. Notice `groups: null` - group membership isn't stored on the User object. It's on the Group objects that were auto-created from the OIDC token (as you saw from `oc get groups` above). Next we'll assign RBAC roles to those groups.
 
 == Configure RBAC
+
+.Users and groups are bound to roles that define what they can do - either within a project or cluster-wide
+image::diagrams/07_08_rbac.png[OpenShift RBAC, align=center]
 
 === Step 9: Configure RBAC and Verify Permissions
 
