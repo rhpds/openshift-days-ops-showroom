@@ -412,7 +412,7 @@ The pod should now be `Running`. Check the logs to confirm the database initiali
 oc logs deployment/weather-db -n debug-lab
 ----
 
-You should see `Database ready on port 5432`.
+You should see `[db] Starting on port 8080` - the database initialized successfully.
 
 **Takeaway:** When you see `Permission denied` in a container log, check the SCC with `oc get pod -o jsonpath='{.metadata.annotations.openshift\.io/scc}'`. Under `restricted-v2`, containers run as a random UID and can't write to root-owned directories. Use `emptyDir` volumes for writable paths, or use images designed to run as non-root.
 
