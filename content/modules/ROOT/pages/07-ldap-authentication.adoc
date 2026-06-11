@@ -383,7 +383,7 @@ openshift-monitoring                     Active
 
 This demonstrates group-based RBAC working correctly.
 
-**Check current user and groups:**
+**Check current user:**
 
 [source,bash,role="execute"]
 ----
