@@ -48,7 +48,7 @@ First, create the namespace and deploy the intentionally broken applications:
 [source,bash,role="execute"]
 ----
 oc create namespace debug-lab 2>/dev/null || true && \
-oc apply -f https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/broken-apps.yaml
+oc apply -f https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/broken-apps-v2.yaml
 ----
 
 === See What's Broken
@@ -98,7 +98,7 @@ oc describe pod -l app=weather-frontend -n debug-lab | tail -10
 Look at the **Events** section. You should see errors like:
 
 ----
-Warning  Failed   Failed to pull image "registry.access.redhat.com/ubi9/httpd-24:9.9": ... manifest unknown
+Warning  Failed   Failed to pull image "quay.io/openshift-workshop-applications/weather-debug-app:9.9": ... manifest unknown
 Warning  Failed   Error: ImagePullBackOff
 ----
 
@@ -115,7 +115,7 @@ Update the image to the correct tag (`latest`):
 
 [source,bash,role="execute"]
 ----
-oc set image deployment/weather-frontend weather-frontend=registry.access.redhat.com/ubi9/httpd-24:latest -n debug-lab
+oc set image deployment/weather-frontend weather-frontend=quay.io/openshift-workshop-applications/weather-debug-app:latest -n debug-lab
 ----
 
 **Verify**
@@ -438,9 +438,21 @@ NAME                                READY   STATUS    RESTARTS   AGE
 weather-api-xxxxx                   1/1     Running   0          1m
 weather-backend-xxxxx               1/1     Running   0          1m
 weather-cache-xxxxx                 1/1     Running   0          1m
+weather-db-xxxxx                    1/1     Running   0          1m
 weather-frontend-xxxxx              1/1     Running   0          1m
 weather-proxy-xxxxx                 1/1     Running   0          5m
 ----
+
+=== See It Working
+
+Now that all six microservices are fixed, expose them and open the weather app:
+
+[source,bash,role="execute"]
+----
+bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/05-debugging/expose-weather-app.sh)
+----
+
+Open the URL in a new browser tab. You should see The Weather App displaying live weather data - fetched by weather-api, processed by weather-backend, cached by weather-cache, and persisted by weather-db. All six microservices working together.
 
 === Quick Reference
 
