@@ -178,7 +178,7 @@ bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showr
 
 TIP: In production, you'd use a Keycloak realm export or the Keycloak Operator's `KeycloakRealmImport` CR to automate this entire setup declaratively.
 
-Verify the setup in the Keycloak UI - click **Users** and **Groups** to confirm all three users and three groups are present. Click **Clients** → **openshift** to see the client configuration and the groups mapper.
+Verify the setup in the Keycloak UI - click **Users** and **Groups** to confirm all three users and three groups are present. Click **Clients** → **openshift** to see the client configuration.
 
 == Connect to OpenShift
 
