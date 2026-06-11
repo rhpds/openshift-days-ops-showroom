@@ -1,0 +1,348 @@
+# Debugging & Troubleshooting Lab - Broken Weather Application
+# A real microservice weather app with intentional misconfigurations.
+# Uses quay.io/openshift-workshop-applications/weather-debug-app - a single
+# Python image that handles all 6 roles (frontend, api, backend, cache, proxy, db)
+# with real inter-service communication.
+#
+# Issues to fix:
+# 1. weather-frontend: Wrong image tag (9.9 doesn't exist)
+# 2. weather-api: Startup check fails (missing config file)
+# 3. weather-cache: Resource typo (512Gi instead of 512Mi)
+# 4. weather-backend: Missing ConfigMap reference
+# 5. weather-proxy: Service selector typo (proxi vs proxy)
+# 6. weather-db: SCC permission denied (can't write to root-owned directory)
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: weather-frontend-html
+  namespace: debug-lab
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html><head><title>The Weather App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,sans-serif;background:#f8fafc;color:#1e293b;min-height:100vh}
+    nav{background:white;padding:16px 32px;box-shadow:0 1px 3px rgba(0,0,0,0.1);display:flex;align-items:center;gap:12px}
+    nav .logo{font-size:20px;font-weight:700;color:#2563eb}
+    nav .dot{width:8px;height:8px;border-radius:50%;animation:pulse 2s infinite}
+    nav .status{font-size:12px;color:#64748b}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+    .main{max-width:700px;margin:40px auto;padding:0 20px}
+    .location{font-size:14px;color:#64748b;text-transform:uppercase;letter-spacing:1px}
+    .temp-row{display:flex;align-items:baseline;gap:16px;margin:8px 0 4px}
+    .temp-row .temp{font-size:80px;font-weight:200}
+    .temp-row .cond{font-size:18px;color:#64748b}
+    .feels{color:#94a3b8;margin-bottom:24px;font-size:14px}
+    .stats{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1px;background:#e2e8f0;border-radius:12px;overflow:hidden;margin-bottom:24px}
+    .stat{background:white;padding:20px;text-align:center}
+    .stat .val{font-size:22px;font-weight:600}
+    .stat .label{font-size:11px;color:#94a3b8;margin-top:4px;text-transform:uppercase;letter-spacing:0.5px}
+    .panel{background:white;border-radius:12px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:16px}
+    .panel h3{font-size:12px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+    .svc{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f5f9}
+    .svc:last-child{border:none}
+    .svc-ok{font-weight:600;font-size:13px}
+    .svc-name{font-size:14px}
+    .svc-role{font-size:12px;color:#94a3b8;margin-left:8px}
+    .loading{text-align:center;padding:60px;color:#94a3b8}
+    .meta{font-size:12px;color:#94a3b8;margin-top:16px;text-align:center}
+    </style></head>
+    <body>
+    <nav>
+      <span class="logo">The Weather App</span>
+      <span class="dot" id="dot" style="background:#f59e0b"></span>
+      <span class="status" id="navstatus">Connecting...</span>
+    </nav>
+    <div class="main" id="app"><div class="loading">Fetching weather from weather-api...</div></div>
+    <script>
+    var API_HOST=window.location.hostname.replace(/^weather-frontend/,'weather-api');
+    var SERVICES=[
+      {name:'weather-frontend',role:'Web UI'},
+      {name:'weather-api',role:'Data API'},
+      {name:'weather-backend',role:'Business Logic'},
+      {name:'weather-cache',role:'Cache Layer'},
+      {name:'weather-proxy',role:'Reverse Proxy'},
+      {name:'weather-db',role:'Database'}
+    ];
+    function checkSvc(s){
+      var h=window.location.hostname.replace(/^weather-frontend/,s.name);
+      return fetch('https://'+h,{mode:'no-cors',signal:AbortSignal.timeout(3000)}).then(function(){return true;}).catch(function(){return false;});
+    }
+    function icon(code){
+      var c=parseInt(code||'116');
+      if(c===113)return'☀️';if(c===116)return'⛅';if(c===119||c===122)return'☁️';
+      if([176,263,266,293,296,299,302,305,308,353,356,359].indexOf(c)>=0)return'🌧️';
+      if([200,386,389,392,395].indexOf(c)>=0)return'⛈️';return'🌤️';
+    }
+    async function load(){
+      var dot=document.getElementById('dot');
+      var navstatus=document.getElementById('navstatus');
+      var weatherHtml='';
+      var meta='';
+      try{
+        var r=await fetch('https://'+API_HOST,{signal:AbortSignal.timeout(10000)});
+        var d=await r.json();
+        if(d.city){
+          weatherHtml=
+            '<div class="location">'+d.city+', '+d.region+'</div>'+
+            '<div class="temp-row"><span style="font-size:48px">'+icon(d.weather_code)+'</span>'+
+            '<span class="temp">'+d.temp_f+'°</span>'+
+            '<span class="cond">'+d.condition+'</span></div>'+
+            '<div class="feels">Feels like '+d.feels_like_f+'°F</div>'+
+            '<div class="stats">'+
+            '<div class="stat"><div class="val">'+d.wind_mph+' mph</div><div class="label">Wind</div></div>'+
+            '<div class="stat"><div class="val">'+d.humidity+'%</div><div class="label">Humidity</div></div>'+
+            '<div class="stat"><div class="val">'+d.pressure+' mb</div><div class="label">Pressure</div></div>'+
+            '<div class="stat"><div class="val">'+d.visibility+' mi</div><div class="label">Visibility</div></div>'+
+            '</div>';
+          if(d.processed_by){
+            meta='<div class="meta">Processed by '+d.processed_by+' at '+d.processed_at+'</div>';
+          }
+        }else if(d.error){
+          weatherHtml='<div style="padding:20px;background:#fef2f2;border-radius:8px;color:#dc2626;margin-bottom:24px">API Error: '+d.error+'</div>';
+        }
+      }catch(e){
+        weatherHtml='<div style="padding:20px;background:#fef2f2;border-radius:8px;color:#dc2626;margin-bottom:24px">Cannot reach weather-api: '+e.message+'</div>';
+      }
+      var checks=await Promise.all(SERVICES.map(function(s){return checkSvc(s);}));
+      var allOk=checks.every(Boolean);
+      dot.style.background=allOk?'#22c55e':'#f59e0b';
+      navstatus.textContent=allOk?'All services operational':checks.filter(Boolean).length+'/'+checks.length+' services up';
+      var svcHtml=SERVICES.map(function(s,i){
+        return '<div class="svc"><span><span class="svc-name">'+s.name+'</span><span class="svc-role">'+s.role+'</span></span>'+
+          '<span class="svc-ok" style="color:'+(checks[i]?'#22c55e':'#ef4444')+'">'+(checks[i]?'● Healthy':'○ Down')+'</span></div>';
+      }).join('');
+      document.getElementById('app').innerHTML=weatherHtml+
+        '<div class="panel"><h3>Service Health</h3>'+svcHtml+'</div>'+meta;
+    }
+    load();
+    </script>
+    </body></html>
+    
+---
+# Scenario 1: ImagePullBackOff - Wrong image tag
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-frontend
+  namespace: debug-lab
+  labels:
+    app: weather-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-frontend
+  template:
+    metadata:
+      labels:
+        app: weather-frontend
+    spec:
+      containers:
+      - name: weather-frontend
+        image: quay.io/openshift-workshop-applications/weather-debug-app:9.9
+        env:
+        - name: SERVICE_ROLE
+          value: frontend
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: html
+          mountPath: /var/www/html
+      volumes:
+      - name: html
+        configMap:
+          name: weather-frontend-html
+---
+# Scenario 2: CrashLoopBackOff - Startup check fails
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-api
+  namespace: debug-lab
+  labels:
+    app: weather-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-api
+  template:
+    metadata:
+      labels:
+        app: weather-api
+    spec:
+      containers:
+      - name: weather-api
+        image: quay.io/openshift-workshop-applications/weather-debug-app:latest
+        command: ["/bin/sh", "-c", "echo 'Error: Missing required config file /etc/weather/config.yaml' && exit 1"]
+        env:
+        - name: SERVICE_ROLE
+          value: api
+        - name: REQUIRE_CONFIG
+          value: "true"
+        ports:
+        - containerPort: 8080
+---
+# Scenario 3: Resource Constraints - LimitRange
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: resource-limits
+  namespace: debug-lab
+spec:
+  limits:
+  - type: Container
+    max:
+      cpu: "2"
+      memory: "2Gi"
+    default:
+      cpu: "500m"
+      memory: "512Mi"
+    defaultRequest:
+      cpu: "100m"
+      memory: "128Mi"
+---
+# Scenario 3: Resource Constraints - Typo in resources (512Gi instead of 512Mi)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-cache
+  namespace: debug-lab
+  labels:
+    app: weather-cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-cache
+  template:
+    metadata:
+      labels:
+        app: weather-cache
+    spec:
+      containers:
+      - name: weather-cache
+        image: quay.io/openshift-workshop-applications/weather-debug-app:latest
+        env:
+        - name: SERVICE_ROLE
+          value: cache
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "512Gi"
+          limits:
+            cpu: "500m"
+            memory: "1Ti"
+        ports:
+        - containerPort: 8080
+---
+# Scenario 4: Missing ConfigMap - References non-existent ConfigMap
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-backend
+  namespace: debug-lab
+  labels:
+    app: weather-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-backend
+  template:
+    metadata:
+      labels:
+        app: weather-backend
+    spec:
+      containers:
+      - name: weather-backend
+        image: quay.io/openshift-workshop-applications/weather-debug-app:latest
+        env:
+        - name: SERVICE_ROLE
+          value: backend
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+        envFrom:
+        - configMapRef:
+            name: weather-config
+        ports:
+        - containerPort: 8080
+---
+# Scenario 5: Service Selector Mismatch - Deployment (correct labels)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-proxy
+  namespace: debug-lab
+  labels:
+    app: weather-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-proxy
+  template:
+    metadata:
+      labels:
+        app: weather-proxy
+        version: v1
+    spec:
+      containers:
+      - name: weather-proxy
+        image: quay.io/openshift-workshop-applications/weather-debug-app:latest
+        env:
+        - name: SERVICE_ROLE
+          value: proxy
+        ports:
+        - containerPort: 8080
+---
+# Scenario 5: Service Selector Mismatch - Service with typo in selector
+apiVersion: v1
+kind: Service
+metadata:
+  name: weather-proxy
+  namespace: debug-lab
+spec:
+  selector:
+    app: weather-proxi  # Typo! Should be weather-proxy
+  ports:
+  - port: 8080
+    targetPort: 8080
+---
+# Scenario 6: SCC Permission Denied - Container can't write to root-owned directory
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weather-db
+  namespace: debug-lab
+  labels:
+    app: weather-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weather-db
+  template:
+    metadata:
+      labels:
+        app: weather-db
+    spec:
+      containers:
+      - name: database
+        image: quay.io/openshift-workshop-applications/weather-debug-app:latest
+        env:
+        - name: SERVICE_ROLE
+          value: db
+        - name: DATA_DIR
+          value: /var/lib/pgsql
+        ports:
+        - containerPort: 8080
