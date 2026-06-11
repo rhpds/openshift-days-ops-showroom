@@ -422,7 +422,7 @@ You should see `Database ready on port 5432`.
 
 Switch to the **OCP Console** tab - **Workloads -> Pods** (project: `debug-lab`). All six pods should now show green `Running` status. Compare this to the red/orange/yellow view you saw at the start - that visual progression is the troubleshooting workflow in action.
 
-image::debugging-all-fixed.png[All five weather pods showing green Running status]
+image::debugging-all-fixed.png[All six weather pods showing green Running status]
 
 Verify via CLI:
 
@@ -438,6 +438,7 @@ NAME                                READY   STATUS    RESTARTS   AGE
 weather-api-xxxxx                   1/1     Running   0          1m
 weather-backend-xxxxx               1/1     Running   0          1m
 weather-cache-xxxxx                 1/1     Running   0          1m
+weather-db-xxxxx                    1/1     Running   0          1m
 weather-frontend-xxxxx              1/1     Running   0          1m
 weather-proxy-xxxxx                 1/1     Running   0          5m
 ----
