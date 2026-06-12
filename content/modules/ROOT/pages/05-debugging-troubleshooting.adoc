@@ -185,9 +185,13 @@ You should see `1/1 Running`.
 
 **Diagnose**
 
-You may have noticed `weather-cache` doesn't appear in the pod list at all. In the **OCP Console**, navigate to **Workloads → Deployments** (project: `debug-lab`) and click `weather-cache`. Click the **ReplicaSets** tab, then click the ReplicaSet name (`weather-cache-xxxxxxx`). The **Events** tab shows the `FailedCreate` errors explaining why no pod was created.
+You may have noticed `weather-cache` doesn't appear in the pod list at all. In the **OCP Console**, navigate to **Workloads → Deployments** (project: `debug-lab`). You'll see `weather-cache` showing `0 of 1 pods` - the deployment exists but no pod was created:
 
-image::debugging-cache-deployment-events.png[weather-cache deployment Events showing FailedCreate due to LimitRange violation]
+image::debugging-deployments.png[Deployments view showing weather-cache with 0 of 1 pods]
+
+Click `weather-cache`, then the **ReplicaSets** tab, then click the ReplicaSet name (`weather-cache-xxxxxxx`). The **Events** tab shows the `FailedCreate` errors explaining why no pod was created.
+
+image::debugging-cache-deployment-events.png[weather-cache ReplicaSet Events showing FailedCreate due to LimitRange violation]
 
 Let's also check via CLI:
 
@@ -354,6 +358,10 @@ oc get endpointslice -l kubernetes.io/service-name=weather-proxy -n debug-lab
 You should now see the pod's IP in the `ENDPOINTS` column. Traffic will flow to the pod.
 
 **Takeaway:** When a pod is Running but the service isn't working, check if the service selector matches the pod labels. A single character typo can break routing. Use `oc get endpointslice` to verify.
+
+You can confirm the fix in the console too - go back to **Networking -> Services** → `weather-proxy` → **Pods** tab. The pod now appears:
+
+image::debugging-proxy-service-fixed.png[weather-proxy Service showing the pod after selector fix]
 
 === Problem 6: Permission Denied (weather-db)
 
