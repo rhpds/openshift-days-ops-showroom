@@ -47,8 +47,7 @@ First, create the namespace and deploy the intentionally broken applications:
 
 [source,bash,role="execute"]
 ----
-oc create namespace debug-lab 2>/dev/null || true && \
-oc apply -f https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/broken-apps-v2.yaml
+bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/05-debugging/deploy-broken-apps.sh)
 ----
 
 === See What's Broken
