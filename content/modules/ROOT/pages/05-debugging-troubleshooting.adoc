@@ -84,7 +84,7 @@ NOTE: You might notice `weather-cache` is missing from the pod list - that's one
 
 **Diagnose**
 
-In the **OCP Console**, click on the `weather-frontend` pod. Click the **Events** tab at the top to see the error with colour-coded severity - you'll see the image pull failure immediately.
+In the **OCP Console**, navigate to **Workloads -> Pods** (project: `debug-lab`) and click on the `weather-frontend` pod. Click the **Events** tab at the top to see the error with colour-coded severity - you'll see the image pull failure immediately.
 
 image::debugging-frontend-events.png[weather-frontend pod Events tab showing ImagePullBackOff error]
 
@@ -133,7 +133,7 @@ You should see `1/1 Running`.
 
 **Diagnose**
 
-The pod keeps starting and crashing. In the **OCP Console**, click the `weather-api` pod, then the **Logs** tab. The log viewer shows the error message with real-time streaming. If the pod has restarted, use the container dropdown on the left (highlighted in red below) to select the previous container's logs.
+The pod keeps starting and crashing. In the **OCP Console**, navigate to **Workloads -> Pods** (project: `debug-lab`) and click the `weather-api` pod, then the **Logs** tab. The log viewer shows the error message with real-time streaming. If the pod has restarted, use the container dropdown on the left (highlighted in red below) to select the previous container's logs.
 
 image::debugging-api-logs.png[weather-api pod Logs tab showing missing config file error]
 
