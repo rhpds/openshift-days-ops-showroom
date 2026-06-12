@@ -462,6 +462,8 @@ bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showr
 
 Open the URL in a new browser tab. You should see The Weather App displaying live weather data - fetched by weather-api, processed by weather-backend, cached by weather-cache, and persisted by weather-db. All six microservices working together.
 
+NOTE: If the page shows an error on first load, wait a few seconds and refresh - the services may still be starting up.
+
 image::debugging-weather-app.png[The Weather App showing live weather data with all six microservices healthy]
 
 === Quick Reference
