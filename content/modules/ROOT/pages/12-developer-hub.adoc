@@ -418,15 +418,6 @@ image::rhdh-metrics-request-rate.png[Prometheus metrics showing RHDH request rat
 
 TIP: These are the same metrics Prometheus collects for any workload with a ServiceMonitor. RHDH is just another workload being monitored by the built-in Prometheus stack.
 
-=== Disable Monitoring
-
-Clean up by disabling the monitoring toggle:
-
-[source,bash,role="execute"]
-----
-oc patch backstage developer-hub -n backstage --type=merge -p '{"spec":{"monitoring":{"enabled":false}}}'
-----
-
 == What You Learned
 
 [cols="1,2"]
@@ -463,10 +454,9 @@ TIP: Interested in building templates, configuring plugins, or platform engineer
 
 == Cleanup
 
-Remove the resources created during this module:
-
 [source,bash,role="execute"]
 ----
+oc patch backstage developer-hub -n backstage --type=merge -p '{"spec":{"monitoring":{"enabled":false}}}'
 oc delete namespace order-tracker 2>/dev/null
 echo "Cleanup complete"
 ----
