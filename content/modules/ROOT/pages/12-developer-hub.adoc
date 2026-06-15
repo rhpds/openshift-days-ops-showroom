@@ -7,7 +7,7 @@ include::partial$console-access.adoc[]
 
 == The Problem
 
-How many times a week does someone message you: _"Is my app running?"_ or _"Can you create me a namespace?"_
+How many times a week does someone message you: _"Is my app running?"_ or _"Can you create a namespace for me?"_
 
 Red Hat Developer Hub (RHDH) is a developer portal based on Backstage. Your platform engineering team has deployed it for this organization, and it's already in use by multiple teams. As an ops admin, you need to understand what it does, what developers see when they use it, and how the pieces fit together so you can support it.
 
@@ -259,7 +259,7 @@ Now go to **Developer Hub** > **Catalog** > **order-tracker** > **Kubernetes** t
 
 image::rhdh-order-tracker-2pods.png[order-tracker showing 2 live pods deployed by the template]
 
-This is what replaced three separate requests to your team: _"create me a namespace"_, _"deploy my app"_, _"wire it up to Developer Hub"_. One template, one click, done.
+This is what replaced three separate requests to your team: _"can you create a namespace for me?"_, _"can you deploy my app?"_, _"can you wire it up to Developer Hub?"_. One template, one click, done.
 
 == Troubleshoot: Tickets from Dev Teams
 
