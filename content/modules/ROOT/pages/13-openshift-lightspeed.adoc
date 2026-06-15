@@ -228,11 +228,19 @@ This module concludes here, but the OpenShift Lightspeed operator will stay acti
 
 == Cleanup & Summary
 
+Clean up the demo namespace:
+
 [source,bash,role="execute"]
 ----
-oc delete olsconfig cluster 2>/dev/null || true
 oc delete namespace lightspeed-demo --ignore-not-found --wait=false
-echo "Cleanup running in background - you can continue to the next module"
+echo "Cleanup complete - you can continue to the next module"
+----
+
+NOTE: The OLSConfig and Lightspeed service are still running. If you want to keep using Lightspeed in later modules, leave it as-is. If you want to remove it entirely, run:
+
+[source,bash,role="execute"]
+----
+oc delete olsconfig cluster
 ----
 
 OpenShift Lightspeed provides AI-assisted operations directly in the console. By enabling natural language interactions, it helps administrators and developers quickly reduce the initial learning curve in OpenShift and be more productive by reducing time-to-resolution for common issues.
