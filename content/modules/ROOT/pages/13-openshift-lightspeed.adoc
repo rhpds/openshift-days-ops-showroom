@@ -97,22 +97,31 @@ Key configuration parameters:
 
 === Wait for OpenShift Lightspeed to Initialize
 
-Monitor the deployment progress:
+The Lightspeed pods take 3-5 minutes to start while TLS certificates are generated and container images are pulled. This command waits for everything to be ready:
 
-[source,bash,role=execute]
+[source,bash,role="execute"]
 ----
-oc get pods -n openshift-lightspeed -w
+echo "Waiting for Lightspeed to start (this takes 3-5 minutes)..."
+ELAPSED=0
+until oc get pods -n openshift-lightspeed -l app.kubernetes.io/component=application-server --no-headers 2>/dev/null | grep -q "3/3.*Running"; do
+  sleep 10; ELAPSED=$((ELAPSED+10))
+  [ $ELAPSED -ge 600 ] && echo "ERROR: Timed out after 10 minutes" && break
+done
+echo "Lightspeed is ready"
+oc get pods -n openshift-lightspeed
 ----
 
-Wait until all pods show `Running` status (press Ctrl+C to exit watch):
+You should see all pods `Running`:
 
 ----
 NAME                                                     READY   STATUS    RESTARTS        AGE
-lightspeed-app-server-69cd56f7f9-fxt2f                   3/3     Running   0               3m38s
-lightspeed-console-plugin-6fc9c46dbc-qr6pt               1/1     Running   0               3m39s
-lightspeed-operator-controller-manager-5d99f6fb9-fhqd5   1/1     Running   0               83m
-lightspeed-postgres-server-f9c54c5d7-vbctt               1/1     Running   0               3m38s
+lightspeed-app-server-xxxxx                              3/3     Running   0               3m
+lightspeed-console-plugin-xxxxx                          1/1     Running   0               3m
+lightspeed-operator-controller-manager-xxxxx              1/1     Running   0               83m
+lightspeed-postgres-server-xxxxx                         1/1     Running   1               3m
 ----
+
+NOTE: The postgres pod may show 1 restart - this is normal during initial startup.
 
 Check the OLSConfig status:
 
