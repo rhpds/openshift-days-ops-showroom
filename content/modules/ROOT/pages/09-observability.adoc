@@ -443,7 +443,7 @@ image::severity.png[Severity filter]
 
 Try it now: select **Infrastructure** logs, then filter by severity **Warning** or **Error**. These are the log entries that matter during an incident - pod evictions, OOM kills, certificate expiry warnings.
 
-Click **Show Histogram** (highlighted in red below) in the top right to display log volume over time. Spikes in the error count correlate with incidents - click on a spike to zoom into that time window.
+Click **Show Histogram** (highlighted in red below) in the top right to display log volume over time. Spikes in the error count correlate with incidents - click and drag to select a time window to zoom in.
 
 image::histogram.png[Log histogram]
 
