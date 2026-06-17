@@ -23,7 +23,7 @@ When you control your clusters—from setup to daily operations—you decide whe
 [[hub-cluster-overview]]
 === RHACM Management Cluster Overview
 
-Red Hat Advanced Cluster Management (RHACM) serves as the central control plane of your cloud environment for managing your entire fleet of OpenShift clusters. It provides a single point of authority and unified interface for cluster lifecycle management, policy enforcement, application deployment, and observability across multiple environments.
+Red Hat Advanced Cluster Management (RHACM) serves as the centralized control plane of your cloud environment for managing your entire fleet of OpenShift clusters. It provides a single point of authority and unified interface for cluster lifecycle management, virtual machine managment, policy enforcement, application deployment, and observability across multiple environments.
 
 === Create and Manage Kubernetes Clusters
 
@@ -34,7 +34,7 @@ Red Hat Advanced Cluster Management for Kubernetes (RHACM) simplifies the deploy
 .Procedure
 . On the top left of the OpenShift Console, click the "Hamburger" drop down and select *Fleet Management -> *Infrastructure* -> *Clusters*
 +
-image::08-dropdown-menu.png[link=self, window=blank, width=100%, Create VM]
+image::08-dropdown-menu-fleetM.png[link=self, window=blank, width=100%, Create VM]
 +
 [NOTE]
 ====
@@ -60,8 +60,8 @@ NOTE: You'll notice that the only option already highlighted is Red Hat OpenShif
 hcp-emea
 ----
 +
-. Verify that is on the *clusters* space for the hosted cluster namespace
-. Select *managed* for the `Cluster Set`
+. Verify that is on the *clusters* space for the *Hosted cluster namespace*
+. Select *managed* for the *Cluster Set*
 . Next, select the release image *OpenShift 4.21.0* (or whatever the current 4.21.x release image is).
 . Select *ocs-external-storagecluster-ceph-rbd* for the Etcd Storage Class
 . Select *Single replica* for both the *Controller availability policy* and the *Infrastructure availability policy*.
@@ -232,9 +232,9 @@ image::03-argoconfig.png[link=self, window=blank, width=100%, ArgoCD Config]
 +
 image::03-app-gitops.png[link=self, window=blank, width=100%, App GitOps]
 +
-. Click *Next* to continue to 3. Repository.
+. Click *Next* to continue to the *Repository*
 . Under repository types, select the *Git* repository type
-. Enter the URL and select *Create new option* for the Repository URL
+. Enter the URL and select *Create new option* for the dropdown
 +
 [source,sh,subs="attributes",role=execute]
 ----
@@ -248,17 +248,16 @@ https://github.com/mfosterrox/demo-applications.git
 skupper-demo
 ----
 
-. Set Destination:
+. Set Destination: *Remote Namespace*
 +
 [source,sh,subs="attributes",role=execute]
 ----
 patient-portal
 ----
-. Then click *Next* to continue to 5. Placement.
+. Leave defaults on page and then Then click *Next* to continue
 +
 image::03-app-gitops-2.png[link=self, window=blank, width=100%, App ACM GitOps]
 +
-. Click *Next*
 . Under *Placement*, verify that *New Placement* is selected.
 * *Cluster set:* Select `global`
 . Under *Label expressions* click *Add label expression* and select the following
@@ -411,11 +410,11 @@ image::02-rhacm-yaml-1.png[link=self, window=blank, width=100%]
 GDPR compliance starts with having clearly labeled namespaces. Labels and annotations allow policies to target GDPR-restricted workloads, support audit requirements, and enforce data residency. This policy requires that every EMEA cluster includes two key namespaces: `gdpr-workloads` (fully labeled for compliance) and `data-residency-emea` (for strict EU-only workloads). Proper labeling is essential for demonstrating GDPR compliance to regulators.
 ====
 +
-. Click "*Create"* and verify that the YAML was added properly and there are no errors.
+. Verify that the YAML was added properly and there are no errors.
 +
 image::02-rhacm-yaml-2.png[link=self, window=blank, width=100%]
 +
-. Next, click *Governance* Screen and Navigate to the *Policies* tab. Select Filter and check the *policies* namespace, this will show only the policies on this namespace.
+. Next, Select *Governance* item in the left panel and Navigate to the *Policies* tab. Select *Filter* and check the *policies* namespace, this will show only the policies on this namespace.
 +
 image::02-rhacm-yaml-3.png[link=self, window=blank, width=100%]
 
