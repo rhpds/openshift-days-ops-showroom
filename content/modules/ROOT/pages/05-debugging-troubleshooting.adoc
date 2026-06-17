@@ -9,6 +9,8 @@
 **Format:** Hands-on Lab - Real Problem Solving +
 **Audience:** IT Operations, SRE, Platform Engineers
 
+include::partial$console-access.adoc[]
+
 Your cluster is running a weather application made up of several microservices. Some of them have just broken. Your job is to diagnose and fix each one - these are the same kinds of issues that generate real support tickets.
 
 === Learning Objectives
@@ -45,22 +47,22 @@ First, create the namespace and deploy the intentionally broken applications:
 
 [source,bash,role="execute"]
 ----
-oc create namespace debug-lab 2>/dev/null || true
-oc apply -f https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/broken-apps.yaml
+bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/05-debugging/deploy-broken-apps.sh)
 ----
 
 === See What's Broken
 
 Six microservices have been deployed with intentional misconfigurations. Let's triage the damage.
 
-Switch to the **OCP Console** tab and navigate to **Workloads -> Pods** (select project `debug-lab` from the dropdown). You'll immediately see colour-coded status indicators:
+Switch to the **OCP Console** tab and navigate to **Workloads -> Pods** (select project `debug-lab` from the dropdown). You'll immediately see which pods have issues - error states like `CrashLoopBackOff` and `ImagePullBackOff` are flagged with a red exclamation mark:
 
 image::broken-pods-triage.png[Pod list showing multiple failure states - ImagePullBackOff CrashLoopBackOff and CreateContainerConfigError]
 
-* **Red** - `weather-frontend` in `ImagePullBackOff`, `weather-api` in `CrashLoopBackOff`
-* **Yellow** - `weather-backend` in `CreateContainerConfigError`
-* **Green** - `weather-proxy` shows `Running` (but has a hidden issue)
-* **Missing** - `weather-cache` doesn't appear at all
+* `weather-frontend` - `ImagePullBackOff` (red indicator)
+* `weather-api` - `CrashLoopBackOff` (red indicator)
+* `weather-backend` - `CreateContainerConfigError`
+* `weather-proxy` - `Running` (but has a hidden issue)
+* `weather-cache` - doesn't appear at all
 
 This is how real incident triage works - visual scanning of pod status to quickly identify what needs attention.
 
@@ -81,7 +83,7 @@ NOTE: You might notice `weather-cache` is missing from the pod list - that's one
 
 **Diagnose**
 
-In the **OCP Console**, click on the `weather-frontend` pod. The **Events** tab at the bottom shows the error with colour-coded severity - you'll see the image pull failure immediately.
+In the **OCP Console**, navigate to **Workloads -> Pods** (project: `debug-lab`) and click on the `weather-frontend` pod. Click the **Events** tab at the top to see the error with colour-coded severity - you'll see the image pull failure immediately.
 
 image::debugging-frontend-events.png[weather-frontend pod Events tab showing ImagePullBackOff error]
 
@@ -95,11 +97,11 @@ oc describe pod -l app=weather-frontend -n debug-lab | tail -10
 Look at the **Events** section. You should see errors like:
 
 ----
-Warning  Failed   Failed to pull image "registry.access.redhat.com/ubi9/httpd-24:9.9": ... manifest unknown
+Warning  Failed   Failed to pull image "quay.io/openshift-workshop-applications/weather-debug-app:9.9": ... manifest unknown
 Warning  Failed   Error: ImagePullBackOff
 ----
 
-The image tag `9.9` doesn't exist — the registry can't find it. Let's confirm the image reference:
+The image tag `9.9` doesn't exist - the registry can't find it. Let's confirm the image reference:
 
 [source,bash,role="execute"]
 ----
@@ -112,7 +114,7 @@ Update the image to the correct tag (`latest`):
 
 [source,bash,role="execute"]
 ----
-oc set image deployment/weather-frontend weather-frontend=registry.access.redhat.com/ubi9/httpd-24:latest -n debug-lab
+oc set image deployment/weather-frontend weather-frontend=quay.io/openshift-workshop-applications/weather-debug-app:latest -n debug-lab
 ----
 
 **Verify**
@@ -130,7 +132,7 @@ You should see `1/1 Running`.
 
 **Diagnose**
 
-The pod keeps starting and crashing. In the **OCP Console**, click the `weather-api` pod, then the **Logs** tab. The log viewer shows the error message with real-time streaming. If the pod has restarted, use the container dropdown on the left (highlighted in red below) to select the previous container's logs.
+The pod keeps starting and crashing. In the **OCP Console**, navigate to **Workloads -> Pods** (project: `debug-lab`) and click the `weather-api` pod, then the **Logs** tab. The log viewer shows the error message with real-time streaming. If the pod has restarted, use the container dropdown on the left (highlighted in red below) to select the previous container's logs.
 
 image::debugging-api-logs.png[weather-api pod Logs tab showing missing config file error]
 
@@ -163,7 +165,7 @@ oc create configmap weather-api-config --from-literal=config.yaml="port: 8080" -
 oc patch deployment weather-api -n debug-lab --type=json -p='[
   {"op":"add","path":"/spec/template/spec/volumes","value":[{"name":"config","configMap":{"name":"weather-api-config"}}]},
   {"op":"add","path":"/spec/template/spec/containers/0/volumeMounts","value":[{"name":"config","mountPath":"/etc/weather"}]},
-  {"op":"replace","path":"/spec/template/spec/containers/0/command","value":["/bin/sh","-c","cat /etc/weather/config.yaml && echo Config loaded successfully && sleep 3600"]}
+  {"op":"remove","path":"/spec/template/spec/containers/0/command"}
 ]'
 ----
 
@@ -182,9 +184,13 @@ You should see `1/1 Running`.
 
 **Diagnose**
 
-You may have noticed `weather-cache` doesn't appear in the pod list at all. In the **OCP Console**, navigate to **Workloads → Deployments** (project: `debug-lab`) and click `weather-cache`. Click the **ReplicaSets** tab, then click the ReplicaSet name (`weather-cache-xxxxxxx`). The **Events** tab shows the `FailedCreate` errors explaining why no pod was created.
+You may have noticed `weather-cache` doesn't appear in the pod list at all. In the **OCP Console**, navigate to **Workloads → Deployments** (project: `debug-lab`). You'll see `weather-cache` showing `0 of 1 pods` - the deployment exists but no pod was created:
 
-image::debugging-cache-deployment-events.png[weather-cache deployment Events showing FailedCreate due to LimitRange violation]
+image::debugging-deployments.png[Deployments view showing weather-cache with 0 of 1 pods]
+
+Click `weather-cache`, then the **ReplicaSets** tab, then click the ReplicaSet name (`weather-cache-xxxxxxx`). The **Events** tab shows the `FailedCreate` errors explaining why no pod was created.
+
+image::debugging-cache-deployment-events.png[weather-cache ReplicaSet Events showing FailedCreate due to LimitRange violation]
 
 Let's also check via CLI:
 
@@ -352,6 +358,10 @@ You should now see the pod's IP in the `ENDPOINTS` column. Traffic will flow to 
 
 **Takeaway:** When a pod is Running but the service isn't working, check if the service selector matches the pod labels. A single character typo can break routing. Use `oc get endpointslice` to verify.
 
+You can confirm the fix in the console too - go back to **Networking -> Services** → `weather-proxy` → **Pods** tab. The pod now appears:
+
+image::debugging-proxy-service-fixed.png[weather-proxy Service showing the pod after selector fix]
+
 === Problem 6: Permission Denied (weather-db)
 
 **Diagnose**
@@ -409,7 +419,7 @@ The pod should now be `Running`. Check the logs to confirm the database initiali
 oc logs deployment/weather-db -n debug-lab
 ----
 
-You should see `Database ready on port 5432`.
+You should see `[db] Starting on port 8080` - the database initialized successfully.
 
 **Takeaway:** When you see `Permission denied` in a container log, check the SCC with `oc get pod -o jsonpath='{.metadata.annotations.openshift\.io/scc}'`. Under `restricted-v2`, containers run as a random UID and can't write to root-owned directories. Use `emptyDir` volumes for writable paths, or use images designed to run as non-root.
 
@@ -419,7 +429,7 @@ You should see `Database ready on port 5432`.
 
 Switch to the **OCP Console** tab - **Workloads -> Pods** (project: `debug-lab`). All six pods should now show green `Running` status. Compare this to the red/orange/yellow view you saw at the start - that visual progression is the troubleshooting workflow in action.
 
-image::debugging-all-fixed.png[All five weather pods showing green Running status]
+image::debugging-all-fixed.png[All six weather pods showing green Running status]
 
 Verify via CLI:
 
@@ -435,9 +445,25 @@ NAME                                READY   STATUS    RESTARTS   AGE
 weather-api-xxxxx                   1/1     Running   0          1m
 weather-backend-xxxxx               1/1     Running   0          1m
 weather-cache-xxxxx                 1/1     Running   0          1m
+weather-db-xxxxx                    1/1     Running   0          1m
 weather-frontend-xxxxx              1/1     Running   0          1m
 weather-proxy-xxxxx                 1/1     Running   0          5m
 ----
+
+=== See It Working
+
+Now that all six microservices are fixed, expose them and open the weather app:
+
+[source,bash,role="execute"]
+----
+bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/05-debugging/expose-weather-app.sh)
+----
+
+Open the URL in a new browser tab. You should see The Weather App displaying live weather data - fetched by weather-api, processed by weather-backend, cached by weather-cache, and persisted by weather-db. All six microservices working together.
+
+NOTE: If the page shows an error on first load, wait a few seconds and refresh - the services may still be starting up.
+
+image::debugging-weather-app.png[The Weather App showing live weather data with all six microservices healthy]
 
 === Quick Reference
 
@@ -494,8 +520,6 @@ You diagnosed and fixed six common OpenShift issues:
 The pattern is always the same: **check status → describe pod/replicaset → read logs/events → fix → verify.**
 
 === Cleanup
-
-NOTE: If the **Developer Hub** module is part of your workshop, **skip this cleanup** - it uses the weather app pods in `debug-lab` to demonstrate the Kubernetes plugin.
 
 [source,bash,role="execute"]
 ----

@@ -6,6 +6,8 @@
 **Format:** Hands-on lab +
 **Audience:** Security Engineers, Platform Engineers, IT Operations
 
+include::partial$console-access.adoc[]
+
 == Learning Objectives
 
 By the end of this module, you will:
@@ -22,7 +24,8 @@ By the end of this module, you will:
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
 git clone https://github.com/mfosterrox/demo-applications.git
-cd demo-applications
+cd ~/demo-applications
+oc apply -f k8s-deployment-manifests/-namespaces --recursive
 oc apply -f k8s-deployment-manifests/emojivoto --recursive
 oc apply -f k8s-deployment-manifests/apache-struts --recursive
 oc apply -f k8s-deployment-manifests/dvwa --recursive
@@ -100,7 +103,6 @@ spec:
       - image-registry.openshift-image-registry.svc:5000
       - gcr.io
       - docker.io
-      - {quay_console_url}
 EOF
 ----
 +
@@ -121,7 +123,6 @@ oc get image.config.openshift.io/cluster -o yaml | grep allowedRegistries -A 10
     - image-registry.openshift-image-registry.svc:5000
     - gcr.io
     - docker.io
-    - https://quay.apps.cluster-j9vv7.dynamic.redhatworkshops.io
 status:
   internalRegistryHostname: image-registry.openshift-image-registry.svc:5000
 ----
@@ -144,13 +145,13 @@ image::acs-security-02.png[Create scan schedule dialog, link=self, window=blank,
 . Next, fill in the form with the following information:
 * *Name*:
 +
-[source,sh,subs="attributes",role=execute]
+[source,sh,subs="attributes",role="copypaste"]
 ----
 acs-catch-all
 ----
 * *Description*:
 +
-[source,sh,subs="attributes",role=execute]
+[source,sh,subs="attributes",role="copypaste"]
 ----
 Daily compliance scan for all profiles covering CIS, E8, Moderate, NERC-CIP, PCI-DSS, and STIG standards.
 ----
@@ -188,6 +189,8 @@ image::acs-security-03.png[Scan schedule menu with Run scan option, link=self, w
 +
 image::acs-security-04.png[Compliance scan running, link=self, window=blank, width=100%]
 +
+NOTE: The scan may take a few minutes to complete.
++
 . Head over to the OpenShift coverage section where you can view all of the details from the scan. Click on the *Compliance* → *OpenShift Coverage* → *E8* tab to view the results.
 +
 image::acs-security-05.png[E8 compliance standard overview, link=self, window=blank, width=100%]
@@ -213,6 +216,12 @@ image::acs-security-07.png[Allowed registries compliance check details, link=sel
 ====
 This view shows you the details of the check for the production cluster. As you can see, the production cluster is passing.
 ====
++
+. And you can run the verification step to ensure the check is passing.
+[source,sh,subs="attributes",role="execute"]
+----
+oc get image.config.openshift.io cluster -o jsonpath='{.spec.registrySources.allowedRegistries}' |
+----
 
 image::https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcHI1ZGQwYWNnd3doY2s4MDNpenZ1MWlzeDlqNWhyNzF5c2JveWNybSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/xTQXENNW77nUsNVmV4/giphy.gif[Fun celebration, link=self, window=blank, width=400]
 
@@ -333,7 +342,7 @@ oc exec -n patient-portal $POD -i --tty -- /bin/sh
 ----
 apk update
 ----
-
++
 . Examine the output and expect to see that the package manager attempts to perform an update operation:
 +
 [source,texinfo,subs="attributes"]
@@ -344,7 +353,9 @@ ERROR: Failed to open apk database: Permission denied
 /home/fritz $ command terminated with exit code 137
 [demo-user@bastion ~]$
 ----
-
++
+NOTE: It's normal to see *Unable to lock database: Permission denied*. This is becaus OpenShift is blocking the sudo behavior of the pod thanks to pod security policies.
++
 . Examine the oc get events tmux pane (The pane on the bottom), and note that it shows that RHACS detected the package manager invocation and deleted the pod:
 +
 [source,texinfo,subs="attributes"]
@@ -353,25 +364,28 @@ ERROR: Failed to open apk database: Permission denied
 LAST SEEN   TYPE      REASON                 OBJECT                           MESSAGE
 50s         Normal    Killing                pod/frontend-8667d5c56b-f9fcj    Stopping container frontend
 50s         Normal    Scheduled              pod/frontend-8667d5c56b-s6dph    Successfully assigned patient-portal/frontend-8667d5c56b-s6dph to ip-10-0-61-109.us-east-2.compute.internal
-49s         Normal    AddedInterface         pod/frontend-8667d5c56b-s6dph    Add eth0 [10.131.0.167/23] from ovn-kubernetes
-49s         Normal    Pulling                pod/frontend-8667d5c56b-s6dph    Pulling image "quay-czscm.apps.cluster-czscm.czscm.sandbox478.opentlc.com/quayadmin/frontend:0.1"
-49s         Normal    Pulled                 pod/frontend-8667d5c56b-s6dph    Successfully pulled image "quay-czscm.apps.cluster-czscm.czscm.sandbox478.opentlc.com/quayadmin/frontend:0.1" in 46ms (46ms including waiting). Image size: 117738460 bytes.
 49s         Normal    Created                pod/frontend-8667d5c56b-s6dph    Created container frontend
 49s         Normal    Started                pod/frontend-8667d5c56b-s6dph    Started container frontend
 50s         Normal    SuccessfulCreate       replicaset/frontend-8667d5c56b   Created pod: frontend-8667d5c56b-s6dph
 50s         Warning   StackRox enforcement   deployment/frontend              A pod (frontend-8667d5c56b-f9fcj) violated StackRox policy "Alpine Linux Package Manager Execution - Enforce" and was killed
 ----
 +
-NOTE: After a few seconds, you can see the pod is deleted and recreated. In your tmux shell pane, note that your shell session has terminated and that you are returned to the Bastion VM command line.
-
+[INFO] 
+====
+After a few seconds, you can see the pod is deleted and recreated. In your tmux shell pane, note that your shell session has terminated and that you are returned to the Bastion VM command line.
+====
++
 . Exit the tmux session and return to the bastion host terminal:
 .. If you are still inside the container shell, type `exit` to exit the container.
 .. Press `Ctrl+C` to stop the `watch` command running in the tmux pane.
 .. Type `exit` or `Ctrl-D` to exit the tmux session and return to the bastion host terminal.
++
+[INFO]
+====
+You can see that the behavior is blocked by the policy, however, the security team still needs to be aware of this behavior and investigate why it is happening.
+====
 
-*Congrats!* 
-
-You have successfully stopped yourself from running a (Potentially breaking) update ! However, the security investigative process continues, as you have now raised a flag that must be triaged! You will triage our violations after you look at deploy time policies.
+You have successfully stopped yourself from running a (Potentially breaking) update! However, the security investigative process continues, as you have now raised an alert that must be triaged! 
 
 [[violations-reporting-audit-compliance]]
 == Violations and Reporting for Audit and Compliance
@@ -401,12 +415,14 @@ If configured properly, each violation record should be pushed to a Security Inf
 +
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
+cd ~/demo-applications
 oc delete -f k8s-deployment-manifests/emojivoto --recursive
 oc delete -f k8s-deployment-manifests/apache-struts --recursive
 oc delete -f k8s-deployment-manifests/dvwa --recursive
 oc delete -f k8s-deployment-manifests/log4shell --recursive
 oc delete -f skupper-demo/ --recursive
 ----
+
 image::https://media.giphy.com/media/v1.Y2lkPWVjZjA1ZTQ3ODhkZThkZXVxb2twdHloazAzc2VhNWJpeWowenRpeTJoczY3MTAyZyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/RIjVnmAtOD4l4c2Ert/giphy.gif[Fun celebration, link=self, window=blank, width=400]
 
 **Great job!** Thanks for playing along and checking out the RHACS basics. You're ready to move on to the next module in the left navigation when you are ready.

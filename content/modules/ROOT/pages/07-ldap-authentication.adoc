@@ -4,6 +4,8 @@
 **Duration:** 15-20 minutes +
 **Format:** Hands-on identity provider configuration
 
+include::partial$console-access.adoc[]
+
 == The Scenario
 
 Your cluster is running with an HTPasswd admin account - fine for initial setup, but production needs real identity management. In this module you'll integrate an LDAP directory, sync groups into OpenShift, configure RBAC so different teams get different access, and test it by logging in as actual users.
@@ -300,8 +302,9 @@ oc get group ose-fancy-dev -o yaml
 ----
 
 The group includes:
-- LDAP metadata (sync time, LDAP DN, LDAP server)
-- List of users in the group
+
+* LDAP metadata (sync time, LDAP DN, LDAP server)
+* List of users in the group
 
 **See this in the console too:** Navigate to **User Management -> Groups** in the **OCP Console**:
 
@@ -380,7 +383,7 @@ openshift-monitoring                     Active
 
 This demonstrates group-based RBAC working correctly.
 
-**Check current user and groups:**
+**Check current user:**
 
 [source,bash,role="execute"]
 ----
@@ -572,10 +575,11 @@ After verifying your identity provider works and granting cluster-admin to at le
 Instead of running group sync manually, production environments typically create a Kubernetes CronJob that runs the sync operation automatically (for example, every hour). This ensures LDAP group membership changes are reflected in OpenShift without manual intervention.
 
 The CronJob would:
-- Run on a regular schedule (e.g., `*/60 * * * *` for hourly)
-- Use a service account with appropriate permissions
-- Mount the group sync configuration from a ConfigMap
-- Execute `oc adm groups sync` with the `--confirm` flag
+
+* Run on a regular schedule (e.g., `*/60 * * * *` for hourly)
+* Use a service account with appropriate permissions
+* Mount the group sync configuration from a ConfigMap
+* Execute `oc adm groups sync` with the `--confirm` flag
 
 For complete implementation details, see the link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/ldap-syncing#ldap-syncing-running-all-ldap-sync_configuring-ldap-syncing[official documentation on automating LDAP sync, window=blank].
 

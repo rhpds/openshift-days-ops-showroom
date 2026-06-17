@@ -6,6 +6,8 @@
 **Format:** Hands-on lab +
 **Audience:** Platform Engineers, Infrastructure Architects, IT Operations
 
+include::partial$console-access.adoc[]
+
 == Learning Objectives
 
 By the end of this module, you will:
@@ -55,7 +57,7 @@ NOTE: You'll notice that the only option already highlighted is Red Hat OpenShif
 . Leave the *Infrastructure provider credential* as *hcp*.
 . Name your cluster *hcp-emea*
 +
-[source,sh,subs="attributes",role=execute]
+[source,sh,subs="attributes",role="copypaste"]
 ----
 hcp-emea
 ----
@@ -67,7 +69,7 @@ hcp-emea
 . Select *Single replica* for both the *Controller availability policy* and the *Infrastructure availability policy*.
 . Under Additional Labels enter *location=emea*
 +
-[source,sh,subs="attributes",role=execute]
+[source,sh,subs="attributes",role="copypaste"]
 ----
 location=emea
 ----
@@ -87,7 +89,7 @@ image::105-create-cluster-details.png[link=self, window=blank, width=100%, Creat
 +
 . Enter the name `hcp-emea` for the *Node pool name* and leave the other details as default.
 +
-[source,sh,subs="attributes",role=execute]
+[source,sh,subs="attributes",role="copypaste"]
 ----
 hcp-emea
 ----
@@ -153,7 +155,7 @@ NOTE: Notice all of the available templates to use, Windows VMs are fully suppor
 
 . Under Virtual machine name, enter the following and leave all other options as default (Disk size, Disk Source):
 +
-[source,sh,role=execute]
+[source,sh,role="copypaste"]
 ----
 rhel9-lab-vm
 ----
@@ -200,7 +202,7 @@ This is all to demonstrate automated, Git-driven multi-cluster consistency while
 . Click *Create application*, select *ArgoCD ApplicationSet - Push Model*.
 . Enter the following information: `skupper-patient-demo`
 +
-[source,sh,subs="attributes",role=execute]
+[source,sh,subs="attributes",role="copypaste"]
 ----
 skupper-patient-demo
 ----
@@ -212,7 +214,7 @@ image::13-argo.png[link=self, window=blank, width=100%, ArgoCD Create]
 . Enter the following information:
 * *Name:* `openshift-gitops-global`
 +
-[source,sh,subs="attributes",role=execute]
+[source,sh,subs="attributes",role="copypaste"]
 ----
 openshift-gitops-global
 ----
@@ -236,21 +238,21 @@ image::03-app-gitops.png[link=self, window=blank, width=100%, App GitOps]
 . Under repository types, select the *Git* repository type
 . Enter the URL and select *Create new option* for the dropdown
 +
-[source,sh,subs="attributes",role=execute]
+[source,sh,subs="attributes",role="copypaste"]
 ----
 https://github.com/mfosterrox/demo-applications.git
 ----
 . Enter revision `main` and select *Create new option* for the Revision
 . Select *Path* from the dropdown (if you don't see anything in the dropdown make sure you created new options in the previous steps):
 +
-[source,sh,subs="attributes",role=execute]
+[source,sh,subs="attributes",role="copypaste"]
 ----
 skupper-demo
 ----
 
 . Set Destination: *Remote Namespace*
 +
-[source,sh,subs="attributes",role=execute]
+[source,sh,subs="attributes",role="copypaste"]
 ----
 patient-portal
 ----
@@ -307,7 +309,7 @@ image::02-rhacm-yaml.png[link=self, window=blank, width=100%]
 
 . Next, paste the following YAML Click *Create*
 +
-[source,bash,subs="+macros,+attributes",role=execute]
+[source,yaml,subs="+macros,+attributes",role="copypaste"]
 ----
 apiVersion: policy.open-cluster-management.io/v1
 kind: Policy

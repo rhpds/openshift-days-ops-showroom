@@ -4,6 +4,8 @@
 **Duration:** 10-15 minutes +
 **Format:** Hands-on network security configuration
 
+include::partial$console-access.adoc[]
+
 == The Scenario
 
 Your apps are receiving traffic - but by default, every pod can talk to every other pod, and any pod can reach the internet. That's not production-ready.

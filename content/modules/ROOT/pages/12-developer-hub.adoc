@@ -3,9 +3,11 @@
 **Duration:** 25-30 minutes +
 **Format:** Guided exploration + Hands-on
 
+include::partial$console-access.adoc[]
+
 == The Problem
 
-How many times a week does someone message you: _"Is my app running?"_ or _"Can you create me a namespace?"_
+How many times a week does someone message you: _"Is my app running?"_ or _"Can you create a namespace for me?"_
 
 Red Hat Developer Hub (RHDH) is a developer portal based on Backstage. Your platform engineering team has deployed it for this organization, and it's already in use by multiple teams. As an ops admin, you need to understand what it does, what developers see when they use it, and how the pieces fit together so you can support it.
 
@@ -100,7 +102,7 @@ image::rhdh-payments-kubernetes-3pods.png[Kubernetes tab showing 3 pods for paym
 
 You should see 3 pods running - `payments-api`, `payments-processor`, and `payments-gateway` - with their status, restarts, and age. This data is live from the cluster.
 
-NOTE: You may see "pods with errors" flagged at the top — this is Developer Hub reporting any pods with a restart count of 1 or more. On a workshop cluster this is normal (pods may have restarted during initial provisioning) and doesn't indicate an actual problem.
+NOTE: You may see "pods with errors" flagged at the top - this is Developer Hub reporting any pods with a restart count of 1 or more. On a workshop cluster this is normal (pods may have restarted during initial provisioning) and doesn't indicate an actual problem.
 
 **This is the key.** A developer clicks their service in the catalog and sees exactly what's running - pod count, restart history, resource usage - without `oc` access, without opening a ticket, without messaging you. You didn't have to do anything for this to work. The platform team configured it once, and every service with the right labels gets this for free.
 
@@ -257,7 +259,7 @@ Now go to **Developer Hub** > **Catalog** > **order-tracker** > **Kubernetes** t
 
 image::rhdh-order-tracker-2pods.png[order-tracker showing 2 live pods deployed by the template]
 
-This is what replaced three separate requests to your team: _"create me a namespace"_, _"deploy my app"_, _"wire it up to Developer Hub"_. One template, one click, done.
+This is what replaced three separate requests to your team: _"can you create a namespace for me?"_, _"can you deploy my app?"_, _"can you wire it up to Developer Hub?"_. One template, one click, done.
 
 == Troubleshoot: Tickets from Dev Teams
 
@@ -416,15 +418,6 @@ image::rhdh-metrics-request-rate.png[Prometheus metrics showing RHDH request rat
 
 TIP: These are the same metrics Prometheus collects for any workload with a ServiceMonitor. RHDH is just another workload being monitored by the built-in Prometheus stack.
 
-=== Disable Monitoring
-
-Clean up by disabling the monitoring toggle:
-
-[source,bash,role="execute"]
-----
-oc patch backstage developer-hub -n backstage --type=merge -p '{"spec":{"monitoring":{"enabled":false}}}'
-----
-
 == What You Learned
 
 [cols="1,2"]
@@ -461,10 +454,9 @@ TIP: Interested in building templates, configuring plugins, or platform engineer
 
 == Cleanup
 
-Remove the resources created during this module:
-
 [source,bash,role="execute"]
 ----
+oc patch backstage developer-hub -n backstage --type=merge -p '{"spec":{"monitoring":{"enabled":false}}}'
 oc delete namespace order-tracker 2>/dev/null
 echo "Cleanup complete"
 ----

@@ -9,6 +9,8 @@
 **Format:** Hands-on +
 **Audience:** Platform Engineers, Operations Teams
 
+include::partial$console-access.adoc[]
+
 In this module, you'll deploy an application, expose it to the outside world, scale it for capacity, see how OpenShift self-heals when things fail, and configure health checks. This is the core ops workflow for managing workloads on OpenShift.
 
 === Learning Objectives
@@ -73,7 +75,7 @@ You should see one pod in `Running` status - the same pod you just saw in the To
 
 === Inspect Your Application
 
-Before moving on, get familiar with the two most important diagnostic commands. These work on any pod in any namespace. You can also see this in the console — you should already have the Topology view open from the previous step. Click the workload node, then click the **Resources** tab in the side panel on the right. Click the pod name to open the pod detail view with **Details**, **Events**, and **Logs** tabs. The console log viewer supports real-time streaming, text search, and downloading.
+Before moving on, get familiar with the two most important diagnostic commands. These work on any pod in any namespace. You can also see this in the console - you should already have the Topology view open from the previous step. Click the workload node, then click the **Resources** tab in the side panel on the right. Click the pod name to open the pod detail view with **Details**, **Events**, and **Logs** tabs. The console log viewer supports real-time streaming, text search, and downloading.
 
 image::app-mgmt-topology-pod-panel.png[Topology side panel showing pod name under Resources tab]
 
@@ -514,8 +516,6 @@ oc get pdb -A                                  # Check disruption budgets
 ----
 
 === Cleanup
-
-NOTE: If the **Ingress & Load Balancing** module is part of your workshop, **skip this cleanup** - it reuses the `weathernow` application in the `app-management` namespace.
 
 [source,bash,role="execute"]
 ----
