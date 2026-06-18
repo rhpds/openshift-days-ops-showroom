@@ -19,7 +19,7 @@ By the end of this module, you will be able to:
 
 * Deploy an application from a container image
 * Expose it via a Route with TLS
-* Scale horizontally and observe the behaviour
+* Scale horizontally and observe the behavior
 * Understand OpenShift self-healing (pod recreation)
 * Configure liveness and readiness probes
 * Use PodDisruptionBudgets to protect availability during maintenance
@@ -202,7 +202,7 @@ sleep 5 && oc get pods -n app-management
 
 The total is back to 3 replicas - all `Running`. The replacement happened in seconds with no manual intervention.
 
-TIP: You can also watch this in the **OCP Console** at **Workloads -> Pods** (project: `app-management`). The console shows pod status transitions in real-time with colour-coded indicators.
+TIP: You can also watch this in the **OCP Console** at **Workloads -> Pods** (project: `app-management`). The console shows pod status transitions in real-time with color-coded indicators.
 
 **The Deployment controller** detected that the actual state (2 pods) didn't match the desired state (3 pods) and created a replacement. This happens in seconds, with no manual intervention.
 
