@@ -263,4 +263,4 @@ In this module, you:
 * Accessed the OpenShift Lightspeed chat interface
 * Used OpenShift Lightspeed to learn OpenShift concepts, generate configurations and troubleshoot issues
 
-We've only covered some of the features, but there are more capabilities such as Bring Your Own Knowledge or connecting OpenShift Lightspeed to custom MCPs. If you want to learn more, check the https://www.redhat.com/en/products/interactive-walkthrough/red-hat-openshift-lightspeed[OpenShift Lightspeed product page].
+We've only covered some of the features, but there are more capabilities such as Bring Your Own Knowledge or connecting OpenShift Lightspeed to custom MCPs. If you want to learn more, check the https://www.redhat.com/en/products/interactive-walkthrough/red-hat-openshift-lightspeed[OpenShift Lightspeed product page, window=blank].
