@@ -25,7 +25,7 @@ By the end of this module, you will be able to:
 * Deploy a complete project configuration (namespace, quotas, limits, network policy) from Git
 * Understand how ArgoCD detects configuration drift
 * Resync resources to restore the desired state
-* Enable self-healing so ArgoCD automatically reverts unauthorised changes
+* Enable self-healing so ArgoCD automatically reverts unauthorized changes
 
 image::diagrams/06_gitops.png[ArgoCD GitOps Sync Flow, align=center]
 
@@ -65,7 +65,7 @@ Enter your admin credentials:
 
 image::gitops-openshift-login.png[OpenShift login form]
 
-Authorise access when prompted:
+Authorize access when prompted:
 
 image::gitops-authorize-access.png[OAuth authorize access page]
 
@@ -160,10 +160,10 @@ Click on the `managed-project` tile to open the application detail view. You'll 
 
 image::gitops-resource-tree-synced.png[ArgoCD resource tree showing managed-project with four child resources all Synced]
 
-* `managed-project` at the centre
+* `managed-project` at the center
 * Branching out to: `default-limits` (LimitRange), `gitops-managed-project` (Namespace), `compute-quota` (ResourceQuota), `deny-from-other-namespaces` (NetworkPolicy)
 
-Each resource node shows its sync and health status with colour-coded icons. Click on any resource - for example, the **compute-quota** ResourceQuota - to open a detail panel:
+Each resource node shows its sync and health status with color-coded icons. Click on any resource - for example, the **compute-quota** ResourceQuota - to open a detail panel:
 
 image::gitops-quota-detail.png[ArgoCD detail panel for compute-quota showing Summary and Live Manifest tabs]
 
@@ -223,7 +223,7 @@ TIP: In the OpenShift console, navigate to **Home -> Projects** and select `gito
 
 === Step 3: Simulate Configuration Drift
 
-Now let's see what happens when someone makes an unauthorised manual change - the kind of thing that happens in production when someone "just needs to fix something quickly."
+Now let's see what happens when someone makes an unauthorized manual change - the kind of thing that happens in production when someone "just needs to fix something quickly."
 
 **Increase the pod quota manually:**
 
@@ -290,7 +290,7 @@ oc get resourcequota compute-quota -n gitops-managed-project -o jsonpath='{.spec
 echo
 ----
 
-Output: `20` - the pod quota is back to the value defined in Git. The unauthorised change has been reverted.
+Output: `20` - the pod quota is back to the value defined in Git. The unauthorized change has been reverted.
 
 === Step 5: Enable Self-Healing
 
@@ -358,7 +358,7 @@ For more information, see link:https://docs.redhat.com/en/documentation/red_hat_
 * Deployed a complete project configuration (namespace, quotas, limits, network policy) from a Git repository
 * Observed ArgoCD detect configuration drift when a ResourceQuota was manually changed
 * Resynced to restore the desired state from Git
-* Enabled self-healing so ArgoCD automatically reverts unauthorised changes
+* Enabled self-healing so ArgoCD automatically reverts unauthorized changes
 
 **Key takeaway:** GitOps turns cluster configuration into code. Everything is in Git - tracked, auditable, and automatically enforced. If it's not in Git, it shouldn't be on the cluster.
 
