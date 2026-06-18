@@ -88,7 +88,7 @@ TIP: Highlighted command blocks are **clickable** - they switch to the Terminal 
 |Verify cluster health, check etcd metrics, deploy an app and expose it in 30 seconds
 
 |**Application Operations**
-|Deploy workloads, break a readiness probe on purpose, scale with HPA under real load, configure network policies
+|Deploy workloads, break a readiness probe on purpose, scale with the Horizontal Pod Autoscaler (HPA) under real load, configure network policies
 
 |**Identity & Access**
 |Integrate LDAP and OIDC authentication, sync groups, test RBAC by logging in as different users

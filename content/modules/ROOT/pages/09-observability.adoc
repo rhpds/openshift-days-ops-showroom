@@ -93,7 +93,7 @@ data:
 EOF
 ----
 
-Any application that exposes a Prometheus `/metrics` endpoint can be scraped by creating a `ServiceMonitor` pointing at it. This is how HPA gets custom metrics for scaling decisions.
+Any application that exposes a Prometheus `/metrics` endpoint can be scraped by creating a `ServiceMonitor` pointing at it. This is how the Horizontal Pod Autoscaler (HPA) gets custom metrics for scaling decisions.
 
 == Alerting with Alertmanager
 
