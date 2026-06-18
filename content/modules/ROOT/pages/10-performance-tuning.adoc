@@ -18,7 +18,7 @@ include::partial$console-access.adoc[]
 
 * Diagnose and fix resource-related pod failures
 * Use VPA to right-size application resources
-* Configure HPA to handle variable load
+* Configure the Horizontal Pod Autoscaler (HPA) to handle variable load
 * Monitor performance with built-in tools
 
 == Part 1: The Over-Provisioned Application

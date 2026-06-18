@@ -394,7 +394,7 @@ Click the **reload button** on the Terminal tab to exit the console.
 |Point-in-time rollback before patches or upgrades
 |===
 
-**The value:** Run VMs and containers side-by-side on one platform. One set of tools, one set of skills. Migrate existing VMs with MTV when ready, or run them indefinitely - OpenShift supports both. Windows Server is SVVP-certified, and RHEL/Fedora/CentOS boot from pre-cached images in seconds.
+**The value:** Run VMs and containers side-by-side on one platform. One set of tools, one set of skills. Migrate existing VMs with the Migration Toolkit for Virtualization (MTV) when ready, or run them indefinitely - OpenShift supports both. Windows Server is SVVP-certified, and RHEL/Fedora/CentOS boot from pre-cached images in seconds.
 
 === Cleanup
 

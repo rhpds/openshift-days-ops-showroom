@@ -10,7 +10,7 @@ include::partial$console-access.adoc[]
 
 Your apps are receiving traffic - but by default, every pod can talk to every other pod, and any pod can reach the internet. That's not production-ready.
 
-In this module you'll lock things down: implement NetworkPolicy to isolate pods, configure EgressFirewall to control outbound traffic, and set up EgressIP for predictable source IPs that external firewalls can whitelist.
+In this module you'll lock things down: implement NetworkPolicy to isolate pods, configure EgressFirewall to control outbound traffic, and set up EgressIP for predictable source IPs that external firewalls can allowlist.
 
 == OpenShift Networking
 
