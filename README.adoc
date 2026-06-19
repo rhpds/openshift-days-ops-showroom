@@ -11,7 +11,7 @@ A comprehensive modular workshop for OpenShift administrators. Modules are selec
 *Getting Started*
 
 * *link:content/modules/ROOT/pages/index.adoc[Setup & Overview]* (15-20 min) - Lab access, Showroom interface, CLI verification, platform overview, console, monitoring, registry, routing, upgrades, operator ecosystem
-* *link:content/modules/ROOT/pages/01-installation.adoc[01 - Installation & Verification]* (10 min) - Installation methods (IPI, UPI, Agent-based, Assisted), cluster health checks, storage provisioning
+* *link:content/modules/ROOT/pages/01-installation.adoc[01 - Installation & Verification]* (10 min) - ClusterOperator health, node status, etcd metrics, storage provisioning, update channels
 
 *Core Operations*
 
@@ -101,9 +101,17 @@ This workshop uses a custom theme with click-to-execute functionality:
 
 The execute button allows code blocks with `role="execute"` to send commands directly to the wetty terminal via `socket.emit`.
 
+== Preview
+
+GitHub Pages preview: https://rhpds.github.io/openshift-days-ops-showroom/
+
+== Branches
+
+* `main` — production content, deployed to students
+* `dev` — development branch for testing changes before production
+
 == Related Repos
 
 * Automation (Ansible roles): https://github.com/rhpds/openshift-days-roadshow-automation
-* AgnosticV (Catalog config): https://github.com/rhpds/agnosticv
-* Showroom (Workshop content): https://github.com/rhpds/openshift-days-ops-showroom
+* AgnosticV (Catalog config): https://github.com/rhpds/agnosticv/tree/master/agd_v2/openshift-days-ops-track-cnv
 * Execute theme (UI bundle): https://github.com/jnewsome97/rhdp_showroom_theme_execute
