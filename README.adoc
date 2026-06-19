@@ -34,9 +34,9 @@ A comprehensive modular workshop for OpenShift administrators. Modules are selec
 *Advanced Topics*
 
 * *link:content/modules/ROOT/pages/11-virtualization.adoc[11 - Virtualization]* (20-25 min) - VM creation, networking, live migration, cloning, snapshots
-* *link:content/modules/ROOT/pages/12-developer-hub.adoc[12 - Developer Hub]* (25-30 min) - Software catalog, templates, deployment verification
+* *link:content/modules/ROOT/pages/12-developer-hub.adoc[12 - Developer Hub]* (25-30 min) - Software catalog, Topology plugin, software templates, platform architecture
 * *link:content/modules/ROOT/pages/13-openshift-lightspeed.adoc[13 - OpenShift Lightspeed]* (15-20 min) - AI assistant, OLSConfig creation, console integration
-* *link:content/modules/ROOT/pages/14-acm.adoc[14 - ACM Multi-Cluster Management]* (30 min) - ACM, hosted control planes, policy-based governance
+* *link:content/modules/ROOT/pages/14-acm.adoc[14 - ACM Multi-Cluster Management]* (30 min) - ACM, hosted control planes, VM management, GitOps app deployment, policy-based governance
 * *link:content/modules/ROOT/pages/15-acs.adoc[15 - Advanced Cluster Security]* (20 min) - Workload scanning with RHACS, compliance, runtime security
 * *link:content/modules/ROOT/pages/16-secrets-management.adoc[16 - Secrets Management (HashiCorp Vault)]* (25 min) - Vault Helm deploy on OpenShift, Kubernetes auth, pod secret injection
 * *link:content/modules/ROOT/pages/17-ztwim.adoc[17 - Layered Zero Trust]* (45 min) - Validated Pattern, SPIFFE/SPIRE, Vault, ZTWIM, GitOps-driven deployment
