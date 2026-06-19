@@ -1,49 +1,105 @@
-name: github pages
+name: Deploy Antora Site
 
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, dev]
     paths-ignore:
       - "README.adoc"
       - ".gitignore"
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
+# Serialize all deploys so main and dev never race on gh-pages.
 concurrency:
-  group: gh-pages
+  group: deploy-gh-pages
   cancel-in-progress: false
 
+permissions:
+  contents: write
+
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
+      - name: Checkout source
         uses: actions/checkout@v4
-      - name: configure pages
-        uses: actions/configure-pages@v5
-      - name: setup node
+        with:
+          path: source
+
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20.13.1
-      - name: install antora
-        run: npm install --global @antora/cli@3.1 @antora/site-generator@3.1
-      - name: antora generate
-        run: antora generate site.yml --stacktrace
-      - name: upload pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: www
-  deploy:
-    needs: build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-    - name: deploy github pages
-      id: deployment
-      uses: actions/deploy-pages@v4
+          node-version: '20'
+
+      - name: Build Antora site
+        working-directory: source
+        run: |
+          npm install --global @antora/cli@3.1 @antora/site-generator@3.1
+          antora generate site.yml --stacktrace
+
+      - name: Deploy to GitHub Pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          git config --global user.name  "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          REPO_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+
+          # Clone or create the gh-pages branch
+          if git ls-remote --exit-code --heads "${REPO_URL}" gh-pages >/dev/null 2>&1; then
+            git clone --single-branch --branch gh-pages "${REPO_URL}" deploy
+          else
+            mkdir deploy
+            cd deploy
+            git init
+            git checkout --orphan gh-pages
+            git remote add origin "${REPO_URL}"
+            touch .nojekyll
+            git add .nojekyll
+            git commit -m "Initialize gh-pages branch"
+            git push -u origin gh-pages
+            cd ..
+          fi
+
+          cd deploy
+          touch .nojekyll
+
+          if [ "${SOURCE_BRANCH}" = "main" ]; then
+            echo "Deploying main -> root (preserving dev/)"
+
+            # Move dev/ aside if it exists
+            if [ -d dev ]; then
+              mv dev /tmp/dev-preserve
+            fi
+
+            # Remove everything except .git
+            find . -mindepth 1 -maxdepth 1 ! -name '.git' -exec rm -rf {} +
+
+            # Restore dev/
+            if [ -d /tmp/dev-preserve ]; then
+              mv /tmp/dev-preserve dev
+            fi
+
+            # Copy built site into root
+            cp -a ../source/www/. .
+            touch .nojekyll
+
+          elif [ "${SOURCE_BRANCH}" = "dev" ]; then
+            echo "Deploying dev -> /dev/"
+
+            rm -rf dev
+            mkdir -p dev
+            cp -a ../source/www/. dev/
+          fi
+
+          git add --all
+
+          if git diff --cached --quiet; then
+            echo "No changes to deploy — skipping commit."
+          else
+            git commit -m "Deploy ${SOURCE_BRANCH} — $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            git push origin gh-pages
+          fi
