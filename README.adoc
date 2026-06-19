@@ -10,35 +10,36 @@ A comprehensive modular workshop for OpenShift administrators. Modules are selec
 
 *Getting Started*
 
-* *link:content/modules/ROOT/pages/00-setup-overview.adoc[00 - Setup & Overview]* (35 min) - Lab access, Showroom interface, CLI verification, platform overview, console, monitoring, registry, routing, upgrades, operator ecosystem
-* *link:content/modules/ROOT/pages/01-installation.adoc[01 - Installation & Verification]* (25 min) - Installation methods (IPI, UPI, Agent-based, Assisted), cluster health checks, storage provisioning
+* *link:content/modules/ROOT/pages/index.adoc[Setup & Overview]* (15-20 min) - Lab access, Showroom interface, CLI verification, platform overview, console, monitoring, registry, routing, upgrades, operator ecosystem
+* *link:content/modules/ROOT/pages/01-installation.adoc[01 - Installation & Verification]* (10 min) - Installation methods (IPI, UPI, Agent-based, Assisted), cluster health checks, storage provisioning
 
 *Core Operations*
 
-* *link:content/modules/ROOT/pages/02-app-mgmt.adoc[02 - Application Management]* (35 min) - Deployment, Routes with TLS, scaling, self-healing, probes, rollback
-* *link:content/modules/ROOT/pages/03-ingress-loadbalancing.adoc[03 - Ingress & Load Balancing]* (25 min) - Ingress Controller, Routes with TLS termination, rate limiting, IP whitelist, Services
-* *link:content/modules/ROOT/pages/04-network-security.adoc[04 - Network Security]* (30 min) - OVN-Kubernetes, NetworkPolicy, EgressFirewall, EgressIP
-* *link:content/modules/ROOT/pages/05-debugging-troubleshooting.adoc[05 - Debugging & Troubleshooting]* (30 min) - Diagnostic toolkit, fixing ImagePullBackOff, CrashLoopBackOff, OOMKilled
-* *link:content/modules/ROOT/pages/06-gitops.adoc[06 - OpenShift GitOps]* (25 min) - ArgoCD login, app deployment, console banner management, drift detection
+* *link:content/modules/ROOT/pages/02-app-mgmt.adoc[02 - Application Management]* (15-20 min) - Deployment, Routes with TLS, scaling, self-healing, probes, rollback, PodDisruptionBudgets
+* *link:content/modules/ROOT/pages/03-ingress-loadbalancing.adoc[03 - Ingress & Load Balancing]* (25 min) - Ingress Controller, Routes with TLS termination, rate limiting, IP allowlist, Services
+* *link:content/modules/ROOT/pages/04-network-security.adoc[04 - Network Security]* (10-15 min) - OVN-Kubernetes, NetworkPolicy, AdminNetworkPolicy, EgressFirewall, EgressIP
+* *link:content/modules/ROOT/pages/05-debugging-troubleshooting.adoc[05 - Debugging & Troubleshooting]* (10-15 min) - Diagnostic toolkit, fixing ImagePullBackOff, CrashLoopBackOff, resource constraints, SCC permissions
+* *link:content/modules/ROOT/pages/06-gitops.adoc[06 - OpenShift GitOps]* (10-15 min) - ArgoCD, app deployment from Git, drift detection, self-healing
 
 *Identity & Access*
 
-* *link:content/modules/ROOT/pages/07-ldap-authentication.adoc[07 - LDAP Authentication]* (55 min) - OAuth configuration, LDAP structure, group sync, RBAC
-* *link:content/modules/ROOT/pages/08-oidc-authentication.adoc[08 - OIDC Authentication]* (55 min) - Red Hat build of Keycloak deployment, OIDC configuration, group sync, RBAC
+* *link:content/modules/ROOT/pages/07-ldap-authentication.adoc[07 - LDAP Authentication]* (15-20 min) - OAuth configuration, LDAP structure, group sync, RBAC
+* *link:content/modules/ROOT/pages/08-oidc-authentication.adoc[08 - OIDC Authentication]* (15-20 min) - Red Hat build of Keycloak deployment, OIDC configuration, group sync, RBAC
 
 *Day 2 Operations*
 
-* *link:content/modules/ROOT/pages/09-observability.adoc[09 - Observability & Logging]* (50 min) - Prometheus metrics, dashboards, user workload monitoring, Alertmanager, OpenTelemetry distributed tracing, logging stack
-* *link:content/modules/ROOT/pages/10-performance-tuning.adoc[10 - Performance Tuning]* (35 min) - Resource diagnostics, VPA right-sizing, HPA autoscaling, performance monitoring
+* *link:content/modules/ROOT/pages/09-observability.adoc[09 - Observability & Logging]* (35-40 min) - Prometheus metrics, dashboards, user workload monitoring, Alertmanager, OpenTelemetry distributed tracing, logging stack
+* *link:content/modules/ROOT/pages/10-performance-tuning.adoc[10 - Performance Tuning]* (15-20 min) - Resource diagnostics, VPA right-sizing, HPA autoscaling, performance monitoring
 
 *Advanced Topics*
 
-* *link:content/modules/ROOT/pages/11-virtualization.adoc[11 - Virtualization]* (35 min) - VM creation, networking, live migration, cloning, snapshots
-* *link:content/modules/ROOT/pages/12-developer-hub.adoc[12 - Developer Hub]* (30 min) - Software catalog, templates, deployment verification
-* *link:content/modules/ROOT/pages/13-openshift-lightspeed.adoc[13 - OpenShift Lightspeed]* (10 min) - AI assistant, OLSConfig creation, console integration
+* *link:content/modules/ROOT/pages/11-virtualization.adoc[11 - Virtualization]* (20-25 min) - VM creation, networking, live migration, cloning, snapshots
+* *link:content/modules/ROOT/pages/12-developer-hub.adoc[12 - Developer Hub]* (25-30 min) - Software catalog, templates, deployment verification
+* *link:content/modules/ROOT/pages/13-openshift-lightspeed.adoc[13 - OpenShift Lightspeed]* (15-20 min) - AI assistant, OLSConfig creation, console integration
 * *link:content/modules/ROOT/pages/14-acm.adoc[14 - ACM Multi-Cluster Management]* (30 min) - ACM, hosted control planes, policy-based governance
-* *link:content/modules/ROOT/pages/15-security.adoc[15 - Advanced Cluster Security]* (15 min) - Workload scanning with ACS, compliance, zero-trust identity
-* *link:content/modules/ROOT/pages/17-secrets-management.adoc[17 - Secrets Management (HashiCorp Vault)]* (25 min) - Vault Helm deploy on OpenShift, UI access, dev-mode lab setup
+* *link:content/modules/ROOT/pages/15-acs.adoc[15 - Advanced Cluster Security]* (20 min) - Workload scanning with RHACS, compliance, runtime security
+* *link:content/modules/ROOT/pages/16-secrets-management.adoc[16 - Secrets Management (HashiCorp Vault)]* (25 min) - Vault Helm deploy on OpenShift, Kubernetes auth, pod secret injection
+* *link:content/modules/ROOT/pages/17-ztwim.adoc[17 - Layered Zero Trust]* (45 min) - Validated Pattern, SPIFFE/SPIRE, Vault, ZTWIM, GitOps-driven deployment
 
 == Module Selection
 
@@ -96,7 +97,7 @@ Output is generated in `./www/`. Serve with `./local-build/serve.sh` or any stat
 This workshop uses a custom theme with click-to-execute functionality:
 
 * Theme repo: https://github.com/jnewsome97/rhdp_showroom_theme_execute
-* Release: `rh-one-2025-execute-v2`
+* Release: `rh-one-2025-execute-v3`
 
 The execute button allows code blocks with `role="execute"` to send commands directly to the wetty terminal via `socket.emit`.
 
