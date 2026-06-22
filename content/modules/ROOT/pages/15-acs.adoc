@@ -6,8 +6,6 @@
 **Format:** Hands-on lab +
 **Audience:** Security Engineers, Platform Engineers, IT Operations
 
-include::partial$console-access.adoc[]
-
 == Learning Objectives
 
 By the end of this module, you will:
@@ -60,35 +58,23 @@ RHACS provides essential tools for security workflows in Kubernetes, including:
 
 With RHACS, you can ensure your Kubernetes clusters remain secure and compliant across CNCF supported Kubernetes environment.
 
-=== RHACS Console Access
-
-You can access the application via the showroom tab to your right or via a separate browser tab or window: {acs_route}[window=blank]
-
-Administrator login is available with:
-
-[cols="1,1"]
-|===
-| *RHACS Console Username:* | {acs_portal_username}
-| *RHACS Console Password:* | {acs_portal_password}
-|===
-
 [[rhacs-compliance-operator-installation-and-compliance-checks]]
 == Compliance Checks with RHACS and the Compliance Operator
 
-Production clusters and applications should meet your security standards and internal policies consistently. RHACS, together with the OpenShift compliance operator, helps you measure that posture and spot gaps before they reach production.
+Production clusters and applications should meet your security standards and internal policies consistently. RHACS, together with the OpenShift compliance operator, helps you measure that posture, spot compliance gaps, and remediate them before they reach production or drifts out of compliance (over time).
 
 First, let's add a configuration to the local cluster so you can see the difference between compliance check results.
 
 === Make a Simple Cluster Change to Pass the Compliance Check
 
-Let's focus on the *ocp4-e8* compliance checks and see how we can pass the `ocp4-e8-ocp-allowed-registries` standard. Follow the steps below to pass the check for the production cluster.
+Let's focus on the *ocp4-e8* compliance standard and see how we can pass the `ocp4-e8-ocp-allowed-registries` control. Follow the steps below to pass the check for the production cluster.
 
 .Procedure
 . Copy and paste the following into the *Terminal* tab on the right.
 +
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
-oc create -f - <<EOF
+oc apply -f - <<EOF
 ---
 apiVersion: config.openshift.io/v1
 kind: Image
@@ -218,9 +204,9 @@ This view shows you the details of the check for the production cluster. As you 
 ====
 +
 . And you can run the verification step to ensure the check is passing.
-[source,sh,subs="attributes",role="execute"]
+[source,sh,subs="attributes",role=execute]
 ----
-oc get image.config.openshift.io cluster -o jsonpath='{.spec.registrySources.allowedRegistries}' |
+oc get image.config.openshift.io cluster -o jsonpath='{.spec.registrySources.allowedRegistries}'
 ----
 
 image::https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcHI1ZGQwYWNnd3doY2s4MDNpenZ1MWlzeDlqNWhyNzF5c2JveWNybSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/xTQXENNW77nUsNVmV4/giphy.gif[Fun celebration, link=self, window=blank, width=400]
@@ -407,6 +393,8 @@ image::acs-security-09.png[RHACS violation detail for package manager policy, li
 ====
 If configured properly, each violation record should be pushed to a Security Information and Event Management (SIEM) application and is available to be retrieved via the API. The forensic data shown in the UI is recorded, including the timestamp, process user IDs, process arguments, process ancestors, and enforcement action.
 ====
+
+
 
 === Clean up
 
