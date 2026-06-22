@@ -1,0 +1,87 @@
+# ESO demo: sync secret/my-second-secret from Vault into a Kubernetes Secret
+# and deploy a workload that consumes it via env vars.
+# Prerequisites: Vault in namespace vault (dev mode), secret/my-second-secret in Vault,
+# External Secrets Operator installed in external-secrets namespace.
+# Apply: oc apply -f demo-eso-vault-app.yaml
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vault-token
+  namespace: vault
+type: Opaque
+stringData:
+  token: root
+---
+apiVersion: external-secrets.io/v1
+kind: SecretStore
+metadata:
+  name: vault-backend
+  namespace: vault
+spec:
+  provider:
+    vault:
+      server: "http://vault.vault.svc:8200"
+      path: "secret"
+      version: "v2"
+      auth:
+        tokenSecretRef:
+          name: vault-token
+          key: token
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: sync-my-second-secret
+  namespace: vault
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault-backend
+    kind: SecretStore
+  target:
+    name: my-second-secret-sync
+    creationPolicy: Owner
+  data:
+    - secretKey: username
+      remoteRef:
+        key: my-second-secret
+        property: username
+    - secretKey: password
+      remoteRef:
+        key: my-second-secret
+        property: password
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eso-vault-test
+  namespace: vault
+  labels:
+    app: eso-read-vault-secret
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eso-read-vault-secret
+  template:
+    metadata:
+      labels:
+        app: eso-read-vault-secret
+    spec:
+      containers:
+        - name: nginx
+          image: registry.access.redhat.com/ubi9/nginx-124:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: my-second-secret-sync
+                  key: username
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: my-second-secret-sync
+                  key: password

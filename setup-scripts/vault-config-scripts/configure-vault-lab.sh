@@ -32,17 +32,21 @@ oc exec -n vault "${VAULT_POD}" -- sh -ec 'vault write auth/kubernetes/config \
   kubernetes_host="https://kubernetes.default.svc:443"'
 
 echo "[vault-lab] Creating Kubernetes auth role vault-role..."
+AUD=$(oc exec -n vault "${VAULT_POD}" -- cat /var/run/secrets/kubernetes.io/serviceaccount/token \
+  | cut -d. -f2 | base64 -d 2>/dev/null | sed -n 's/.*"aud":\["\([^"]*\)".*/\1/p')
+vault_cmd delete auth/kubernetes/role/vault-role 2>/dev/null || true
 vault_cmd write auth/kubernetes/role/vault-role \
   bound_service_account_names=vault-serviceaccount \
   bound_service_account_namespaces=vault \
   policies=read-policy \
-  ttl=1h
+  ttl=1h \
+  audience="${AUD}"
 
 echo "[vault-lab] Enabling KV secrets engine at secret/ (if needed)..."
 vault_cmd secrets enable -path=secret kv-v2 2>/dev/null || true
 
 echo "[vault-lab] Writing workshop secrets..."
-vault_cmd kv put secret/login pattoken=workshop-pattoken-abc123
+vault_cmd kv put secret/login rhos-token=workshop-token-abc123
 vault_cmd kv put secret/my-first-secret username=workshop-user password=workshop-password
 
 echo "[vault-lab] Secrets in Vault:"
