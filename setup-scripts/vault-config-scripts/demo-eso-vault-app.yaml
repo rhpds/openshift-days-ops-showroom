@@ -70,10 +70,9 @@ spec:
         app: eso-read-vault-secret
     spec:
       containers:
-        - name: nginx
-          image: registry.access.redhat.com/ubi9/nginx-124:latest
-          ports:
-            - containerPort: 8080
+        - name: app
+          image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+          command: ["sleep", "infinity"]
           env:
             - name: USERNAME
               valueFrom:
