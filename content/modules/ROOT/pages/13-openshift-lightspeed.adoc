@@ -11,7 +11,7 @@ include::partial$console-access.adoc[]
 
 OpenShift Lightspeed (OLS) is an AI-powered assistant integrated into the OpenShift web console that combines the power of Large Language Models (LLMs) and official OpenShift documentation via Retrieval-Augmented Generation (RAG) to help administrators and developers with:
 
-* Understanding OpenShift concepts
+* Understanding OpenShift concepts and architecture
 * Getting guidance on configurations
 * Assisted YAML generation
 * Troubleshooting cluster issues
