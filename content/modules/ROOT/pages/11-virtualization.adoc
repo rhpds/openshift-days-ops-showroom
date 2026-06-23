@@ -70,6 +70,8 @@ image::virt-create-wizard.png[VM creation wizard showing InstanceType selection 
 
 **Step 3: Configure and Create**
 
+IMPORTANT: Name the VM exactly `rhel9-vm` and ensure the project is set to `vm-demo`. The commands in the rest of this module use these names, so different values will cause them to fail.
+
 In the **VirtualMachine details** section:
 
 1. Change the **Name** to `rhel9-vm`
