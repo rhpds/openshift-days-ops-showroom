@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# Configure the ZTWIM platform for the workshop lab.
-# - Uses pre-installed operator when CSV is already Succeeded (showroom default)
-# - Applies SPIRE custom resources when missing
-# - Waits for workloads and verifies the platform is ready before exiting
+# Configure the ZTWIM platform for the PostgreSQL SPIFFE mTLS workshop lab.
+# 1. Discover what is already deployed on the cluster
+# 2. Apply only what is missing for the lab example
+# 3. Verify the platform is ready before exiting
 #
 # Upstream alignment: Roadshow-ZTWIM scripts/00-install-ztwim-operator.sh
 set -euo pipefail
 
-OPERATOR_NAMESPACE="${OPERATOR_NAMESPACE:-zero-trust-workload-identity-manager}"
-LEGACY_OPERATOR_NAMESPACE="openshift-zero-trust-workload-identity-manager"
+DEFAULT_OPERATOR_NAMESPACE="openshift-zero-trust-workload-identity-manager"
+OPERATOR_NAMESPACE="${OPERATOR_NAMESPACE:-}"
 SUBSCRIPTION_NAME="${ZTWIM_SUBSCRIPTION_NAME:-openshift-zero-trust-workload-identity-manager}"
 PACKAGE_NAME="${ZTWIM_PACKAGE:-zero-trust-workload-identity-manager}"
 INSTALL_MODE="${1:-setup}"
@@ -33,6 +33,35 @@ detect_cluster_config() {
   log "Trust domain: ${TRUST_DOMAIN}"
 }
 
+namespace_has_operator_artifacts() {
+  local ns="$1"
+  oc get namespace "${ns}" >/dev/null 2>&1 || return 1
+  oc get subscription -n "${ns}" 2>/dev/null | grep -qE 'zero-trust|openshift-zero-trust' && return 0
+  oc get csv -n "${ns}" 2>/dev/null | grep -q 'zero-trust-workload-identity-manager' && return 0
+  oc get pods -n "${ns}" --no-headers 2>/dev/null \
+    | grep -qE 'controller-manager|zero-trust-workload-identity-manager' && return 0
+  return 1
+}
+
+detect_operator_namespace() {
+  if [[ -n "${OPERATOR_NAMESPACE}" ]]; then
+    log "Operator namespace: ${OPERATOR_NAMESPACE} (from environment)"
+    return 0
+  fi
+
+  local ns
+  for ns in "${DEFAULT_OPERATOR_NAMESPACE}" zero-trust-workload-identity-manager; do
+    if namespace_has_operator_artifacts "${ns}"; then
+      OPERATOR_NAMESPACE="${ns}"
+      log "Operator namespace: ${OPERATOR_NAMESPACE} (detected)"
+      return 0
+    fi
+  done
+
+  OPERATOR_NAMESPACE="${DEFAULT_OPERATOR_NAMESPACE}"
+  log "Operator namespace: ${OPERATOR_NAMESPACE} (default)"
+}
+
 operator_csv_name() {
   oc get csv -n "${OPERATOR_NAMESPACE}" \
     -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null \
@@ -50,115 +79,24 @@ operator_csv_ready() {
   [[ "$(operator_csv_phase 2>/dev/null || echo "")" == "Succeeded" ]]
 }
 
-operator_csv_phase_in() {
-  local ns="$1" csv
-  csv="$(oc get csv -n "${ns}" \
-    -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null \
-    | grep -E '^zero-trust-workload-identity-manager\.' | head -1)"
-  [[ -n "${csv}" ]] || return 1
-  oc get csv "${csv}" -n "${ns}" -o jsonpath='{.status.phase}'
-}
-
-cleanup_legacy_operator_namespace() {
-  if ! oc get namespace "${LEGACY_OPERATOR_NAMESPACE}" >/dev/null 2>&1; then
+operator_controller_ready() {
+  local ready
+  ready="$(oc get pods -n "${OPERATOR_NAMESPACE}" \
+    -l app.kubernetes.io/name=zero-trust-workload-identity-manager \
+    -o jsonpath='{.items[0].status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || true)"
+  if [[ "${ready}" == "True" ]]; then
     return 0
   fi
-
-  local phase
-  phase="$(operator_csv_phase_in "${LEGACY_OPERATOR_NAMESPACE}" 2>/dev/null || echo "missing")"
-  if [[ "${phase}" == "Succeeded" ]]; then
-    log "WARNING: ZTWIM operator is installed in unsupported namespace ${LEGACY_OPERATOR_NAMESPACE}."
-    log "         Red Hat supports only zero-trust-workload-identity-manager (not openshift-*)."
-    return 0
-  fi
-
-  if [[ "${phase}" != "missing" ]]; then
-    log "Removing failed ZTWIM install from unsupported namespace ${LEGACY_OPERATOR_NAMESPACE} (phase: ${phase})..."
-    oc delete subscription "${SUBSCRIPTION_NAME}" -n "${LEGACY_OPERATOR_NAMESPACE}" --ignore-not-found --timeout=120s 2>/dev/null || true
-    oc delete csv -n "${LEGACY_OPERATOR_NAMESPACE}" \
-      -l operators.coreos.com/"${PACKAGE_NAME}"."${LEGACY_OPERATOR_NAMESPACE}" \
-      --ignore-not-found --timeout=120s 2>/dev/null || true
-    oc delete installplan -n "${LEGACY_OPERATOR_NAMESPACE}" --all --ignore-not-found --timeout=120s 2>/dev/null || true
-  fi
+  oc get pods -n "${OPERATOR_NAMESPACE}" --no-headers 2>/dev/null \
+    | grep -E 'controller-manager' | grep -q 'Running'
 }
 
-recover_failed_operator() {
-  local csv phase
-  csv="$(operator_csv_name)"
-  [[ -n "${csv}" ]] || return 0
-  phase="$(operator_csv_phase)"
-  if [[ "${phase}" == "Failed" ]] || [[ "${phase}" == "Replacing" ]]; then
-    log "ZTWIM operator CSV ${csv} is ${phase}; deleting to trigger OLM reinstall..."
-    oc get csv "${csv}" -n "${OPERATOR_NAMESPACE}" \
-      -o jsonpath='{.status.message}{"\n"}' 2>/dev/null | sed 's/^/[ztwim-platform]   /' || true
-    oc delete csv "${csv}" -n "${OPERATOR_NAMESPACE}" --timeout=120s 2>/dev/null || true
-    oc delete installplan -n "${OPERATOR_NAMESPACE}" --all --ignore-not-found --timeout=120s 2>/dev/null || true
-    if oc get subscription "${SUBSCRIPTION_NAME}" -n "${OPERATOR_NAMESPACE}" >/dev/null 2>&1; then
-      oc patch subscription "${SUBSCRIPTION_NAME}" -n "${OPERATOR_NAMESPACE}" --type merge \
-        -p '{"spec":{"startingCSV":"","installPlanApproval":"Automatic"}}' 2>/dev/null || true
-    fi
-  fi
+operator_subscription_exists() {
+  oc get subscription "${SUBSCRIPTION_NAME}" -n "${OPERATOR_NAMESPACE}" >/dev/null 2>&1
 }
 
-ensure_operator_subscription() {
-  oc create namespace "${OPERATOR_NAMESPACE}" --dry-run=client -o yaml | oc apply -f -
-
-  if ! oc get operatorgroup zero-trust-workload-identity-manager -n "${OPERATOR_NAMESPACE}" >/dev/null 2>&1; then
-    oc apply -f - <<EOF
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  name: zero-trust-workload-identity-manager
-  namespace: ${OPERATOR_NAMESPACE}
-spec:
-  targetNamespaces:
-  - ${OPERATOR_NAMESPACE}
-EOF
-  fi
-
-  if ! oc get subscription "${SUBSCRIPTION_NAME}" -n "${OPERATOR_NAMESPACE}" >/dev/null 2>&1; then
-    log "Creating ZTWIM operator subscription..."
-    oc apply -f - <<EOF
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: ${SUBSCRIPTION_NAME}
-  namespace: ${OPERATOR_NAMESPACE}
-spec:
-  channel: stable-v1
-  installPlanApproval: Automatic
-  name: ${PACKAGE_NAME}
-  source: redhat-operators
-  sourceNamespace: openshift-marketplace
-EOF
-  else
-    log "ZTWIM operator subscription already exists"
-  fi
-}
-
-wait_for_operator_csv() {
-  log "Waiting for ZTWIM operator CSV to reach Succeeded (up to 15 minutes)..."
-  local elapsed=0 phase last_phase=""
-  while [[ "${elapsed}" -lt 900 ]]; do
-    if operator_csv_ready; then
-      log "Operator installed: $(operator_csv_name)"
-      return 0
-    fi
-    phase="$(operator_csv_phase 2>/dev/null || echo "pending")"
-    if [[ "${phase}" == "Failed" ]]; then
-      recover_failed_operator
-    elif [[ "${phase}" != "${last_phase}" ]] || [[ $((elapsed % 60)) -eq 0 ]]; then
-      log "  operator CSV phase: ${phase} (${elapsed}s elapsed)"
-      last_phase="${phase}"
-    fi
-    sleep 10
-    elapsed=$((elapsed + 10))
-  done
-  phase="$(operator_csv_phase 2>/dev/null || echo "missing")"
-  log "Final operator CSV phase: ${phase}"
-  oc get csv,subscription,installplan -n "${OPERATOR_NAMESPACE}" 2>/dev/null \
-    | grep -E 'zero-trust|NAME' || true
-  err "Timed out waiting for ZTWIM operator CSV"
+operator_usable() {
+  operator_csv_ready || operator_controller_ready
 }
 
 spire_crs_exist() {
@@ -193,17 +131,71 @@ clusterspiffeid_crd_exists() {
   oc get crd clusterspiffeids.spire.spiffe.io >/dev/null 2>&1
 }
 
+survey_platform() {
+  log "=== Deployed state (PostgreSQL SPIFFE lab prerequisites) ==="
+
+  if operator_csv_ready; then
+    log "  operator CSV: Succeeded ($(operator_csv_name))"
+  elif operator_controller_ready; then
+    log "  operator CSV: $(operator_csv_phase 2>/dev/null || echo missing) (controller running)"
+  elif operator_subscription_exists; then
+    log "  operator: subscription present, controller not ready yet"
+  else
+    log "  operator: not found in ${OPERATOR_NAMESPACE}"
+  fi
+
+  if spire_crs_exist; then
+    log "  SPIRE custom resources: present"
+  else
+    log "  SPIRE custom resources: missing"
+  fi
+
+  if spire_server_ready; then
+    log "  SPIRE server: ready (2/2)"
+  else
+    log "  SPIRE server: not ready"
+  fi
+
+  if daemonset_ready spire-agent; then
+    log "  SPIRE agents: ready"
+  else
+    log "  SPIRE agents: not ready"
+  fi
+
+  if daemonset_ready spire-spiffe-csi-driver; then
+    log "  SPIFFE CSI driver: ready"
+  else
+    log "  SPIFFE CSI driver: not ready"
+  fi
+
+  if csi_driver_registered; then
+    log "  CSI driver csi.spiffe.io: registered"
+  else
+    log "  CSI driver csi.spiffe.io: not registered"
+  fi
+
+  if clusterspiffeid_crd_exists; then
+    log "  ClusterSPIFFEID CRD: present"
+  else
+    log "  ClusterSPIFFEID CRD: missing"
+  fi
+}
+
 check_platform_ready() {
   local failures=0
 
-  log "Checking ZTWIM platform readiness..."
+  log "=== Readiness check ==="
 
   if operator_csv_ready; then
     log "  [OK] ZTWIM operator CSV Succeeded"
+  elif operator_controller_ready; then
+    local phase
+    phase="$(operator_csv_phase 2>/dev/null || echo "missing")"
+    log "  [OK] ZTWIM operator controller running (CSV phase: ${phase})"
   else
     local phase
     phase="$(operator_csv_phase 2>/dev/null || echo "missing")"
-    log "  [FAIL] ZTWIM operator CSV not Succeeded (phase: ${phase})"
+    log "  [FAIL] ZTWIM operator not ready (CSV phase: ${phase})"
     failures=$((failures + 1))
   fi
 
@@ -249,7 +241,6 @@ check_platform_ready() {
     failures=$((failures + 1))
   fi
 
-  log "Trust domain: ${TRUST_DOMAIN}"
   return "${failures}"
 }
 
@@ -261,19 +252,88 @@ print_platform_status() {
   oc get csidriver csi.spiffe.io 2>/dev/null || true
 }
 
-install_operator() {
-  if operator_csv_ready; then
-    log "ZTWIM operator CSV already Succeeded; skipping operator install"
+ensure_operator_subscription() {
+  oc create namespace "${OPERATOR_NAMESPACE}" --dry-run=client -o yaml | oc apply -f -
+
+  if ! oc get operatorgroup zero-trust-workload-identity-manager -n "${OPERATOR_NAMESPACE}" >/dev/null 2>&1; then
+    log "Creating OperatorGroup..."
+    oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: zero-trust-workload-identity-manager
+  namespace: ${OPERATOR_NAMESPACE}
+spec:
+  targetNamespaces:
+  - ${OPERATOR_NAMESPACE}
+EOF
+  fi
+
+  if ! operator_subscription_exists; then
+    log "Creating operator subscription..."
+    oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: ${SUBSCRIPTION_NAME}
+  namespace: ${OPERATOR_NAMESPACE}
+spec:
+  channel: stable-v1
+  installPlanApproval: Automatic
+  name: ${PACKAGE_NAME}
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+  fi
+}
+
+wait_for_operator() {
+  if operator_usable; then
     return 0
   fi
 
-  recover_failed_operator
+  if operator_subscription_exists; then
+    log "Waiting for operator controller in ${OPERATOR_NAMESPACE} (up to 5 minutes)..."
+    local elapsed=0
+    while [[ "${elapsed}" -lt 300 ]]; do
+      if operator_usable; then
+        local phase
+        phase="$(operator_csv_phase 2>/dev/null || echo "missing")"
+        log "Operator is usable (CSV phase: ${phase})"
+        return 0
+      fi
+      sleep 10
+      elapsed=$((elapsed + 10))
+      if [[ $((elapsed % 30)) -eq 0 ]]; then
+        log "  still waiting (${elapsed}s)..."
+      fi
+    done
+    err "Operator controller did not become ready within 5 minutes"
+  fi
+
   ensure_operator_subscription
-  wait_for_operator_csv
+  log "Waiting for operator install in ${OPERATOR_NAMESPACE} (up to 15 minutes)..."
+  local elapsed=0 phase last_phase=""
+  while [[ "${elapsed}" -lt 900 ]]; do
+    if operator_usable; then
+      local csv_phase
+      csv_phase="$(operator_csv_phase 2>/dev/null || echo "missing")"
+      log "Operator is usable (CSV phase: ${csv_phase})"
+      return 0
+    fi
+    phase="$(operator_csv_phase 2>/dev/null || echo "pending")"
+    if [[ "${phase}" != "${last_phase}" ]] || [[ $((elapsed % 60)) -eq 0 ]]; then
+      log "  operator CSV phase: ${phase} (${elapsed}s elapsed)"
+      last_phase="${phase}"
+    fi
+    sleep 10
+    elapsed=$((elapsed + 10))
+  done
+  err "Timed out waiting for ZTWIM operator"
 }
 
 configure_spire() {
-  log "Applying SPIRE custom resources..."
+  log "Applying SPIRE custom resources for the PostgreSQL SPIFFE lab..."
   oc apply -f - <<EOF
 apiVersion: operator.openshift.io/v1alpha1
 kind: ZeroTrustWorkloadIdentityManager
@@ -331,11 +391,19 @@ EOF
 }
 
 wait_for_workloads() {
-  log "Waiting for SPIRE server pod..."
-  oc wait --for=condition=Ready pod -l app.kubernetes.io/name=spire-server \
-    -n "${OPERATOR_NAMESPACE}" --timeout=300s
+  if ! spire_server_ready; then
+    log "Waiting for SPIRE server pod..."
+    oc wait --for=condition=Ready pod -l app.kubernetes.io/name=spire-server \
+      -n "${OPERATOR_NAMESPACE}" --timeout=300s
+  else
+    log "SPIRE server already ready"
+  fi
 
   for component in spire-agent spire-spiffe-csi-driver; do
+    if daemonset_ready "${component}"; then
+      log "${component} already ready"
+      continue
+    fi
     log "Waiting for ${component} DaemonSet..."
     local elapsed=0
     while [[ "${elapsed}" -lt 300 ]]; do
@@ -355,44 +423,49 @@ wait_for_workloads() {
   done
 }
 
-setup_platform() {
-  require_oc
-  detect_cluster_config
-  cleanup_legacy_operator_namespace
-
-  if check_platform_ready; then
-    log "ZTWIM platform is already ready."
-    print_platform_status
-    log "Next: ./configure-ztwim-postgresql-lab.sh deploy"
-    return 0
+ensure_lab_platform() {
+  if ! operator_usable; then
+    log "Operator not ready — installing or waiting for existing subscription..."
+    wait_for_operator
+  else
+    log "Operator already usable — skipping install"
   fi
-
-  log "ZTWIM platform is not ready; configuring..."
-
-  install_operator
-  operator_csv_ready || err "ZTWIM operator is required before SPIRE configuration"
 
   if ! spire_crs_exist; then
     configure_spire
   else
-    log "SPIRE custom resources already exist; skipping apply"
+    log "SPIRE custom resources already present — skipping apply"
   fi
 
-  wait_for_workloads
+  if ! spire_server_ready || ! daemonset_ready spire-agent || ! daemonset_ready spire-spiffe-csi-driver; then
+    wait_for_workloads
+  else
+    log "SPIRE workloads already ready — skipping wait"
+  fi
+}
+
+setup_platform() {
+  require_oc
+  detect_cluster_config
+  detect_operator_namespace
+  survey_platform
+
+  if check_platform_ready; then
+    log "ZTWIM platform is ready for the PostgreSQL SPIFFE lab."
+    log "Next: ./configure-ztwim-postgresql-lab.sh deploy"
+    return 0
+  fi
+
+  log "Configuring missing components..."
+  ensure_lab_platform
 
   if ! check_platform_ready; then
     log "Platform status after configuration:"
     print_platform_status
-    local csv
-    csv="$(operator_csv_name)"
-    if [[ -n "${csv}" ]]; then
-      log "Operator CSV details:"
-      oc describe csv "${csv}" -n "${OPERATOR_NAMESPACE}" 2>/dev/null | tail -25 || true
-    fi
-    err "ZTWIM platform readiness check failed"
+    err "ZTWIM platform is not ready for the PostgreSQL SPIFFE lab"
   fi
 
-  log "ZTWIM platform is ready."
+  log "ZTWIM platform is ready for the PostgreSQL SPIFFE lab."
   print_platform_status
   log "Next: ./configure-ztwim-postgresql-lab.sh deploy"
 }
@@ -400,27 +473,28 @@ setup_platform() {
 verify_only() {
   require_oc
   detect_cluster_config
+  detect_operator_namespace
+  survey_platform
   if check_platform_ready; then
-    log "ZTWIM platform is ready."
-    print_platform_status
+    log "ZTWIM platform is ready for the PostgreSQL SPIFFE lab."
     return 0
   fi
   log "Platform status:"
   print_platform_status
-  err "ZTWIM platform is not ready"
+  err "ZTWIM platform is not ready for the PostgreSQL SPIFFE lab"
 }
 
 usage() {
   cat <<EOF
 Usage: $0 [setup|check]
 
-  setup  Configure SPIRE (if needed), wait for workloads, verify readiness (default)
-  check  Verify platform readiness only; exit non-zero if not ready
+  setup  Discover deployed state, configure gaps, verify readiness (default)
+  check  Survey and verify readiness only; exit non-zero if not ready
 
 Environment:
-  OPERATOR_NAMESPACE  Default: zero-trust-workload-identity-manager
-  ZTWIM_PACKAGE         OLM package name (default: zero-trust-workload-identity-manager)
-  ZTWIM_SUBSCRIPTION_NAME  Subscription metadata name (default: openshift-zero-trust-workload-identity-manager)
+  OPERATOR_NAMESPACE       Operator namespace (auto-detected when unset)
+  ZTWIM_PACKAGE            OLM package name (default: zero-trust-workload-identity-manager)
+  ZTWIM_SUBSCRIPTION_NAME  Subscription name (default: openshift-zero-trust-workload-identity-manager)
 EOF
 }
 

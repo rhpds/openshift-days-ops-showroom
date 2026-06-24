@@ -45,6 +45,9 @@ Zero-trust principles require cryptographic proof of workload identity—not jus
 +
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
+cd ~/
+git clone mfosterrox@github.com:mfosterrox/openshift-days-ops-showroom.git
+git pull
 cd ~/openshift-days-ops-showroom/setup-scripts/ztwim-config-scripts
 ./configure-ztwim-lab.sh
 ----
