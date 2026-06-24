@@ -7,6 +7,11 @@ kind: Namespace
 apiVersion: v1
 metadata:
   name: postgresql-spiffe-client
+  labels:
+    security.openshift.io/scc.podSecurityLabelSync: "false"
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
 ---
 kind: ServiceAccount
 apiVersion: v1
