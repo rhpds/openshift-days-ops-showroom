@@ -1,7 +1,34 @@
-# Demo app from the Vault-on-Kubernetes hands-on guide (Agent Injector).
-# Prerequisites: Vault in namespace vault (dev mode), configure-vault-lab.sh completed.
+# Vault Secrets App — Agent Injector demo with OpenShift Route.
+# Prerequisites: Vault in namespace vault (dev mode), vault-role configured.
 # Apply: oc apply -f demo-vault-app.yaml
-# Reference: https://medium.com/@muppedaanvesh/a-hand-on-guide-to-vault-in-kubernetes-%EF%B8%8F-1daf73f331bd
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vault-secrets-app-html
+  namespace: vault
+  labels:
+    app: vault-secrets-app
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <title>Vault Secrets App</title>
+      <style>
+        body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; color: #151515; }
+        h1 { color: #ee0000; }
+        code { background: #f0f0f0; padding: 0.1rem 0.3rem; border-radius: 3px; }
+      </style>
+    </head>
+    <body>
+      <h1>Vault Secrets App</h1>
+      <p>This demo application authenticates to HashiCorp Vault through the <strong>Vault Agent Injector</strong>.</p>
+      <p>Injected secrets are mounted at <code>/vault/secrets/</code> inside the pod. Use the lab CLI steps to read them—credentials are not displayed in the browser.</p>
+      <p><strong>Status:</strong> Application is running and reachable through the OpenShift Route.</p>
+    </body>
+    </html>
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -9,29 +36,30 @@ metadata:
   name: vault-serviceaccount
   namespace: vault
   labels:
-    app: read-vault-secret
+    app: vault-secrets-app
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vault-test
+  name: vault-secrets-app
   namespace: vault
   labels:
-    app: read-vault-secret
+    app: vault-secrets-app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: read-vault-secret
+      app: vault-secrets-app
   template:
     metadata:
       labels:
-        app: read-vault-secret
+        app: vault-secrets-app
       annotations:
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/agent-inject-status: "update"
         vault.hashicorp.com/role: "vault-role"
         vault.hashicorp.com/agent-inject-address: "http://vault.vault.svc:8200"
+        vault.hashicorp.com/agent-inject-containers: "web"
         vault.hashicorp.com/agent-inject-secret-login: "secret/login"
         vault.hashicorp.com/agent-inject-template-login: |
           {{- with secret "secret/login" -}}
@@ -45,8 +73,49 @@ spec:
           {{- end }}
     spec:
       serviceAccountName: vault-serviceaccount
+      volumes:
+        - name: html
+          configMap:
+            name: vault-secrets-app-html
       containers:
-        - name: nginx
-          image: registry.access.redhat.com/ubi9/nginx-124:latest
+        - name: web
+          image: docker.io/nginxinc/nginx-unprivileged:1.27-alpine
           ports:
-            - containerPort: 8080
+            - name: http
+              containerPort: 8080
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+              readOnly: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vault-secrets-app
+  namespace: vault
+  labels:
+    app: vault-secrets-app
+spec:
+  selector:
+    app: vault-secrets-app
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: vault-secrets-app
+  namespace: vault
+  labels:
+    app: vault-secrets-app
+spec:
+  to:
+    kind: Service
+    name: vault-secrets-app
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
