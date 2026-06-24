@@ -106,6 +106,17 @@ spire_crs_exist() {
   [[ "${count}" -ge 5 ]]
 }
 
+remove_misplaced_spire_crs() {
+  local count
+  count="$(oc get zerotrustworkloadidentitymanager,spireserver,spireagent,spiffecsidriver,spireoidcdiscoveryprovider \
+    -n default --no-headers 2>/dev/null | wc -l | tr -d ' ')"
+  if [[ "${count}" -gt 0 ]]; then
+    log "Removing SPIRE custom resources from default namespace (belong in ${OPERATOR_NAMESPACE})..."
+    oc delete zerotrustworkloadidentitymanager,spireserver,spireagent,spiffecsidriver,spireoidcdiscoveryprovider \
+      cluster -n default --ignore-not-found --timeout=120s 2>/dev/null || true
+  fi
+}
+
 daemonset_ready() {
   local component="$1"
   local ready desired
@@ -339,6 +350,7 @@ apiVersion: operator.openshift.io/v1alpha1
 kind: ZeroTrustWorkloadIdentityManager
 metadata:
   name: cluster
+  namespace: ${OPERATOR_NAMESPACE}
 spec:
   trustDomain: ${TRUST_DOMAIN}
   clusterName: ${CLUSTER_NAME}
@@ -348,6 +360,7 @@ apiVersion: operator.openshift.io/v1alpha1
 kind: SpireServer
 metadata:
   name: cluster
+  namespace: ${OPERATOR_NAMESPACE}
 spec:
   caSubject:
     commonName: redhat.com
@@ -365,6 +378,7 @@ apiVersion: operator.openshift.io/v1alpha1
 kind: SpireAgent
 metadata:
   name: cluster
+  namespace: ${OPERATOR_NAMESPACE}
 spec:
   nodeAttestor:
     k8sPSATEnabled: "true"
@@ -377,6 +391,7 @@ apiVersion: operator.openshift.io/v1alpha1
 kind: SpiffeCSIDriver
 metadata:
   name: cluster
+  namespace: ${OPERATOR_NAMESPACE}
 spec:
   agentSocketPath: /run/spire/agent-sockets
 ---
@@ -384,17 +399,39 @@ apiVersion: operator.openshift.io/v1alpha1
 kind: SpireOIDCDiscoveryProvider
 metadata:
   name: cluster
+  namespace: ${OPERATOR_NAMESPACE}
 spec:
   jwtIssuer: https://spire-spiffe-oidc-discovery-provider.${CLUSTER_DOMAIN}
   managedRoute: "true"
 EOF
 }
 
+wait_for_spire_server() {
+  log "Waiting for SPIRE server pod..."
+  local elapsed=0
+  while [[ "${elapsed}" -lt 300 ]]; do
+    if spire_server_ready; then
+      log "SPIRE server ready (2/2)"
+      return 0
+    fi
+    local count
+    count="$(oc get pods -n "${OPERATOR_NAMESPACE}" -l app.kubernetes.io/name=spire-server \
+      --no-headers 2>/dev/null | wc -l | tr -d ' ')"
+    if [[ "${count}" -gt 0 ]]; then
+      oc wait --for=condition=Ready pod -l app.kubernetes.io/name=spire-server \
+        -n "${OPERATOR_NAMESPACE}" --timeout=60s 2>/dev/null || true
+    elif [[ $((elapsed % 30)) -eq 0 ]]; then
+      log "  waiting for SPIRE server pod to appear (${elapsed}s)..."
+    fi
+    sleep 5
+    elapsed=$((elapsed + 5))
+  done
+  err "SPIRE server did not become ready within 5 minutes"
+}
+
 wait_for_workloads() {
   if ! spire_server_ready; then
-    log "Waiting for SPIRE server pod..."
-    oc wait --for=condition=Ready pod -l app.kubernetes.io/name=spire-server \
-      -n "${OPERATOR_NAMESPACE}" --timeout=300s
+    wait_for_spire_server
   else
     log "SPIRE server already ready"
   fi
@@ -416,6 +453,9 @@ wait_for_workloads() {
         log "${component} ready (${ready}/${desired})"
         break
       fi
+      if [[ $((elapsed % 30)) -eq 0 ]] && [[ "${elapsed}" -gt 0 ]]; then
+        log "  waiting for ${component} (${elapsed}s)..."
+      fi
       sleep 5
       elapsed=$((elapsed + 5))
     done
@@ -432,6 +472,7 @@ ensure_lab_platform() {
   fi
 
   if ! spire_crs_exist; then
+    remove_misplaced_spire_crs
     configure_spire
   else
     log "SPIRE custom resources already present — skipping apply"
