@@ -10,8 +10,7 @@
 
 By the end of this module, you will:
 
-* Configure the pre-installed Zero Trust Workload Identity Manager (ZTWIM) platform using the workshop setup script
-* Confirm SPIRE server, agents, and the CSI driver are healthy before deploying lab workloads
+* Configure ZTWIM for the lab using the workshop setup scripts
 * Deploy PostgreSQL with SPIFFE-issued certificates and a separate client workload identity
 * Establish mutual TLS (mTLS) database connections using short-lived SPIFFE certificates instead of passwords
 * Inspect certificate properties, identity binding, and automatic certificate rotation
@@ -22,7 +21,6 @@ By the end of this module, you will:
 Password-based database authentication creates persistent credential theft targets. Compromised passwords enable lateral movement, and stolen credentials remain valid until manually rotated. Network segmentation alone cannot prevent authenticated attackers from accessing databases.
 
 Zero-trust principles require cryptographic proof of workload identity—not just network proximity or static secrets. This lab demonstrates how ZTWIM issues short-lived X.509 certificates bound to Kubernetes workload identity (namespace + service account), enabling PostgreSQL to authenticate clients via mutual TLS with no passwords stored in Secrets or ConfigMaps.
-
 
 [cols="1,2,2",options="header"]
 |===
@@ -39,107 +37,43 @@ Zero-trust principles require cryptographic proof of workload identity—not jus
 
 [NOTE]
 ====
-**Showroom environments:** The ZTWIM *operator* is pre-installed on this cluster. The setup script configures SPIRE components (if missing) and verifies the platform is ready before you deploy the PostgreSQL lab.
+**Showroom environments:** The ZTWIM operator is pre-installed. Run the setup script to prepare SPIRE for the PostgreSQL lab.
 ====
 
-Run the workshop setup script from the bastion. It detects your cluster trust domain, applies SPIRE custom resources when they are missing, waits for workloads to become ready, and runs a platform readiness check before exiting.
-
+.Procedure
+. From the bastion, run the platform setup script:
++
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
 cd ~/openshift-days-ops-showroom/setup-scripts/ztwim-config-scripts
 ./configure-ztwim-lab.sh
 ----
-
-The script is idempotent. If the platform is already healthy, it reports readiness and exits without making changes.
-
-=== What the script checks
-
-At the end of setup, the script verifies:
-
-* ZTWIM operator CSV is in phase *Succeeded*
-* Five SPIRE custom resources exist (`ZeroTrustWorkloadIdentityManager`, `SpireServer`, `SpireAgent`, `SpiffeCSIDriver`, `SpireOIDCDiscoveryProvider`)
-* SPIRE server pod is `2/2 Running`
-* SPIRE agent and CSI driver DaemonSets are ready on all nodes
-* CSI driver `csi.spiffe.io` is registered
-* `ClusterSPIFFEID` CRD exists
-
-=== Expected success output
-
-When the platform is ready, you will see lines like:
-
-[source,text]
-----
-[ztwim-platform] Checking ZTWIM platform readiness...
-[ztwim-platform]   [OK] ZTWIM operator CSV Succeeded
-[ztwim-platform]   [OK] SPIRE custom resources present
-[ztwim-platform]   [OK] SPIRE server pod ready (2/2)
-[ztwim-platform]   [OK] SPIRE agents ready
-[ztwim-platform]   [OK] SPIFFE CSI driver DaemonSet ready
-[ztwim-platform]   [OK] CSI driver csi.spiffe.io registered
-[ztwim-platform]   [OK] ClusterSPIFFEID CRD exists
-[ztwim-platform] ZTWIM platform is ready.
-[ztwim-platform] Next: ./configure-ztwim-postgresql-lab.sh deploy
-----
-
-If setup fails, the script prints `[FAIL]` lines and cluster status. Re-run after resolving the issue, or check SPIRE pod logs:
-
-[source,bash,subs="+macros,+attributes",role=execute]
-----
-./configure-ztwim-lab.sh check
-oc logs -n openshift-zero-trust-workload-identity-manager -l app.kubernetes.io/name=spire-server -c spire-server --tail=30
-oc get events -n openshift-zero-trust-workload-identity-manager --sort-by='.lastTimestamp' | tail -15
-----
-
-[IMPORTANT]
-====
-Do not proceed to <<deploy-postgresql>> until `./configure-ztwim-lab.sh` reports *ZTWIM platform is ready*.
-====
++
+. Wait until the script reports *ZTWIM platform is ready*, then continue to <<deploy-postgresql>>.
 
 [[deploy-postgresql]]
 == Deploy PostgreSQL with SPIFFE integration
 
-Deploy the lab application with the workshop script. It verifies the ZTWIM platform is ready, deploys the PostgreSQL server and client, grants required SCC permissions, and waits until both pods are `2/2 Running`.
-
+.Procedure
+. Deploy the PostgreSQL server and client workloads:
++
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
 cd ~/openshift-days-ops-showroom/setup-scripts/ztwim-config-scripts
 ./configure-ztwim-postgresql-lab.sh deploy
 ----
-
-=== What gets deployed
-
-The PostgreSQL server deployment creates:
-
-* *Namespace*: `postgresql-spiffe`
-* *ServiceAccount*: `postgresql-spiffe` (used by SPIRE for identity)
-* *Deployment*: PostgreSQL with `spiffe-helper` init and sidecar containers
-* *Service*: Exposes PostgreSQL on port 5432
-* *ClusterSPIFFEID*: Automatic certificate issuance with:
-** Server certificate CN: `postgresql-spiffe.postgresql-spiffe.svc`
-** SPIFFE ID: `spiffe://<trust-domain>/ns/postgresql-spiffe/sa/postgresql-spiffe`
-** DNS SAN: `postgresql-spiffe.postgresql-spiffe.svc`
-
-The client deployment creates:
-
-* *Namespace*: `postgresql-spiffe-client`
-* *ServiceAccount*: `postgresql-spiffe-client`
-* *Deployment*: Client pod with `psql` tools and `spiffe-helper` sidecar
-* *ClusterSPIFFEID*: Client certificate with:
-** Client certificate CN: `postgresql_spiffe` (matches database username)
-** SPIFFE ID: `spiffe://<trust-domain>/ns/postgresql-spiffe-client/sa/postgresql-spiffe-client`
++
+. Confirm both pods are `2/2 Running`:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc get pods -n postgresql-spiffe
+oc get pods -n postgresql-spiffe-client
+----
 
 [NOTE]
 ====
-The client certificate's Common Name (CN) must match a valid PostgreSQL database user. PostgreSQL maps the CN directly to the username during certificate authentication.
-====
-
-[TIP]
-====
-If pods are not starting, check events:
-[source,bash,subs="+macros,+attributes",role=execute]
-----
-oc get events -n postgresql-spiffe --sort-by='.lastTimestamp'
-----
+The client certificate Common Name (`postgresql_spiffe`) must match the PostgreSQL database user. PostgreSQL maps the CN to the username during certificate authentication.
 ====
 
 == Inspect server certificate properties

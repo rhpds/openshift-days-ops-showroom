@@ -7,7 +7,10 @@
 # Upstream alignment: Roadshow-ZTWIM scripts/00-install-ztwim-operator.sh
 set -euo pipefail
 
-OPERATOR_NAMESPACE="${OPERATOR_NAMESPACE:-openshift-zero-trust-workload-identity-manager}"
+OPERATOR_NAMESPACE="${OPERATOR_NAMESPACE:-zero-trust-workload-identity-manager}"
+LEGACY_OPERATOR_NAMESPACE="openshift-zero-trust-workload-identity-manager"
+SUBSCRIPTION_NAME="${ZTWIM_SUBSCRIPTION_NAME:-openshift-zero-trust-workload-identity-manager}"
+PACKAGE_NAME="${ZTWIM_PACKAGE:-zero-trust-workload-identity-manager}"
 INSTALL_MODE="${1:-setup}"
 
 log() { echo "[ztwim-platform] $*"; }
@@ -30,13 +33,132 @@ detect_cluster_config() {
   log "Trust domain: ${TRUST_DOMAIN}"
 }
 
-operator_csv_ready() {
-  local csv
-  csv="$(oc get csv -n "${OPERATOR_NAMESPACE}" \
+operator_csv_name() {
+  oc get csv -n "${OPERATOR_NAMESPACE}" \
     -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null \
-    | grep -E 'zero-trust-workload-identity-manager|zerotrust' | head -1)"
-  [[ -n "${csv}" ]] \
-    && [[ "$(oc get csv "${csv}" -n "${OPERATOR_NAMESPACE}" -o jsonpath='{.status.phase}')" == "Succeeded" ]]
+    | grep -E '^zero-trust-workload-identity-manager\.' | head -1
+}
+
+operator_csv_phase() {
+  local csv
+  csv="$(operator_csv_name)"
+  [[ -n "${csv}" ]] || return 1
+  oc get csv "${csv}" -n "${OPERATOR_NAMESPACE}" -o jsonpath='{.status.phase}'
+}
+
+operator_csv_ready() {
+  [[ "$(operator_csv_phase 2>/dev/null || echo "")" == "Succeeded" ]]
+}
+
+operator_csv_phase_in() {
+  local ns="$1" csv
+  csv="$(oc get csv -n "${ns}" \
+    -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null \
+    | grep -E '^zero-trust-workload-identity-manager\.' | head -1)"
+  [[ -n "${csv}" ]] || return 1
+  oc get csv "${csv}" -n "${ns}" -o jsonpath='{.status.phase}'
+}
+
+cleanup_legacy_operator_namespace() {
+  if ! oc get namespace "${LEGACY_OPERATOR_NAMESPACE}" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  local phase
+  phase="$(operator_csv_phase_in "${LEGACY_OPERATOR_NAMESPACE}" 2>/dev/null || echo "missing")"
+  if [[ "${phase}" == "Succeeded" ]]; then
+    log "WARNING: ZTWIM operator is installed in unsupported namespace ${LEGACY_OPERATOR_NAMESPACE}."
+    log "         Red Hat supports only zero-trust-workload-identity-manager (not openshift-*)."
+    return 0
+  fi
+
+  if [[ "${phase}" != "missing" ]]; then
+    log "Removing failed ZTWIM install from unsupported namespace ${LEGACY_OPERATOR_NAMESPACE} (phase: ${phase})..."
+    oc delete subscription "${SUBSCRIPTION_NAME}" -n "${LEGACY_OPERATOR_NAMESPACE}" --ignore-not-found --timeout=120s 2>/dev/null || true
+    oc delete csv -n "${LEGACY_OPERATOR_NAMESPACE}" \
+      -l operators.coreos.com/"${PACKAGE_NAME}"."${LEGACY_OPERATOR_NAMESPACE}" \
+      --ignore-not-found --timeout=120s 2>/dev/null || true
+    oc delete installplan -n "${LEGACY_OPERATOR_NAMESPACE}" --all --ignore-not-found --timeout=120s 2>/dev/null || true
+  fi
+}
+
+recover_failed_operator() {
+  local csv phase
+  csv="$(operator_csv_name)"
+  [[ -n "${csv}" ]] || return 0
+  phase="$(operator_csv_phase)"
+  if [[ "${phase}" == "Failed" ]] || [[ "${phase}" == "Replacing" ]]; then
+    log "ZTWIM operator CSV ${csv} is ${phase}; deleting to trigger OLM reinstall..."
+    oc get csv "${csv}" -n "${OPERATOR_NAMESPACE}" \
+      -o jsonpath='{.status.message}{"\n"}' 2>/dev/null | sed 's/^/[ztwim-platform]   /' || true
+    oc delete csv "${csv}" -n "${OPERATOR_NAMESPACE}" --timeout=120s 2>/dev/null || true
+    oc delete installplan -n "${OPERATOR_NAMESPACE}" --all --ignore-not-found --timeout=120s 2>/dev/null || true
+    if oc get subscription "${SUBSCRIPTION_NAME}" -n "${OPERATOR_NAMESPACE}" >/dev/null 2>&1; then
+      oc patch subscription "${SUBSCRIPTION_NAME}" -n "${OPERATOR_NAMESPACE}" --type merge \
+        -p '{"spec":{"startingCSV":"","installPlanApproval":"Automatic"}}' 2>/dev/null || true
+    fi
+  fi
+}
+
+ensure_operator_subscription() {
+  oc create namespace "${OPERATOR_NAMESPACE}" --dry-run=client -o yaml | oc apply -f -
+
+  if ! oc get operatorgroup zero-trust-workload-identity-manager -n "${OPERATOR_NAMESPACE}" >/dev/null 2>&1; then
+    oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: zero-trust-workload-identity-manager
+  namespace: ${OPERATOR_NAMESPACE}
+spec:
+  targetNamespaces:
+  - ${OPERATOR_NAMESPACE}
+EOF
+  fi
+
+  if ! oc get subscription "${SUBSCRIPTION_NAME}" -n "${OPERATOR_NAMESPACE}" >/dev/null 2>&1; then
+    log "Creating ZTWIM operator subscription..."
+    oc apply -f - <<EOF
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: ${SUBSCRIPTION_NAME}
+  namespace: ${OPERATOR_NAMESPACE}
+spec:
+  channel: stable-v1
+  installPlanApproval: Automatic
+  name: ${PACKAGE_NAME}
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+EOF
+  else
+    log "ZTWIM operator subscription already exists"
+  fi
+}
+
+wait_for_operator_csv() {
+  log "Waiting for ZTWIM operator CSV to reach Succeeded (up to 15 minutes)..."
+  local elapsed=0 phase last_phase=""
+  while [[ "${elapsed}" -lt 900 ]]; do
+    if operator_csv_ready; then
+      log "Operator installed: $(operator_csv_name)"
+      return 0
+    fi
+    phase="$(operator_csv_phase 2>/dev/null || echo "pending")"
+    if [[ "${phase}" == "Failed" ]]; then
+      recover_failed_operator
+    elif [[ "${phase}" != "${last_phase}" ]] || [[ $((elapsed % 60)) -eq 0 ]]; then
+      log "  operator CSV phase: ${phase} (${elapsed}s elapsed)"
+      last_phase="${phase}"
+    fi
+    sleep 10
+    elapsed=$((elapsed + 10))
+  done
+  phase="$(operator_csv_phase 2>/dev/null || echo "missing")"
+  log "Final operator CSV phase: ${phase}"
+  oc get csv,subscription,installplan -n "${OPERATOR_NAMESPACE}" 2>/dev/null \
+    | grep -E 'zero-trust|NAME' || true
+  err "Timed out waiting for ZTWIM operator CSV"
 }
 
 spire_crs_exist() {
@@ -79,7 +201,9 @@ check_platform_ready() {
   if operator_csv_ready; then
     log "  [OK] ZTWIM operator CSV Succeeded"
   else
-    log "  [FAIL] ZTWIM operator CSV not Succeeded"
+    local phase
+    phase="$(operator_csv_phase 2>/dev/null || echo "missing")"
+    log "  [FAIL] ZTWIM operator CSV not Succeeded (phase: ${phase})"
     failures=$((failures + 1))
   fi
 
@@ -143,45 +267,9 @@ install_operator() {
     return 0
   fi
 
-  oc create namespace "${OPERATOR_NAMESPACE}" --dry-run=client -o yaml | oc apply -f -
-
-  oc apply -f - <<EOF
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  name: zero-trust-workload-identity-manager
-  namespace: ${OPERATOR_NAMESPACE}
-spec:
-  targetNamespaces:
-  - ${OPERATOR_NAMESPACE}
----
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: openshift-zero-trust-workload-identity-manager
-  namespace: ${OPERATOR_NAMESPACE}
-spec:
-  channel: stable-v1
-  installPlanApproval: Automatic
-  name: openshift-zero-trust-workload-identity-manager
-  source: redhat-operators
-  sourceNamespace: openshift-marketplace
-EOF
-
-  log "Waiting for operator CSV (up to 15 minutes)..."
-  local elapsed=0
-  while [[ "${elapsed}" -lt 900 ]]; do
-    local csv
-    csv="$(oc get subscription openshift-zero-trust-workload-identity-manager \
-      -n "${OPERATOR_NAMESPACE}" -o jsonpath='{.status.currentCSV}' 2>/dev/null || true)"
-    if [[ -n "${csv}" ]] && [[ "$(oc get csv "${csv}" -n "${OPERATOR_NAMESPACE}" -o jsonpath='{.status.phase}')" == "Succeeded" ]]; then
-      log "Operator installed: ${csv}"
-      return 0
-    fi
-    sleep 10
-    elapsed=$((elapsed + 10))
-  done
-  err "Timed out waiting for operator CSV"
+  recover_failed_operator
+  ensure_operator_subscription
+  wait_for_operator_csv
 }
 
 configure_spire() {
@@ -270,6 +358,7 @@ wait_for_workloads() {
 setup_platform() {
   require_oc
   detect_cluster_config
+  cleanup_legacy_operator_namespace
 
   if check_platform_ready; then
     log "ZTWIM platform is already ready."
@@ -294,6 +383,12 @@ setup_platform() {
   if ! check_platform_ready; then
     log "Platform status after configuration:"
     print_platform_status
+    local csv
+    csv="$(operator_csv_name)"
+    if [[ -n "${csv}" ]]; then
+      log "Operator CSV details:"
+      oc describe csv "${csv}" -n "${OPERATOR_NAMESPACE}" 2>/dev/null | tail -25 || true
+    fi
     err "ZTWIM platform readiness check failed"
   fi
 
@@ -323,7 +418,9 @@ Usage: $0 [setup|check]
   check  Verify platform readiness only; exit non-zero if not ready
 
 Environment:
-  OPERATOR_NAMESPACE  Default: openshift-zero-trust-workload-identity-manager
+  OPERATOR_NAMESPACE  Default: zero-trust-workload-identity-manager
+  ZTWIM_PACKAGE         OLM package name (default: zero-trust-workload-identity-manager)
+  ZTWIM_SUBSCRIPTION_NAME  Subscription metadata name (default: openshift-zero-trust-workload-identity-manager)
 EOF
 }
 

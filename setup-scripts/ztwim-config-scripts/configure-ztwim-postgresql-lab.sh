@@ -13,7 +13,7 @@ usage() {
   cat <<EOF
 Usage: $0 [deploy|cleanup]
 
-  deploy   Verify ZTWIM platform, deploy PostgreSQL server and client, wait for Ready (default)
+  deploy   Ensure ZTWIM platform is ready, deploy PostgreSQL server and client, wait for Ready (default)
   cleanup  Remove PostgreSQL lab namespaces and workloads (ZTWIM platform is left in place)
 EOF
 }
@@ -36,8 +36,8 @@ prepare_namespace() {
 }
 
 deploy_lab() {
-  log "Verifying ZTWIM platform is ready..."
-  "${SCRIPT_DIR}/configure-ztwim-lab.sh" check
+  log "Ensuring ZTWIM platform is ready..."
+  "${SCRIPT_DIR}/configure-ztwim-lab.sh" setup
 
   log "Deploying PostgreSQL server with SPIFFE integration..."
   prepare_namespace postgresql-spiffe postgresql-spiffe
