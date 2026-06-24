@@ -11,6 +11,7 @@ DEFAULT_OPERATOR_NAMESPACE="openshift-zero-trust-workload-identity-manager"
 OPERATOR_NAMESPACE="${OPERATOR_NAMESPACE:-}"
 SUBSCRIPTION_NAME="${ZTWIM_SUBSCRIPTION_NAME:-openshift-zero-trust-workload-identity-manager}"
 PACKAGE_NAME="${ZTWIM_PACKAGE:-zero-trust-workload-identity-manager}"
+CSI_DRIVER_COMPONENT="spiffe-csi-driver"
 INSTALL_MODE="${1:-setup}"
 
 log() { echo "[ztwim-platform] $*"; }
@@ -142,6 +143,15 @@ clusterspiffeid_crd_exists() {
   oc get crd clusterspiffeids.spire.spiffe.io >/dev/null 2>&1
 }
 
+csi_driver_daemonset_ready() {
+  daemonset_ready "${CSI_DRIVER_COMPONENT}"
+}
+
+print_csi_driver_status() {
+  oc get daemonset -n "${OPERATOR_NAMESPACE}" -l "app.kubernetes.io/name=${CSI_DRIVER_COMPONENT}" 2>/dev/null || true
+  oc get pods -n "${OPERATOR_NAMESPACE}" -l "app.kubernetes.io/name=${CSI_DRIVER_COMPONENT}" 2>/dev/null || true
+}
+
 survey_platform() {
   log "=== Deployed state (PostgreSQL SPIFFE lab prerequisites) ==="
 
@@ -173,7 +183,7 @@ survey_platform() {
     log "  SPIRE agents: not ready"
   fi
 
-  if daemonset_ready spire-spiffe-csi-driver; then
+  if csi_driver_daemonset_ready; then
     log "  SPIFFE CSI driver: ready"
   else
     log "  SPIFFE CSI driver: not ready"
@@ -231,7 +241,7 @@ check_platform_ready() {
     failures=$((failures + 1))
   fi
 
-  if daemonset_ready spire-spiffe-csi-driver; then
+  if csi_driver_daemonset_ready; then
     log "  [OK] SPIFFE CSI driver DaemonSet ready"
   else
     log "  [FAIL] SPIFFE CSI driver DaemonSet not ready"
@@ -436,7 +446,7 @@ wait_for_workloads() {
     log "SPIRE server already ready"
   fi
 
-  for component in spire-agent spire-spiffe-csi-driver; do
+  for component in spire-agent "${CSI_DRIVER_COMPONENT}"; do
     if daemonset_ready "${component}"; then
       log "${component} already ready"
       continue
@@ -459,7 +469,13 @@ wait_for_workloads() {
       sleep 5
       elapsed=$((elapsed + 5))
     done
-    daemonset_ready "${component}" || err "${component} did not become ready within 5 minutes"
+    daemonset_ready "${component}" || {
+      if [[ "${component}" == "${CSI_DRIVER_COMPONENT}" ]]; then
+        log "CSI driver status:"
+        print_csi_driver_status
+      fi
+      err "${component} did not become ready within 5 minutes"
+    }
   done
 }
 
@@ -478,7 +494,7 @@ ensure_lab_platform() {
     log "SPIRE custom resources already present — skipping apply"
   fi
 
-  if ! spire_server_ready || ! daemonset_ready spire-agent || ! daemonset_ready spire-spiffe-csi-driver; then
+  if ! spire_server_ready || ! daemonset_ready spire-agent || ! csi_driver_daemonset_ready; then
     wait_for_workloads
   else
     log "SPIRE workloads already ready — skipping wait"
