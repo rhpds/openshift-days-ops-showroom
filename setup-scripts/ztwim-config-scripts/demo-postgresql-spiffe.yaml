@@ -1,6 +1,6 @@
 # PostgreSQL server with SPIFFE mTLS (Roadshow-ZTWIM deploy/postgresql-spiffe.yaml).
-# Prerequisites: configure-ztwim-lab.sh completed.
-# Apply: ./configure-ztwim-postgresql-lab.sh  OR  oc apply -f demo-postgresql-spiffe.yaml
+# Prerequisites: configure-ztwim-lab.sh completed (platform ready).
+# Deploy: ./configure-ztwim-postgresql-lab.sh deploy
 # Reference: https://github.com/SeanRickerd/Roadshow-ZTWIM
 ---
 kind: Namespace

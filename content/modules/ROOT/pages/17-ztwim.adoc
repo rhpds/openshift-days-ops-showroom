@@ -10,13 +10,14 @@
 
 By the end of this module, you will:
 
-* Verify the pre-installed Zero Trust Workload Identity Manager (ZTWIM) and SPIRE components are healthy
+* Configure the pre-installed Zero Trust Workload Identity Manager (ZTWIM) platform using the workshop setup script
+* Confirm SPIRE server, agents, and the CSI driver are healthy before deploying lab workloads
 * Deploy PostgreSQL with SPIFFE-issued certificates and a separate client workload identity
 * Establish mutual TLS (mTLS) database connections using short-lived SPIFFE certificates instead of passwords
 * Inspect certificate properties, identity binding, and automatic certificate rotation
 * Confirm that connections without valid certificates are rejected
 
-== Why SPIFFE mTLS for databases?
+== Why SPIFFE mTLS for workloads?
 
 Password-based database authentication creates persistent credential theft targets. Compromised passwords enable lateral movement, and stolen credentials remain valid until manually rotated. Network segmentation alone cannot prevent authenticated attackers from accessing databases.
 
@@ -33,167 +34,76 @@ Zero-trust principles require cryptographic proof of workload identity—not jus
 |No Mutual Authentication | Server cannot verify client | One-way ID check at secure facility
 |===
 
+[[configure-ztwim-platform]]
+== Configure the ZTWIM platform
+
 [NOTE]
 ====
-**Showroom environments:** The ZTWIM *operator* is pre-installed on this cluster. SPIRE components (server, agents, CSI driver) are configured separately—run <<configure-spire>> if verification shows they are missing.
+**Showroom environments:** The ZTWIM *operator* is pre-installed on this cluster. The setup script configures SPIRE components (if missing) and verifies the platform is ready before you deploy the PostgreSQL lab.
 ====
 
-[[verify-ztwim]]
-== Verify ZTWIM is ready
-
-Confirm the ZTWIM operator and SPIRE components are running before deploying the PostgreSQL lab:
-
-[source,bash,subs="+macros,+attributes",role=execute]
-----
-# Operator and SPIRE platform health
-oc get csv -n openshift-zero-trust-workload-identity-manager
-oc get zerotrustworkloadidentitymanager,spireserver,spireagent,spiffecsidriver,spireoidcdiscoveryprovider -n openshift-zero-trust-workload-identity-manager
-oc get pods -n openshift-zero-trust-workload-identity-manager
-oc get pods -n openshift-zero-trust-workload-identity-manager -l app.kubernetes.io/name=spire-server
-oc get pods -n openshift-zero-trust-workload-identity-manager -l app.kubernetes.io/name=spire-agent
-oc get pods -n openshift-zero-trust-workload-identity-manager -l app.kubernetes.io/name=spire-spiffe-csi-driver
-oc get csidriver csi.spiffe.io
-oc get crd clusterspiffeids.spire.spiffe.io
-oc get ingresses.config/cluster -o jsonpath='Trust domain: {.spec.domain}{"\n"}'
-
-# Lab workload status (may be empty until you deploy)
-oc get ns postgresql-spiffe postgresql-spiffe-client 2>/dev/null || true
-oc get pods -n postgresql-spiffe 2>/dev/null || true
-oc get pods -n postgresql-spiffe-client 2>/dev/null || true
-oc get clusterspiffeid -A 2>/dev/null | egrep 'postgresql-spiffe|NAME' || true
-----
-
-==== Before SPIRE bootstrap (operator only)
-
-If SPIRE has not been configured yet, your output will look like this—the operator is healthy, but SPIRE resources and pods are missing:
-
-[source,text]
-----
-$ oc get csv -n openshift-zero-trust-workload-identity-manager | grep zero-trust
-zero-trust-workload-identity-manager.v1.0.1   ...   Succeeded
-
-$ oc get zerotrustworkloadidentitymanager,spireserver,spireagent,spiffecsidriver,spireoidcdiscoveryprovider \
-    -n openshift-zero-trust-workload-identity-manager
-No resources found
-
-$ oc get pods -n openshift-zero-trust-workload-identity-manager
-NAME                                                              READY   STATUS
-zero-trust-workload-identity-manager-controller-manager-682tvws   1/1     Running
-
-$ oc get pods -n openshift-zero-trust-workload-identity-manager -l app.kubernetes.io/name=spire-server
-No resources found in openshift-zero-trust-workload-identity-manager namespace.
-
-$ oc get csidriver csi.spiffe.io
-Error from server (NotFound): csidrivers.storage.k8s.io "csi.spiffe.io" not found
-
-$ oc get crd clusterspiffeids.spire.spiffe.io
-NAME                               CREATED AT
-clusterspiffeids.spire.spiffe.io   2026-06-22T15:26:59Z
-
-$ oc get ingresses.config/cluster -o jsonpath='Trust domain: {.spec.domain}{"\n"}'
-Trust domain: apps.cluster-q2vxc.dynamic2.redhatworkshops.io
-----
-
-This state means the ZTWIM operator is installed but SPIRE is not ready. Continue to <<configure-spire>>—do not proceed to <<deploy-postgresql>> yet.
-
-==== After SPIRE bootstrap (ready for the lab)
-
-Once SPIRE is healthy, you should see:
-
-* Operator CSV `zero-trust-workload-identity-manager.v1.0.1` in phase *Succeeded*
-* Five SPIRE custom resources named `cluster` (one per kind)
-* SPIRE server: 1 pod with `2/2 Running`
-* SPIRE agents: one pod per worker node, all `1/1 Running`
-* CSI driver: one pod per worker node, all `2/2 Running`
-* CSI driver registered: `csi.spiffe.io` listed (no `NotFound` error)
-* ClusterSPIFFEID CRD exists
-* PostgreSQL lab namespaces not deployed yet (empty until <<deploy-postgresql>>)
-
-[cols="2,3,3",options="header"]
-|===
-|Check | Ready for lab | Operator only (your output)
-|Operator CSV | `Succeeded` | `Succeeded`
-|SPIRE CRs | 5 `cluster` resources | `No resources found`
-|SPIRE server pod | `2/2 Running` | `No resources found`
-|CSI driver | `csi.spiffe.io` exists | `NotFound`
-|PostgreSQL lab | Not deployed yet | Not deployed yet
-|===
-
-If SPIRE pods exist but are not healthy, check pod logs:
-
-[source,bash,subs="+macros,+attributes",role=execute]
-----
-oc describe pod -n openshift-zero-trust-workload-identity-manager -l app.kubernetes.io/name=spire-server
-oc logs -n openshift-zero-trust-workload-identity-manager -l app.kubernetes.io/name=spire-server -c spire-server --tail=30
-oc get events -n openshift-zero-trust-workload-identity-manager --sort-by='.lastTimestamp' | tail -15
-----
-
-[[configure-spire]]
-== Configure SPIRE (one-time bootstrap)
-
-If verification shows the operator is running but SPIRE custom resources and pods are missing, bootstrap SPIRE from the bastion. This does **not** reinstall the operator—it only creates the SPIRE server, agents, CSI driver, and OIDC discovery provider.
+Run the workshop setup script from the bastion. It detects your cluster trust domain, applies SPIRE custom resources when they are missing, waits for workloads to become ready, and runs a platform readiness check before exiting.
 
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
 cd ~/openshift-days-ops-showroom/setup-scripts/ztwim-config-scripts
-./configure-ztwim-lab.sh spire-only
+./configure-ztwim-lab.sh
 ----
 
-The script auto-detects your cluster trust domain, applies the SPIRE custom resources, and waits for pods to become ready. When it finishes, rerun the commands in <<verify-ztwim>> before deploying PostgreSQL.
+The script is idempotent. If the platform is already healthy, it reports readiness and exits without making changes.
+
+=== What the script checks
+
+At the end of setup, the script verifies:
+
+* ZTWIM operator CSV is in phase *Succeeded*
+* Five SPIRE custom resources exist (`ZeroTrustWorkloadIdentityManager`, `SpireServer`, `SpireAgent`, `SpiffeCSIDriver`, `SpireOIDCDiscoveryProvider`)
+* SPIRE server pod is `2/2 Running`
+* SPIRE agent and CSI driver DaemonSets are ready on all nodes
+* CSI driver `csi.spiffe.io` is registered
+* `ClusterSPIFFEID` CRD exists
+
+=== Expected success output
+
+When the platform is ready, you will see lines like:
+
+[source,text]
+----
+[ztwim-platform] Checking ZTWIM platform readiness...
+[ztwim-platform]   [OK] ZTWIM operator CSV Succeeded
+[ztwim-platform]   [OK] SPIRE custom resources present
+[ztwim-platform]   [OK] SPIRE server pod ready (2/2)
+[ztwim-platform]   [OK] SPIRE agents ready
+[ztwim-platform]   [OK] SPIFFE CSI driver DaemonSet ready
+[ztwim-platform]   [OK] CSI driver csi.spiffe.io registered
+[ztwim-platform]   [OK] ClusterSPIFFEID CRD exists
+[ztwim-platform] ZTWIM platform is ready.
+[ztwim-platform] Next: ./configure-ztwim-postgresql-lab.sh deploy
+----
+
+If setup fails, the script prints `[FAIL]` lines and cluster status. Re-run after resolving the issue, or check SPIRE pod logs:
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+./configure-ztwim-lab.sh check
+oc logs -n openshift-zero-trust-workload-identity-manager -l app.kubernetes.io/name=spire-server -c spire-server --tail=30
+oc get events -n openshift-zero-trust-workload-identity-manager --sort-by='.lastTimestamp' | tail -15
+----
 
 [IMPORTANT]
 ====
-Run `./configure-ztwim-lab.sh spire-only` once per cluster. Re-running after SPIRE is healthy is unnecessary.
+Do not proceed to <<deploy-postgresql>> until `./configure-ztwim-lab.sh` reports *ZTWIM platform is ready*.
 ====
 
 [[deploy-postgresql]]
 == Deploy PostgreSQL with SPIFFE integration
 
-=== Option A: Deploy via workshop script (recommended)
+Deploy the lab application with the workshop script. It verifies the ZTWIM platform is ready, deploys the PostgreSQL server and client, grants required SCC permissions, and waits until both pods are `2/2 Running`.
 
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
 cd ~/openshift-days-ops-showroom/setup-scripts/ztwim-config-scripts
-./configure-ztwim-postgresql-lab.sh
-----
-
-The script deploys the PostgreSQL server and client, grants required SCC permissions, and waits for pods to become ready.
-
-=== Option B: Deploy manually via CLI
-
-. Deploy the PostgreSQL server:
-+
-[source,bash,subs="+macros,+attributes",role=execute]
-----
-cd ~/openshift-days-ops-showroom/setup-scripts/ztwim-config-scripts
-oc apply -f demo-postgresql-spiffe.yaml
-----
-+
-. Grant required permissions (PostgreSQL runs as UID 26):
-+
-[source,bash,subs="+macros,+attributes",role=execute]
-----
-oc label namespace postgresql-spiffe \
-  security.openshift.io/scc.podSecurityLabelSync=false \
-  pod-security.kubernetes.io/enforce=privileged \
-  pod-security.kubernetes.io/audit=privileged \
-  pod-security.kubernetes.io/warn=privileged \
-  --overwrite
-oc adm policy add-scc-to-user anyuid -z postgresql-spiffe -n postgresql-spiffe
-----
-+
-. Deploy the client workload:
-+
-[source,bash,subs="+macros,+attributes",role=execute]
-----
-oc apply -f demo-postgresql-spiffe-client.yaml
-oc label namespace postgresql-spiffe-client \
-  security.openshift.io/scc.podSecurityLabelSync=false \
-  pod-security.kubernetes.io/enforce=privileged \
-  pod-security.kubernetes.io/audit=privileged \
-  pod-security.kubernetes.io/warn=privileged \
-  --overwrite
-oc adm policy add-scc-to-user anyuid -z postgresql-spiffe-client -n postgresql-spiffe-client
+./configure-ztwim-postgresql-lab.sh deploy
 ----
 
 === What gets deployed
@@ -222,18 +132,6 @@ The client deployment creates:
 ====
 The client certificate's Common Name (CN) must match a valid PostgreSQL database user. PostgreSQL maps the CN directly to the username during certificate authentication.
 ====
-
-=== Wait for pods to be ready
-
-[source,bash,subs="+macros,+attributes",role=execute]
-----
-oc wait --for=condition=Ready pod -l app=postgresql-spiffe -n postgresql-spiffe --timeout=120s
-oc wait --for=condition=Ready pod -l app=postgresql-spiffe-client -n postgresql-spiffe-client --timeout=120s
-oc get pods -n postgresql-spiffe
-oc get pods -n postgresql-spiffe-client
-----
-
-Both pods should show `2/2 Running`.
 
 [TIP]
 ====
@@ -504,12 +402,12 @@ oc rsh -n postgresql-spiffe-client -c postgresql-spiffe-client deployment/postgr
 
 == Clean up (optional)
 
-Remove only the PostgreSQL lab workloads. Do not uninstall ZTWIM—it is shared platform infrastructure in this environment.
+Remove the PostgreSQL lab workloads with the same script. ZTWIM platform infrastructure is left in place.
 
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
 cd ~/openshift-days-ops-showroom/setup-scripts/ztwim-config-scripts
-./uninstall-ztwim-lab.sh
+./configure-ztwim-postgresql-lab.sh cleanup
 ----
 
 **Great job!** You secured database access with cryptographic workload identity and mutual TLS instead of static passwords. Continue when you are ready for the next topic in the workshop.
