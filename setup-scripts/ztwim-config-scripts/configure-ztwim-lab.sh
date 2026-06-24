@@ -26,7 +26,21 @@ detect_cluster_config() {
   log "Trust domain: ${TRUST_DOMAIN}"
 }
 
+operator_csv_ready() {
+  local csv
+  csv="$(oc get csv -n "${OPERATOR_NAMESPACE}" \
+    -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null \
+    | grep -E 'zero-trust-workload-identity-manager|zerotrust' | head -1)"
+  [[ -n "${csv}" ]] \
+    && [[ "$(oc get csv "${csv}" -n "${OPERATOR_NAMESPACE}" -o jsonpath='{.status.phase}')" == "Succeeded" ]]
+}
+
 install_operator() {
+  if operator_csv_ready; then
+    log "ZTWIM operator CSV already Succeeded; skipping operator install"
+    return 0
+  fi
+
   if oc get subscription openshift-zero-trust-workload-identity-manager -n "${OPERATOR_NAMESPACE}" >/dev/null 2>&1; then
     log "Operator subscription already exists; continuing"
   fi
@@ -160,6 +174,18 @@ verify_installation() {
 main() {
   require_oc
   detect_cluster_config
+
+  if [[ "${INSTALL_MODE}" == "spire-only" ]]; then
+    operator_csv_ready || err "ZTWIM operator CSV not Succeeded; install the operator first"
+    log "Configuring SPIRE components only (operator assumed pre-installed)..."
+    configure_spire
+    wait_for_ready
+    verify_installation
+    log "SPIRE configuration complete."
+    log "Next: ./configure-ztwim-postgresql-lab.sh"
+    return 0
+  fi
+
   install_operator
   configure_spire
   wait_for_ready
@@ -169,8 +195,9 @@ main() {
 }
 
 if [[ "${1:-}" == "--help" ]] || [[ "${1:-}" == "-h" ]]; then
-  echo "Usage: $0 [full|force]"
-  echo "  Installs ZTWIM operator and SPIRE components (Roadshow-ZTWIM aligned)."
+  echo "Usage: $0 [full|spire-only]"
+  echo "  full       Install operator (if needed) and configure SPIRE (default)"
+  echo "  spire-only Configure SPIRE when operator CSV is already Succeeded"
   exit 0
 fi
 

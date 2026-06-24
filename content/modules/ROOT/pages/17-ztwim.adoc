@@ -1,4 +1,4 @@
-= Layered Zero Trust Pattern
+= Zero-Trust Database Access with SPIFFE mTLS
 
 == Module Overview
 
@@ -10,215 +10,506 @@
 
 By the end of this module, you will:
 
-* Understand the https://validatedpatterns.io/patterns/layered-zero-trust/[Layered Zero Trust Validated Pattern^] architecture and its GitOps-driven deployment model
-* Deploy or verify the pattern on an OpenShift hub cluster using `pattern.sh`
-* Explore the `qtodo` multitier application secured with OIDC, Vault just-in-time credentials, and Zero Trust Workload Identity Manager (ZTWIM)
-* Confirm that a frontend application retrieves database credentials dynamically instead of using static secrets
+* Verify the pre-installed Zero Trust Workload Identity Manager (ZTWIM) and SPIRE components are healthy
+* Deploy PostgreSQL with SPIFFE-issued certificates and a separate client workload identity
+* Establish mutual TLS (mTLS) database connections using short-lived SPIFFE certificates instead of passwords
+* Inspect certificate properties, identity binding, and automatic certificate rotation
+* Confirm that connections without valid certificates are rejected
 
-== Why layered zero trust?
+== Why SPIFFE mTLS for databases?
 
-Traditional application stacks often store database passwords in Kubernetes Secrets or configuration files. Those credentials are long-lived, difficult to rotate, and attractive targets for lateral movement after a breach.
+Password-based database authentication creates persistent credential theft targets. Compromised passwords enable lateral movement, and stolen credentials remain valid until manually rotated. Network segmentation alone cannot prevent authenticated attackers from accessing databases.
 
-The https://validatedpatterns.io/patterns/layered-zero-trust/[Layered Zero Trust Validated Pattern^] demonstrates a production-oriented approach: workloads authenticate with cryptographic identity, secrets are brokered on demand, and platform components are managed through OpenShift GitOps. Zero trust is applied in layers—identity, secrets, supply chain, and application access—not as a single product install.
+Zero-trust principles require cryptographic proof of workload identity—not just network proximity or static secrets. This lab demonstrates how ZTWIM issues short-lived X.509 certificates bound to Kubernetes workload identity (namespace + service account), enabling PostgreSQL to authenticate clients via mutual TLS with no passwords stored in Secrets or ConfigMaps.
 
-This module follows the upstream guides for https://validatedpatterns.io/patterns/layered-zero-trust/lzt-getting-started/[getting started^] and https://validatedpatterns.io/patterns/layered-zero-trust/lzt-secure-multitier/[securing multitiered applications^].
 
-== Pattern architecture
-
-The pattern provisions a hub cluster with GitOps-managed components, including:
-
-* *Red Hat Advanced Cluster Management (RHACM)* — multicluster management and governance
-* *OpenShift GitOps (Argo CD)* — Cluster Argo CD and Hub Argo CD instances that reconcile pattern components
-* *HashiCorp Vault* — central secret store with JWT-based authentication for workload access
-* *Zero Trust Workload Identity Manager (ZTWIM)* — SPIFFE/SPIRE-based workload identities
-* *Red Hat Build of Keycloak (RHBK)* — external identity provider for application login
-* *qtodo* — Quarkus frontend with PostgreSQL backend, demonstrating just-in-time (JIT) credential retrieval
-
-The `qtodo` use case replaces static database credentials with a secure JIT flow: the application obtains a ZTWIM-based identity, authenticates to Vault, and fetches PostgreSQL credentials at runtime.
-
-[IMPORTANT]
-====
-The pattern assumes none of its components were installed previously on the target cluster. If you are reusing a cluster, verify it does not already contain conflicting RHACM, GitOps, Vault, or ZTWIM installations before deploying.
-====
-
-== Deploy the Layered Zero Trust pattern
+[cols="1,2,2",options="header"]
+|===
+|Area | Risk If Ignored | Analogy
+|Static Database Passwords | Credential theft enables persistence | Master key copies floating everywhere
+|Password-Based Auth | Brute force / spray attacks | Guessable combination lock
+|Network-Only Security | Lateral movement after breach | Locked front door, open internal doors
+|Manual Cert Rotation | Stale credentials remain valid | Expired building access badges still work
+|No Mutual Authentication | Server cannot verify client | One-way ID check at secure facility
+|===
 
 [NOTE]
 ====
-**Showroom environments:** The Layered Zero Trust pattern can take more than an hour to provision on a fresh cluster. Your workshop hub may already have the pattern installed. Run the verification steps in the next section first—if Argo CD applications report *Healthy*, skip to <<secure-multitiered-applications>>.
+**Showroom environments:** The ZTWIM *operator* is pre-installed on this cluster. SPIRE components (server, agents, CSI driver) are configured separately—run <<configure-spire>> if verification shows they are missing.
 ====
 
-.Prerequisites
+[[verify-ztwim]]
+== Verify ZTWIM is ready
 
-* OpenShift Container Platform 4.20 or newer with a default `StorageClass` and publicly signed Ingress certificates
-* A GitHub account and personal access token with repository permissions (to fork and push)
-* Podman or Docker (used by `pattern.sh` provisioning containers)
-* Sufficient hub cluster resources for RHACM (for a single-node lab, start with at least 4 vCPUs, 16 GB RAM, and 120 GB storage)
+Confirm the ZTWIM operator and SPIRE components are running before deploying the PostgreSQL lab:
 
-.Procedure
-. Fork the https://github.com/validatedpatterns/layered-zero-trust[`layered-zero-trust` repository^] on GitHub. You must use your fork because GitOps updates it during deployment.
-. Clone your fork and add the upstream remote from the bastion:
-+
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
-git clone git@github.com:<your_username>/layered-zero-trust.git
-cd layered-zero-trust
-git remote add -f upstream git@github.com:validatedpatterns/layered-zero-trust.git
-git remote -v
-----
-+
-. Create a local secrets file outside the repository (never commit credentials):
-+
-[source,bash,subs="+macros,+attributes",role=execute]
-----
-cp values-secret.yaml.template ~/values-secret-layered-zero-trust.yaml
-----
-+
-Edit `~/values-secret-layered-zero-trust.yaml` with any required credentials for your environment.
-+
-. Optional: create a feature branch and customize Helm values (`values-global.yaml`, `values-hub.yaml`, environment-specific files), then push to your fork.
-. Log in to the hub cluster and run the pattern installer:
-+
-[source,bash,subs="+macros,+attributes",role=execute]
-----
-oc login --token=<retrieved_token> --server=https://api.<your_cluster>.<domain>:6443
-cd layered-zero-trust
-./pattern.sh make install
-----
-
-The script provisions pattern components and registers them with OpenShift GitOps on the hub cluster.
-
-== Verify the deployment
-
-After deployment completes, confirm GitOps is reconciling every component.
-
-The pattern installs two Argo CD instances on the hub:
-
-* *Cluster Argo CD* — deploys the App-of-Apps application `layered-zero-trust-hub`, which installs pattern components
-* *Hub Argo CD* — manages Cluster Argo CD and individual pattern components
-
-.Procedure
-. From the OpenShift web console, open the *Application Launcher* (nine-square icon) and locate the Argo CD instances.
-. Confirm the `layered-zero-trust-hub` application and its child applications report *Healthy* status.
-. From the bastion, verify key namespaces and workloads:
-+
-[source,bash,subs="+macros,+attributes",role=execute]
-----
-oc get ns | egrep 'qtodo|keycloak|vault|openshift-zero-trust|openshift-gitops|open-cluster-management'
-oc get pods -n qtodo
-oc get pods -n keycloak-system
-oc get pods -n vault
+# Operator and SPIRE platform health
+oc get csv -n openshift-zero-trust-workload-identity-manager
+oc get zerotrustworkloadidentitymanager,spireserver,spireagent,spiffecsidriver,spireoidcdiscoveryprovider -n openshift-zero-trust-workload-identity-manager
 oc get pods -n openshift-zero-trust-workload-identity-manager
+oc get pods -n openshift-zero-trust-workload-identity-manager -l app.kubernetes.io/name=spire-server
+oc get pods -n openshift-zero-trust-workload-identity-manager -l app.kubernetes.io/name=spire-agent
+oc get pods -n openshift-zero-trust-workload-identity-manager -l app.kubernetes.io/name=spire-spiffe-csi-driver
+oc get csidriver csi.spiffe.io
+oc get crd clusterspiffeids.spire.spiffe.io
+oc get ingresses.config/cluster -o jsonpath='Trust domain: {.spec.domain}{"\n"}'
+
+# Lab workload status (may be empty until you deploy)
+oc get ns postgresql-spiffe postgresql-spiffe-client 2>/dev/null || true
+oc get pods -n postgresql-spiffe 2>/dev/null || true
+oc get pods -n postgresql-spiffe-client 2>/dev/null || true
+oc get clusterspiffeid -A 2>/dev/null | egrep 'postgresql-spiffe|NAME' || true
 ----
 
-When Argo CD applications are healthy and core pods are `Running`, the pattern is ready for the application walkthrough.
+==== Before SPIRE bootstrap (operator only)
 
-[[secure-multitiered-applications]]
-== Secure multitiered applications
+If SPIRE has not been configured yet, your output will look like this—the operator is healthy, but SPIRE resources and pods are missing:
 
-This use case demonstrates securing a common design pattern: a frontend application that persists data in a relational database. Instead of embedding database passwords in the application, the `qtodo` Quarkus app uses JIT credentials fetched from Vault using a ZTWIM-based workload identity.
+[source,text]
+----
+$ oc get csv -n openshift-zero-trust-workload-identity-manager | grep zero-trust
+zero-trust-workload-identity-manager.v1.0.1   ...   Succeeded
 
-=== Application components
+$ oc get zerotrustworkloadidentitymanager,spireserver,spireagent,spiffecsidriver,spireoidcdiscoveryprovider \
+    -n openshift-zero-trust-workload-identity-manager
+No resources found
 
-* *qtodo* — Quarkus frontend protected by OpenID Connect (OIDC) through RHBK
-* *PostgreSQL (`qtodo-db`)* — database whose credentials are generated dynamically and stored in Vault
-* *RHBK (Keycloak)* — external identity store with provisioned users and OIDC clients
-* *HashiCorp Vault* — stores sensitive values and accepts JWT authentication from ZTWIM identities
-* *ZTWIM* — assigns a SPIFFE identity to `qtodo` so it can authenticate to Vault
-* *spiffe-helper* — sidecar that fetches JWT-based identities from the SPIFFE Workload API
+$ oc get pods -n openshift-zero-trust-workload-identity-manager
+NAME                                                              READY   STATUS
+zero-trust-workload-identity-manager-controller-manager-682tvws   1/1     Running
 
-=== Explore the qtodo application
+$ oc get pods -n openshift-zero-trust-workload-identity-manager -l app.kubernetes.io/name=spire-server
+No resources found in openshift-zero-trust-workload-identity-manager namespace.
 
-.Procedure
-. In the OpenShift web console, navigate to *Home* → *Projects* and select the `qtodo` project.
-. Open *Workloads* → *Pods* and inspect the `qtodo` and `qtodo-db` pods.
-+
-The `qtodo` pod uses init containers and sidecars—including `spiffe-helper`—to supply credentials required at startup and runtime.
-+
-. From the bastion, list pod containers:
+$ oc get csidriver csi.spiffe.io
+Error from server (NotFound): csidrivers.storage.k8s.io "csi.spiffe.io" not found
+
+$ oc get crd clusterspiffeids.spire.spiffe.io
+NAME                               CREATED AT
+clusterspiffeids.spire.spiffe.io   2026-06-22T15:26:59Z
+
+$ oc get ingresses.config/cluster -o jsonpath='Trust domain: {.spec.domain}{"\n"}'
+Trust domain: apps.cluster-q2vxc.dynamic2.redhatworkshops.io
+----
+
+This state means the ZTWIM operator is installed but SPIRE is not ready. Continue to <<configure-spire>>—do not proceed to <<deploy-postgresql>> yet.
+
+==== After SPIRE bootstrap (ready for the lab)
+
+Once SPIRE is healthy, you should see:
+
+* Operator CSV `zero-trust-workload-identity-manager.v1.0.1` in phase *Succeeded*
+* Five SPIRE custom resources named `cluster` (one per kind)
+* SPIRE server: 1 pod with `2/2 Running`
+* SPIRE agents: one pod per worker node, all `1/1 Running`
+* CSI driver: one pod per worker node, all `2/2 Running`
+* CSI driver registered: `csi.spiffe.io` listed (no `NotFound` error)
+* ClusterSPIFFEID CRD exists
+* PostgreSQL lab namespaces not deployed yet (empty until <<deploy-postgresql>>)
+
+[cols="2,3,3",options="header"]
+|===
+|Check | Ready for lab | Operator only (your output)
+|Operator CSV | `Succeeded` | `Succeeded`
+|SPIRE CRs | 5 `cluster` resources | `No resources found`
+|SPIRE server pod | `2/2 Running` | `No resources found`
+|CSI driver | `csi.spiffe.io` exists | `NotFound`
+|PostgreSQL lab | Not deployed yet | Not deployed yet
+|===
+
+If SPIRE pods exist but are not healthy, check pod logs:
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc describe pod -n openshift-zero-trust-workload-identity-manager -l app.kubernetes.io/name=spire-server
+oc logs -n openshift-zero-trust-workload-identity-manager -l app.kubernetes.io/name=spire-server -c spire-server --tail=30
+oc get events -n openshift-zero-trust-workload-identity-manager --sort-by='.lastTimestamp' | tail -15
+----
+
+[[configure-spire]]
+== Configure SPIRE (one-time bootstrap)
+
+If verification shows the operator is running but SPIRE custom resources and pods are missing, bootstrap SPIRE from the bastion. This does **not** reinstall the operator—it only creates the SPIRE server, agents, CSI driver, and OIDC discovery provider.
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+cd ~/openshift-days-ops-showroom/setup-scripts/ztwim-config-scripts
+./configure-ztwim-lab.sh spire-only
+----
+
+The script auto-detects your cluster trust domain, applies the SPIRE custom resources, and waits for pods to become ready. When it finishes, rerun the commands in <<verify-ztwim>> before deploying PostgreSQL.
+
+[IMPORTANT]
+====
+Run `./configure-ztwim-lab.sh spire-only` once per cluster. Re-running after SPIRE is healthy is unnecessary.
+====
+
+[[deploy-postgresql]]
+== Deploy PostgreSQL with SPIFFE integration
+
+=== Option A: Deploy via workshop script (recommended)
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+cd ~/openshift-days-ops-showroom/setup-scripts/ztwim-config-scripts
+./configure-ztwim-postgresql-lab.sh
+----
+
+The script deploys the PostgreSQL server and client, grants required SCC permissions, and waits for pods to become ready.
+
+=== Option B: Deploy manually via CLI
+
+. Deploy the PostgreSQL server:
 +
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
-oc get pods -n qtodo
-oc describe pod -n qtodo -l app=qtodo | egrep 'Init Containers:|Containers:|vault|spiffe'
+cd ~/openshift-days-ops-showroom/setup-scripts/ztwim-config-scripts
+oc apply -f demo-postgresql-spiffe.yaml
 ----
-
-=== Locate the application address
-
-.Procedure
-. In the `qtodo` project, open *Networking* → *Routes* and note the URL in the *Location* column.
-. Alternatively, print the route from the bastion:
++
+. Grant required permissions (PostgreSQL runs as UID 26):
 +
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
-echo "https://$(oc get route qtodo -n qtodo -o jsonpath='{.spec.host}')/"
+oc label namespace postgresql-spiffe \
+  security.openshift.io/scc.podSecurityLabelSync=false \
+  pod-security.kubernetes.io/enforce=privileged \
+  pod-security.kubernetes.io/audit=privileged \
+  pod-security.kubernetes.io/warn=privileged \
+  --overwrite
+oc adm policy add-scc-to-user anyuid -z postgresql-spiffe -n postgresql-spiffe
 ----
 +
-. Open the URL in a new browser tab. The RHBK login page should appear.
-
-=== Locate application credentials
-
-RHBK is provisioned with two default users: `qtodo-admin` and `qtodo-user`. Initial passwords are stored in the `keycloak-users` secret in the `keycloak-system` namespace.
-
-.Procedure
-. In the console, open the `keycloak-system` project, then *Workloads* → *Secrets* → `keycloak-users`, and click *Reveal values*.
-. Or decode credentials from the bastion:
+. Deploy the client workload:
 +
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
-oc get secret keycloak-users -n keycloak-system \
-  -o go-template='{{range $k,$v := .data}}{{$k}}: {{$v | base64decode}}{{"\n"}}{{end}}'
+oc apply -f demo-postgresql-spiffe-client.yaml
+oc label namespace postgresql-spiffe-client \
+  security.openshift.io/scc.podSecurityLabelSync=false \
+  pod-security.kubernetes.io/enforce=privileged \
+  pod-security.kubernetes.io/audit=privileged \
+  pod-security.kubernetes.io/warn=privileged \
+  --overwrite
+oc adm policy add-scc-to-user anyuid -z postgresql-spiffe-client -n postgresql-spiffe-client
 ----
 
-=== Access the application
+=== What gets deployed
 
-.Procedure
-. Open the `qtodo` route URL from the previous section.
-. Sign in with one of the Keycloak users (`qtodo-admin` or `qtodo-user`) and the password from `keycloak-users`.
-. When prompted, change the temporary password and confirm the update.
-. After login, the `qtodo` to-do list application appears.
+The PostgreSQL server deployment creates:
 
-=== Verify integration
+* *Namespace*: `postgresql-spiffe`
+* *ServiceAccount*: `postgresql-spiffe` (used by SPIRE for identity)
+* *Deployment*: PostgreSQL with `spiffe-helper` init and sidecar containers
+* *Service*: Exposes PostgreSQL on port 5432
+* *ClusterSPIFFEID*: Automatic certificate issuance with:
+** Server certificate CN: `postgresql-spiffe.postgresql-spiffe.svc`
+** SPIFFE ID: `spiffe://<trust-domain>/ns/postgresql-spiffe/sa/postgresql-spiffe`
+** DNS SAN: `postgresql-spiffe.postgresql-spiffe.svc`
 
-The application uses PostgreSQL for persistent storage. Confirm that JIT credentials from Vault enable read/write access to the database.
+The client deployment creates:
 
-.Procedure
-. In `qtodo`, add a new to-do item and remove an existing item.
-. Refresh the browser page and confirm the list persists.
+* *Namespace*: `postgresql-spiffe-client`
+* *ServiceAccount*: `postgresql-spiffe-client`
+* *Deployment*: Client pod with `psql` tools and `spiffe-helper` sidecar
+* *ClusterSPIFFEID*: Client certificate with:
+** Client certificate CN: `postgresql_spiffe` (matches database username)
+** SPIFFE ID: `spiffe://<trust-domain>/ns/postgresql-spiffe-client/sa/postgresql-spiffe-client`
+
+[NOTE]
+====
+The client certificate's Common Name (CN) must match a valid PostgreSQL database user. PostgreSQL maps the CN directly to the username during certificate authentication.
+====
+
+=== Wait for pods to be ready
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc wait --for=condition=Ready pod -l app=postgresql-spiffe -n postgresql-spiffe --timeout=120s
+oc wait --for=condition=Ready pod -l app=postgresql-spiffe-client -n postgresql-spiffe-client --timeout=120s
+oc get pods -n postgresql-spiffe
+oc get pods -n postgresql-spiffe-client
+----
+
+Both pods should show `2/2 Running`.
+
+[TIP]
+====
+If pods are not starting, check events:
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc get events -n postgresql-spiffe --sort-by='.lastTimestamp'
+----
+====
+
+== Inspect server certificate properties
+
+SPIFFE certificates are automatically generated and mounted at `/opt/postgresql-certs/` by the `spiffe-helper` sidecar.
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc rsh -n postgresql-spiffe -c postgresql-spiffe deployment/postgresql-spiffe \
+  cat /opt/postgresql-certs/svid.pem | openssl x509 -noout -text
+----
+
+=== Key certificate fields
+
+*Subject (Certificate Identity)*::
+The Common Name identifies the server hostname:
 +
-Successful persistence confirms that the Quarkus frontend connected to PostgreSQL using credentials sourced dynamically from Vault—not static secrets in the deployment manifest.
+[source,text]
+----
+Subject: C=US, O=SPIRE, CN=postgresql-spiffe.postgresql-spiffe.svc
+----
+
+*Validity Period (Short-Lived)*::
+SPIFFE certificates have intentionally short lifespans (default: 1 hour):
 +
-. Optional: inspect Vault and ZTWIM integration from the bastion:
+[source,text]
+----
+Validity:
+    Not Before: Apr 22 12:32:55 2026 GMT
+    Not After : Apr 22 13:32:55 2026 GMT
+----
+
+*Subject Alternative Name (SAN)*::
+Contains the SPIFFE ID URI that uniquely identifies this workload:
++
+[source,text]
+----
+X509v3 Subject Alternative Name:
+    DNS:postgresql-spiffe.postgresql-spiffe.svc
+    URI:spiffe://<trust-domain>/ns/postgresql-spiffe/sa/postgresql-spiffe
+----
+
+The SPIFFE ID format: `spiffe://<trust-domain>/ns/<namespace>/sa/<serviceaccount>`
+
+=== View certificate files
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc rsh -n postgresql-spiffe -c postgresql-spiffe deployment/postgresql-spiffe \
+  ls -la /opt/postgresql-certs/
+----
+
+Expected output:
+
+[source,text]
+----
+-rw-------. 1 postgres postgres  241 svid.key         ← Private key (600 permissions)
+-rw-r--r--. 1 postgres postgres 1298 svid.pem         ← Public certificate
+-rw-r--r--. 1 postgres postgres 1403 svid_bundle.pem  ← CA bundle for verification
+----
+
+== Inspect client certificate properties
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc rsh -n postgresql-spiffe-client -c postgresql-spiffe-client deployment/postgresql-spiffe-client \
+  cat /opt/postgresql-certs/svid.pem | openssl x509 -noout -text
+----
+
+The client certificate CN must match a valid PostgreSQL database user:
+
+[source,text]
+----
+Subject: C=US, O=SPIRE, CN=postgresql_spiffe
+----
+
+Each workload gets a unique SPIFFE ID based on its Kubernetes identity:
+
+* *Server*: `spiffe://.../ns/postgresql-spiffe/sa/postgresql-spiffe`
+* *Client*: `spiffe://.../ns/postgresql-spiffe-client/sa/postgresql-spiffe-client`
+
+Check certificate expiration:
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc rsh -n postgresql-spiffe-client -c postgresql-spiffe-client deployment/postgresql-spiffe-client \
+  sh -c 'echo "Current time: $(date)"; openssl x509 -in /opt/postgresql-certs/svid.pem -noout -dates'
+----
+
+The `spiffe-helper` sidecar automatically fetches a new certificate approximately 30 minutes before expiration.
+
+== Establish mTLS connection from client
+
+Connect to PostgreSQL using mutual TLS authentication with SPIFFE certificates—no password required.
+
+=== Connect via one-line command
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc rsh -n postgresql-spiffe-client -c postgresql-spiffe-client deployment/postgresql-spiffe-client \
+  psql "host=postgresql-spiffe.postgresql-spiffe.svc port=5432 user=postgresql_spiffe dbname=testdb sslmode=verify-full sslcert=/opt/postgresql-certs/svid.pem sslkey=/opt/postgresql-certs/svid.key sslrootcert=/opt/postgresql-certs/svid_bundle.pem" \
+  -c "SELECT current_user, current_database();"
+----
+
+Expected output:
+
+[source,text]
+----
+   current_user    | current_database
+-------------------+------------------
+ postgresql_spiffe | testdb
+(1 row)
+----
+
+Success—the connection authenticated using certificates with no password.
+
+=== Connection string parameters
+
+* `host=postgresql-spiffe.postgresql-spiffe.svc` — Kubernetes service DNS name
+* `port=5432` — Standard PostgreSQL port
+* `user=postgresql_spiffe` — Must match the certificate CN
+* `dbname=testdb` — Database created by the initialization script
+* `sslmode=verify-full` — Strictest SSL mode: server certificate verified, hostname matched, client certificate required
+* `sslcert`, `sslkey`, `sslrootcert` — Paths to SPIFFE-issued client certificate, private key, and CA bundle
+
+== Verify certificate-based authentication
+
+Inside an interactive `psql` session, examine connection details:
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc rsh -n postgresql-spiffe-client -c postgresql-spiffe-client deployment/postgresql-spiffe-client
+----
+
+[source,bash]
+----
+psql "host=postgresql-spiffe.postgresql-spiffe.svc port=5432 user=postgresql_spiffe dbname=testdb sslmode=verify-full sslcert=/opt/postgresql-certs/svid.pem sslkey=/opt/postgresql-certs/svid.key sslrootcert=/opt/postgresql-certs/svid_bundle.pem"
+----
+
+[source,sql]
+----
+\conninfo
+SELECT ssl_is_used();
+SELECT version();
+\q
+----
+
+Example `\conninfo` output:
+
+[source,text]
+----
+You are connected to database "testdb" as user "postgresql_spiffe"
+on host "postgresql-spiffe.postgresql-spiffe.svc" at port "5432".
+SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384,
+bits: 256, compression: off)
+----
+
+=== Test database operations
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc rsh -n postgresql-spiffe-client -c postgresql-spiffe-client deployment/postgresql-spiffe-client \
+  psql "host=postgresql-spiffe.postgresql-spiffe.svc port=5432 user=postgresql_spiffe dbname=testdb sslmode=verify-full sslcert=/opt/postgresql-certs/svid.pem sslkey=/opt/postgresql-certs/svid.key sslrootcert=/opt/postgresql-certs/svid_bundle.pem" <<'SQL'
+INSERT INTO test_table (name, text)
+VALUES ('spiffe-test', 'Authenticated with certificates!');
+SELECT * FROM test_table;
+SQL
+----
+
+== Test security controls: connection without certificate
+
+To prove certificate-based authentication is enforced, attempt a connection without client certificates:
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc rsh -n postgresql-spiffe-client -c postgresql-spiffe-client deployment/postgresql-spiffe-client \
+  psql "host=postgresql-spiffe.postgresql-spiffe.svc port=5432 user=postgresql_spiffe dbname=testdb sslmode=require" \
+  2>&1 | head -5
+----
+
+Expected error:
+
+[source,text]
+----
+psql: error: connection to server at "postgresql-spiffe.postgresql-spiffe.svc" failed:
+FATAL: connection requires a valid client certificate
+----
+
+This demonstrates:
+
+* Network connectivity alone is insufficient—the workload must present a valid SPIFFE certificate
+* No password bypass is possible because no passwords exist for the `postgresql_spiffe` user
+* PostgreSQL `pg_hba.conf` requires SSL *and* valid client certificates (`hostssl ... cert`)
+
+=== Test from unauthorized pod (advanced)
+
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc run unauthorized-client --image=registry.redhat.io/rhel9/postgresql-16:latest \
+  -n postgresql-spiffe-client --command -- sleep infinity
+oc wait --for=condition=Ready pod/unauthorized-client -n postgresql-spiffe-client --timeout=60s
+oc exec -n postgresql-spiffe-client unauthorized-client -- \
+  psql "host=postgresql-spiffe.postgresql-spiffe.svc port=5432 user=postgresql_spiffe dbname=testdb" \
+  2>&1 | head -3
+oc delete pod unauthorized-client -n postgresql-spiffe-client
+----
+
+Even pods within the same namespace cannot connect without valid SPIFFE certificates.
+
+== Observe automatic certificate rotation (optional)
+
+SPIFFE certificates rotate before expiration with zero downtime.
+
+. Capture the current certificate serial number:
 +
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
-oc get pods -n qtodo -o wide
-oc logs -n qtodo -l app=qtodo -c spiffe-helper --tail=20
-oc get clusterspiffeid -A 2>/dev/null | head -10
+oc rsh -n postgresql-spiffe-client -c postgresql-spiffe-client deployment/postgresql-spiffe-client \
+  sh -c 'openssl x509 -in /opt/postgresql-certs/svid.pem -noout -serial -enddate'
+----
++
+. Monitor `spiffe-helper` logs for rotation events:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc logs -n postgresql-spiffe-client -l app=postgresql-spiffe-client -c spiffe-helper --tail=20 -f
+----
++
+. After rotation, verify the serial number changed and connections still work:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc rsh -n postgresql-spiffe-client -c postgresql-spiffe-client deployment/postgresql-spiffe-client \
+  psql "host=postgresql-spiffe.postgresql-spiffe.svc port=5432 user=postgresql_spiffe dbname=testdb sslmode=verify-full sslcert=/opt/postgresql-certs/svid.pem sslkey=/opt/postgresql-certs/svid.key sslrootcert=/opt/postgresql-certs/svid_bundle.pem" \
+  -c "SELECT 'Connection successful after rotation' AS status;"
 ----
 
 == What you learned
 
-* The https://validatedpatterns.io/patterns/layered-zero-trust/[Layered Zero Trust Validated Pattern^] combines GitOps, multicluster management, Vault, ZTWIM, and identity providers into a cohesive zero-trust platform.
-* *GitOps* (`pattern.sh` + Argo CD) is the control plane for installing and reconciling every pattern component on the hub cluster.
-* The *qtodo* application demonstrates *JIT credentials*: ZTWIM issues workload identity, Vault brokers database secrets, and the frontend never stores long-lived database passwords.
-* *OIDC through RHBK* secures user access to the application layer while ZTWIM and Vault secure service-to-service and data-layer access.
+* *ZTWIM* on this cluster already provides SPIRE server, agents, CSI driver, and OIDC discovery for workload identity.
+* *SPIFFE workload identity* binds X.509 certificates to Kubernetes namespace and service account, replacing static database passwords.
+* *Mutual TLS* enforces bidirectional certificate verification—both client and server prove cryptographic identity.
+* *Short-lived certificates* (approximately 1 hour) limit exposure windows and rotate automatically via `spiffe-helper` sidecars.
+* *Zero-trust enforcement*: connections without valid SPIFFE certificates are rejected regardless of network access.
+
+[cols="1,2,2,2",options="header"]
+|===
+|Aspect | Password Auth | Certificate Auth (SPIFFE) | Mutual TLS (This Lab)
+|Credential Type | Static password | Client certificate only | Client + server certificates
+|Rotation Burden | Manual | Automatic | Automatic (both sides)
+|Theft Impact | Persistent access | Time-limited exposure | Time-limited + verified server
+|Identity Binding | None (password reuse) | Certificate CN | Certificate CN + SPIFFE ID
+|===
 
 == References
 
-* https://validatedpatterns.io/patterns/layered-zero-trust/lzt-getting-started/[Deploying the Layered Zero Trust pattern — Validated Patterns]
-* https://validatedpatterns.io/patterns/layered-zero-trust/lzt-secure-multitier/[Secure multitiered applications — Validated Patterns]
-* https://github.com/validatedpatterns/layered-zero-trust[layered-zero-trust GitHub repository]
+* https://github.com/SeanRickerd/Roadshow-ZTWIM/blob/main/docs/lab-201-01-postgresql-spiffe-mtls.adoc[Roadshow-ZTWIM — PostgreSQL SPIFFE mTLS lab]
 * https://github.com/openshift/zero-trust-workload-identity-manager[Zero Trust Workload Identity Manager on GitHub]
+* https://spiffe.io/[SPIFFE — Secure Production Identity Framework for Everyone]
 
 == Clean up (optional)
 
-Removing the full pattern reverses many hub-level components. Only run cleanup on disposable lab clusters.
+Remove only the PostgreSQL lab workloads. Do not uninstall ZTWIM—it is shared platform infrastructure in this environment.
 
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
-cd layered-zero-trust
-./pattern.sh make uninstall
+cd ~/openshift-days-ops-showroom/setup-scripts/ztwim-config-scripts
+./uninstall-ztwim-lab.sh
 ----
 
-**Great job!** You explored the Layered Zero Trust Validated Pattern and verified secure multitiered application access with OIDC, ZTWIM workload identity, and Vault JIT credentials. Continue when you are ready for the next topic in the workshop.
+**Great job!** You secured database access with cryptographic workload identity and mutual TLS instead of static passwords. Continue when you are ready for the next topic in the workshop.

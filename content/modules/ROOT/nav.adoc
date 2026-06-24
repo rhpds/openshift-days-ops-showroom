@@ -72,6 +72,6 @@ ifeval::["{module_enable_vault}" == "true"]
 * xref:16-secrets-management.adoc[Secrets Management]
 endif::[]
 ifeval::["{module_enable_ztwim}" == "true"]
-* xref:17-ztwim.adoc[Layered Zero Trust]
+* xref:17-ztwim.adoc[Zero-Trust Workload Identity Manager]
 endif::[]
 

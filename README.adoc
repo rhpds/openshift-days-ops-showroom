@@ -39,7 +39,7 @@ A comprehensive modular workshop for OpenShift administrators. Modules are selec
 * *link:content/modules/ROOT/pages/14-acm.adoc[14 - ACM Multi-Cluster Management]* (30 min) - ACM, hosted control planes, VM management, GitOps app deployment, policy-based governance
 * *link:content/modules/ROOT/pages/15-acs.adoc[15 - Advanced Cluster Security]* (20 min) - Workload scanning with RHACS, compliance, runtime security
 * *link:content/modules/ROOT/pages/16-secrets-management.adoc[16 - Secrets Management (HashiCorp Vault)]* (25 min) - Vault Helm deploy on OpenShift, Kubernetes auth, pod secret injection
-* *link:content/modules/ROOT/pages/17-ztwim.adoc[17 - Layered Zero Trust]* (45 min) - Validated Pattern, SPIFFE/SPIRE, Vault, ZTWIM, GitOps-driven deployment
+* *link:content/modules/ROOT/pages/17-ztwim.adoc[17 - Zero-Trust Database Access with SPIFFE mTLS]* (45 min) - ZTWIM operator, SPIFFE/SPIRE workload identity, PostgreSQL mTLS without passwords
 
 == Module Selection
 
