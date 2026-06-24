@@ -29,17 +29,23 @@ grant_scc() {
   oc adm policy add-scc-to-user anyuid -z "${sa}" -n "${ns}"
 }
 
+prepare_namespace() {
+  local ns="$1" sa="$2"
+  oc create namespace "${ns}" --dry-run=client -o yaml | oc apply -f -
+  grant_scc "${ns}" "${sa}"
+}
+
 deploy_lab() {
   log "Verifying ZTWIM platform is ready..."
   "${SCRIPT_DIR}/configure-ztwim-lab.sh" check
 
   log "Deploying PostgreSQL server with SPIFFE integration..."
+  prepare_namespace postgresql-spiffe postgresql-spiffe
   oc apply -f "${SCRIPT_DIR}/demo-postgresql-spiffe.yaml"
-  grant_scc postgresql-spiffe postgresql-spiffe
 
   log "Deploying PostgreSQL client with SPIFFE integration..."
+  prepare_namespace postgresql-spiffe-client postgresql-spiffe-client
   oc apply -f "${SCRIPT_DIR}/demo-postgresql-spiffe-client.yaml"
-  grant_scc postgresql-spiffe-client postgresql-spiffe-client
 
   log "Waiting for pods to become Ready..."
   oc wait --for=condition=Ready pod -l app=postgresql-spiffe -n postgresql-spiffe --timeout=300s
