@@ -162,7 +162,7 @@ Daily compliance scan for all profiles covering CIS, E8, Moderate, NERC-CIP, PCI
 [start=8]
 . Click *Next*
 +
-[INFO]
+[NOTE]
 ====
 You can send notifications via email, get details via API or download reports via the console. However, we will not add a delivery destination so we will skip this step.
 ====
@@ -181,7 +181,7 @@ NOTE: The scan may take a few minutes to complete.
 +
 image::acs-security-05.png[E8 compliance standard overview, link=self, window=blank, width=100%]
 +
-[INFO]
+[NOTE]
 ====
 Remember that we passed the check for the production cluster by adding the allowed registries to the cluster configuration.
 ====
@@ -189,7 +189,7 @@ Remember that we passed the check for the production cluster by adding the allow
 +
 image::acs-security-06.png[Allowed registries compliance clusters, link=self, window=blank, width=100%]
 +
-[INFO]
+[NOTE]
 ====
 This view shows you all of the clusters and their status for the check. As you can see, the production cluster is passing.
 ====
@@ -198,7 +198,7 @@ This view shows you all of the clusters and their status for the check. As you c
 +
 image::acs-security-07.png[Allowed registries compliance check details, link=self, window=blank, width=100%]
 +
-[INFO]
+[NOTE]
 ====
 This view shows you the details of the check for the production cluster. As you can see, the production cluster is passing.
 ====
@@ -356,7 +356,7 @@ LAST SEEN   TYPE      REASON                 OBJECT                           ME
 50s         Warning   StackRox enforcement   deployment/frontend              A pod (frontend-8667d5c56b-f9fcj) violated StackRox policy "Alpine Linux Package Manager Execution - Enforce" and was killed
 ----
 +
-[INFO] 
+[NOTE]
 ====
 After a few seconds, you can see the pod is deleted and recreated. In your tmux shell pane, note that your shell session has terminated and that you are returned to the Bastion VM command line.
 ====
@@ -366,7 +366,7 @@ After a few seconds, you can see the pod is deleted and recreated. In your tmux 
 .. Press `Ctrl+C` to stop the `watch` command running in the tmux pane.
 .. Type `exit` or `Ctrl-D` to exit the tmux session and return to the bastion host terminal.
 +
-[INFO]
+[NOTE]
 ====
 You can see that the behavior is blocked by the policy, however, the security team still needs to be aware of this behavior and investigate why it is happening.
 ====
