@@ -132,6 +132,14 @@ echo "asciidoc:" >> "$SITE_FILE"
 echo "  attributes:" >> "$SITE_FILE"
 echo -n "$ATTRS" >> "$SITE_FILE"
 
+# Also inject key attributes into content/antora.yml for source block substitution
+# (Antora source blocks with subs="+attributes" only read from antora.yml, not the site playbook)
+ANTORA_YML="${REPO_DIR}/content/antora.yml"
+if [ -f "$ANTORA_YML" ] && ! grep -q 'ols_azure_url' "$ANTORA_YML"; then
+  echo "Injecting ols_azure_url into antora.yml..."
+  echo "    ols_azure_url: '${OLS_AZURE_URL:-}'" >> "$ANTORA_YML"
+fi
+
 echo "=== Antora injection complete ==="
 
 # ==============================================================================
