@@ -91,8 +91,7 @@ Copy the URL and open it in a **new browser tab**. Log in with the admin credent
 
 You're now in the Red Hat build of Keycloak admin console. You'll see the **master realm** welcome page:
 
-image::oidc-rhbk-welcome.png[RHBK admin console welcome page showing master realm]
-
+image::oidc-rhbk-welcome.png[RHBK admin console welcome page showing master realm, link=self, window=blank]
 This is where you manage realms, users, clients, and authentication flows.
 
 == Configure Users & Groups
@@ -105,14 +104,12 @@ Keycloak uses **realms** to isolate sets of users, credentials, and clients. The
 2. Click **Create realm**
 3. Set **Realm name** to: `OpenShift`
 +
-image::oidc-rhbk-create-realm.png[Create realm dialog with OpenShift as realm name]
-+
+image::oidc-rhbk-create-realm.png[Create realm dialog with OpenShift as realm name, link=self, window=blank]+
 4. Click **Create**
 
 You'll see both realms listed, with **OpenShift** as the current realm:
 
-image::oidc-rhbk-realm-created.png[Manage realms showing master and OpenShift realms]
-
+image::oidc-rhbk-realm-created.png[Manage realms showing master and OpenShift realms, link=self, window=blank]
 You're now working inside the OpenShift realm. Everything you create from here - users, groups, clients - belongs to this realm.
 
 === Step 4: Create Your First User
@@ -131,19 +128,16 @@ IMPORTANT: All four fields (**Username**, **Email**, **First name**, **Last name
    - **First name**: `Admin`
    - **Last name**: `User`
 +
-image::oidc-rhbk-create-user.png[Create user form with admin1 details filled in]
-+
+image::oidc-rhbk-create-user.png[Create user form with admin1 details filled in, link=self, window=blank]+
 4. Click **Create**
 5. Click the **Credentials** tab - you'll see "No credentials":
 +
-image::oidc-rhbk-credentials-tab.png[Credentials tab showing No credentials with Set password button]
-+
+image::oidc-rhbk-credentials-tab.png[Credentials tab showing No credentials with Set password button, link=self, window=blank]+
 6. Click **Set password**
 7. Enter password: `OpenShift123!` in both fields
 8. Turn **Temporary** to **Off** (so the user isn't forced to change password on first login)
 +
-image::oidc-rhbk-set-password.png[Set password dialog with Temporary set to Off]
-+
+image::oidc-rhbk-set-password.png[Set password dialog with Temporary set to Off, link=self, window=blank]+
 9. Click **Save** and confirm
 
 === Step 5: Create Your First Group
@@ -154,15 +148,13 @@ Groups in Keycloak map to OpenShift groups. When a user logs into OpenShift, the
 2. Click **Create group**
 3. Set name to: `ocp-admins` and click **Create**
 
-image::oidc-rhbk-groups-created.png[Groups page showing ocp-admins group]
-
+image::oidc-rhbk-groups-created.png[Groups page showing ocp-admins group, link=self, window=blank]
 **Assign admin1 to the group:**
 
 1. Click **Users** → click **admin1**
 2. Click the **Groups** tab - you'll see "No groups":
 +
-image::oidc-rhbk-user-join-group.png[User Groups tab showing Join Group button]
-+
+image::oidc-rhbk-user-join-group.png[User Groups tab showing Join Group button, link=self, window=blank]+
 3. Click **Join Group** → select **ocp-admins** → click **Join**
 
 === Step 6: Script the Remaining Users and Groups
@@ -213,8 +205,7 @@ NOTE: This takes a minute or two while the OAuth pods restart with the new confi
 1. In the **OCP Console** tab, click your username (top-right) and select **Log out**
 2. Click the **reload button** (circular arrow) next to the OCP Console tab name. You'll see both identity providers:
 +
-image::oidc-login-selector.png[OpenShift login page showing htpasswd and rhbk]
-+
+image::oidc-login-selector.png[OpenShift login page showing htpasswd and rhbk, link=self, window=blank]+
 3. Click **rhbk**
 4. Log in as `developer1` / `OpenShift123!`
 
@@ -222,8 +213,7 @@ image::oidc-login-selector.png[OpenShift login page showing htpasswd and rhbk]
 ====
 You may see an **Authentication error** page:
 
-image::oidc-auth-error.png[Authentication error after OIDC login]
-
+image::oidc-auth-error.png[Authentication error after OIDC login, link=self, window=blank]
 Click the **reload button** (circular arrow) next to the OCP Console tab to reload the page.
 ====
 
@@ -253,8 +243,7 @@ In the output, look at the `identities` section - it shows the identity provider
 == Configure RBAC
 
 .Users and groups are bound to roles that define what they can do - either within a project or cluster-wide
-image::diagrams/07_08_rbac.png[OpenShift RBAC, align=center]
-
+image::diagrams/07_08_rbac.png[OpenShift RBAC, align=center, link=self, window=blank]
 === Step 9: Configure RBAC and Verify Permissions
 
 Grant permissions to the OIDC groups:
@@ -283,8 +272,7 @@ Test permissions from the terminal using developer1's token:
 
 1. In the OCP Console (logged in as developer1), click your username (top-right) → **Copy login command** → click **rhbk** → **Display Token**
 +
-image::oidc-copy-login-command.png[User menu showing Copy login command option]
-+
+image::oidc-copy-login-command.png[User menu showing Copy login command option, link=self, window=blank]+
 2. Copy the `oc login --token=...` command and paste it in the terminal
 
 Verify you are logged in as developer1:

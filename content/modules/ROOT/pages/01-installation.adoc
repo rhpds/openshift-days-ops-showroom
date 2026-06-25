@@ -73,8 +73,7 @@ Check the `Conditions` section for details about why it's degraded.
 
 **Console view:** Switch to the **OCP Console** tab and navigate to **Administration -> Cluster Settings**, then select the **ClusterOperators** tab. The console shows each operator with green/red status icons - degraded operators are immediately visible without scanning a 34-row table. This is faster than CLI for a quick health check.
 
-image::installation-images/clusteroperators-console.png[ClusterOperators in web console]
-
+image::installation-images/clusteroperators-console.png[ClusterOperators in web console, link=self, window=blank]
 === Step 2: Check Cluster Version and Update Status
 
 View the current cluster version:
@@ -120,8 +119,7 @@ with --to-image or wait for new updates to be available.
 
 In the **OCP Console**, navigate to **Administration -> Cluster Settings**. The **Details** tab shows the current version, update channel, and - when updates are available - a visual upgrade path graph showing the route from your current version to available targets. This is far more informative than the CLI text output for planning upgrades.
 
-image::installation-images/cluster-settings-update.png[Cluster Settings Details tab showing version and update channel]
-
+image::installation-images/cluster-settings-update.png[Cluster Settings Details tab showing version and update channel, link=self, window=blank]
 **Key takeaway:** Operators manage cluster updates. When updates are available, you can upgrade with a single command: `oc adm upgrade --to=<version>`
 
 == Step 3: Verify Node Configuration
@@ -154,8 +152,7 @@ MachineConfigPools manage node-level configuration (kernel arguments, systemd un
 
 You can also verify this in the console. Navigate to **Compute -> MachineConfigPools**:
 
-image::installation-images/machineconfigpools-console.png[MachineConfigPools showing master and worker pools with Up to date status]
-
+image::installation-images/machineconfigpools-console.png[MachineConfigPools showing master and worker pools with Up to date status, link=self, window=blank]
 The green *Up to date* indicators and *Degraded: False* confirm that all node configurations have been applied successfully. During an upgrade or configuration change, you would see the *Update status* change to *Updating* - this view is a quick way to monitor node rollout progress without polling the CLI.
 
 == Step 4: Test Networking (Hands-on)

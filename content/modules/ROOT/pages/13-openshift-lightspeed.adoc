@@ -22,8 +22,7 @@ In this module, you'll configure OpenShift Lightspeed and use it to understand O
 
 The OpenShift Lightspeed Operator has been pre-installed on your cluster. However, to be fully operational, OpenShift Lightspeed must be connected to an LLM provider. In this module, you'll also create the configuration necessary to enable this connection.
 
-image::diagrams/13_lightspeed.png[OpenShift Lightspeed Architecture, align=center]
-
+image::diagrams/13_lightspeed.png[OpenShift Lightspeed Architecture, align=center, link=self, window=blank]
 == Deploy OpenShift Lightspeed
 
 === Verify the Operator Installation
@@ -39,12 +38,10 @@ You should see the operator in `Succeeded` phase.
 
 You can also verify in the console by navigating to *Ecosystem* → *Installed Operators*. Make sure to toggle on **Show default projects** in the project dropdown, then select the `openshift-lightspeed` namespace:
 
-image::ols-operator-installed.png[OpenShift Lightspeed Operator Installed]
-
+image::ols-operator-installed.png[OpenShift Lightspeed Operator Installed, link=self, window=blank]
 To switch namespace, use the dropdown at the top:
 
-image::ols-switch-namespace.png[Switch to openshift-lightspeed namespace]
-
+image::ols-switch-namespace.png[Switch to openshift-lightspeed namespace, link=self, window=blank]
 === Create the OLSConfig
 
 The operator is installed but needs configuration to connect to an LLM provider. OpenShift Lightspeed supports various model providers, including public cloud services (WatsonX, Azure OpenAI, OpenAI) and on-premise solutions (Red Hat OpenShift AI, RHEL AI). For this workshop, Azure OpenAI credentials have been pre-configured as a secret.
@@ -145,12 +142,10 @@ TIP: If you see an authentication error when using Lightspeed, reload the **OCP 
 
 Once the OLSConfig is ready, the OpenShift Lightspeed chat button in the bottom right corner will now be functional:
 
-image::ols-chat-button.png[Lightspeed chat button in bottom right]
-
+image::ols-chat-button.png[Lightspeed chat button in bottom right, link=self, window=blank]
 Click the button to open the OpenShift Lightspeed chat window:
 
-image::ols-chat-window.png[OpenShift Lightspeed chat window]
-
+image::ols-chat-window.png[OpenShift Lightspeed chat window, link=self, window=blank]
 === Starter Question
 
 OpenShift Lightspeed allows users to interact and ask questions about OpenShift using natural language. Thanks to its specific knowledge about OpenShift, it is particularly useful for exploring and understanding concepts and resources in this platform.
@@ -166,8 +161,7 @@ OpenShift Lightspeed will search for the most relevant sections of the documenta
 
 OpenShift Lightspeed will likely provide a response explaining what both Deployment and StatefulSet resources are, along with a comparison between them. If you scroll down to the end of the response, OpenShift Lightspeed will display links to the most relevant documentation, allowing you to quickly access those sections and explore further:
 
-image::ols-related-docs.png[Related documentation in OpenShift Lightspeed]
-
+image::ols-related-docs.png[Related documentation in OpenShift Lightspeed, link=self, window=blank]
 == Capabilities
 
 === Assisted YAML generation
@@ -181,8 +175,7 @@ Can you generate a YAML for a Deployment using the image red.ht/ols:2026?
 
 Please note that OpenShift Lightspeed provides guidance and crafts the resources we request, but it will not apply those resources directly in the cluster. You can copy and apply them manually:
 
-image::ols-copy-yaml.png[Copy YAML button in OpenShift Lightspeed]
-
+image::ols-copy-yaml.png[Copy YAML button in OpenShift Lightspeed, link=self, window=blank]
 === Cluster Interaction and Troubleshooting
 
 A demo pod with an intentional issue has been pre-deployed as part of the workshop setup. Let's use OpenShift Lightspeed to diagnose it.
@@ -210,16 +203,14 @@ Show me the pods in the lightspeed-demo namespace
 
 The model has likely used `pods_list_in_namespace` - one of the tools provided by the MCP server, to retrieve this information. You can click on the tool to view the tool output used to answer your question.
 
-image::ols-tool-output.png[OpenShift Lightspeed MCP tool output]
-
+image::ols-tool-output.png[OpenShift Lightspeed MCP tool output, link=self, window=blank]
 Now let's use OpenShift Lightspeed to help diagnose the issue. For troubleshooting with OpenShift Lightspeed, we can use the attachments feature to pass different resources and configurations to the model for analysis, helping us identify and resolve problems.
 
 In the OpenShift web console, navigate to *Workloads* → *Pods* and make sure you are in the `lightspeed-demo` namespace. You'll find the pod that OpenShift Lightspeed listed before. Click on `broken-pod` to view the resource details.
 
 Now, in the chat window, click on the *clip* icon next to the typing bar and you will see a menu that allows you to attach different components. Select *Full YAML file*:
 
-image::ols-attachments.png[OpenShift Lightspeed attachments menu]
-
+image::ols-attachments.png[OpenShift Lightspeed attachments menu, link=self, window=blank]
 Once attached, try asking:
 
 [quote]

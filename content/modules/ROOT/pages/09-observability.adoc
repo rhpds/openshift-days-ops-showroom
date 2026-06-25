@@ -12,8 +12,7 @@ Something's wrong with your cluster. How do you know? Where do you look? If you 
 
 In this module you'll explore the metrics and alerting that's already running (Prometheus, Alertmanager), set up a logging pipeline (Loki, Vector) so you can actually search logs, and deploy distributed tracing (OpenTelemetry, Tempo) to follow requests across services.
 
-image::diagrams/09_observability.png[OpenShift Monitoring Architecture, align=center]
-
+image::diagrams/09_observability.png[OpenShift Monitoring Architecture, align=center, link=self, window=blank]
 TIP: If you were logged in as a different user in a previous module, log back in as admin. Console: Username `{openshift_cluster_admin_username}` / Password `{openshift_cluster_admin_password}`. Terminal: `oc login -u {openshift_cluster_admin_username} -p {openshift_cluster_admin_password}`
 
 == Built-in Metrics with Prometheus
@@ -38,8 +37,7 @@ Query cluster CPU usage using the console metrics viewer:
 
 You'll see a time-series graph showing cluster CPU usage over time - far more useful than a point-in-time number.
 
-image::observe-metrics-query.png[Observe Metrics page showing cluster CPU usage query result]
-
+image::observe-metrics-query.png[Observe Metrics page showing cluster CPU usage query result, link=self, window=blank]
 TIP: Try other queries like `node_memory_MemAvailable_bytes` or `kubelet_running_pods` to explore what metrics are available.
 
 For quick CLI snapshots, you can also use:
@@ -58,8 +56,7 @@ oc adm top pods -A --sort-by=cpu | head -15
 
 Navigate to **Observe -> Dashboards** in the OpenShift console. Key dashboards include:
 
-image::observe-dashboards-list.png[Observe Dashboards showing Kubernetes Compute Resources Cluster dashboard]
-
+image::observe-dashboards-list.png[Observe Dashboards showing Kubernetes Compute Resources Cluster dashboard, link=self, window=blank]
 * **etcd** - Control plane database health
 * **Kubernetes / Compute Resources / Cluster** - Cluster-wide CPU and memory
 * **Kubernetes / Compute Resources / Namespace (Pods)** - Per-namespace breakdown
@@ -167,16 +164,13 @@ echo "Crash-looping pod deployed - it will restart every few seconds"
 
 While the restarts accumulate, navigate to **Observe -> Alerting -> Alerting Rules** in the console and search for `HighPodRestartRate`. It may take a minute or two for Prometheus to pick up the new rule. If you don't see it, refresh the page and click **Clear all filters** or remove any existing filter chips (click the **x** on them) before searching.
 
-image::alerting-rules-search.png[Alerting Rules showing custom HighPodRestartRate rule]
-
+image::alerting-rules-search.png[Alerting Rules showing custom HighPodRestartRate rule, link=self, window=blank]
 Click on the rule to see its details. After about 2-3 minutes (once the pod has restarted a few times and the `for: 1m` duration passes), you'll see the alert transition from **Inactive** → **Pending** → **Firing**:
 
-image::alerting-rule-detail.png[HighPodRestartRate rule detail showing expression and active alerts]
-
+image::alerting-rule-detail.png[HighPodRestartRate rule detail showing expression and active alerts, link=self, window=blank]
 Now navigate to **Alerting → Alerts** - you should see `HighPodRestartRate`. Click into the alert and click the **Description** at the bottom to see more detail - you'll see `crashloop-test` as the source pod:
 
-image::alerts-firing.png[Alerts tab showing currently firing alerts with severity and state]
-
+image::alerts-firing.png[Alerts tab showing currently firing alerts with severity and state, link=self, window=blank]
 This is the view on-call engineers live in. You just created a rule, triggered it with a real failure, and watched it fire. Clean up the crash-looping pod:
 
 [source,bash,role="execute"]
@@ -210,8 +204,7 @@ bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showr
 
 The script will print the Mailpit inbox URL. Click it or copy it into your browser. Within a minute you should see alert emails arriving:
 
-image::alerting-mailpit-inbox.png[Mailpit inbox showing alert notification emails from Alertmanager]
-
+image::alerting-mailpit-inbox.png[Mailpit inbox showing alert notification emails from Alertmanager, link=self, window=blank]
 Notice the routing:
 
 * **Warning** alerts (like `PodDisruptionBudgetAtLimit`, `KubeCPUOvercommit`) go to `ops-team@example.com`
@@ -281,17 +274,14 @@ Install the Loki Operator from the Software Catalog - this is the same process f
 2. Search for **Loki Operator**
 3. Click the **Loki Operator** tile (select the one labeled **Red Hat**, not snapshot-lightspeed)
 +
-image::obs-loki-operator-details.png[Loki Operator details with Install button highlighted]
-+
+image::obs-loki-operator-details.png[Loki Operator details with Install button highlighted, link=self, window=blank]+
 4. Click **Install**
 5. On the install configuration page, leave all defaults (channel, namespace, approval) and click **Install**
 +
-image::obs-loki-install-config.png[Loki Operator install configuration page]
-
+image::obs-loki-install-config.png[Loki Operator install configuration page, link=self, window=blank]
 You'll see the "Installing Operator" confirmation:
 
-image::obs-loki-installing.png[Loki Operator installing confirmation]
-
+image::obs-loki-installing.png[Loki Operator installing confirmation, link=self, window=blank]
 **Remaining Operators**
 
 You've seen how OperatorHub works. The remaining operators use the same process - let's script them. This will take a couple of minutes to complete:
@@ -416,8 +406,7 @@ You should see the logging operator, collector pods (one per node), and multiple
 
 After the UIPlugin is created, you may see a notification in the console:
 
-image::Loki_refresh.png[Web console update notification]
-
+image::Loki_refresh.png[Web console update notification, link=self, window=blank]
 Click **Refresh** to reload the console with the new Logs view. This may log you out of the console - if so, log back in with:
 
 * Username: `{openshift_cluster_admin_username}`
@@ -425,28 +414,23 @@ Click **Refresh** to reload the console with the new Logs view. This may log you
 
 Navigate to **Observe -> Logs** in the console. Use the log type dropdown (highlighted in red below) to switch between three log types:
 
-image::observe-logs-view.png[Observe Logs view with log type dropdown highlighted]
-
+image::observe-logs-view.png[Observe Logs view with log type dropdown highlighted, link=self, window=blank]
 * **Application** - Logs from user workloads
 * **Infrastructure** - Logs from OpenShift components
 * **Audit** - Kubernetes API audit logs
 
-image::appinfraaudit.png[Log type selector]
-
+image::appinfraaudit.png[Log type selector, link=self, window=blank]
 Use the filters to search by namespace, pod name, or severity level:
 
-image::filterlogs.png[Log filters]
-
+image::filterlogs.png[Log filters, link=self, window=blank]
 Filter by severity (Critical, Error, Warning, Info, Debug):
 
-image::severity.png[Severity filter]
-
+image::severity.png[Severity filter, link=self, window=blank]
 Try it now: select **Infrastructure** logs, then filter by severity **Warning** or **Error**. These are the log entries that matter during an incident - pod evictions, OOM kills, certificate expiry warnings.
 
 Click **Show Histogram** (highlighted in red below) in the top right to display log volume over time. Spikes in the error count correlate with incidents - click and drag to select a time window to zoom in.
 
-image::histogram.png[Log histogram]
-
+image::histogram.png[Log histogram, link=self, window=blank]
 [NOTE]
 ====
 It may take 1-2 minutes for logs to start appearing after the collector pods are running. If you see "No datapoints found", wait a moment and refresh.
@@ -603,12 +587,10 @@ Loading the Traces view may log you out of the console. If so, log back in with:
 
 Navigate to **Observe -> Traces** in the console. Select the Tempo instance (`tracing-system / sample`) and tenant (`dev`):
 
-image::otel-traces-view.png[Observe Traces view showing workshop-demo trace with scatter graph]
-
+image::otel-traces-view.png[Observe Traces view showing workshop-demo trace with scatter graph, link=self, window=blank]
 You should see the `workshop-demo` trace. Click on it to see the trace detail view - a timing waterfall showing each span:
 
-image::otel-trace-detail.png[Trace detail view showing GET /api/weather span with 500ms duration]
-
+image::otel-trace-detail.png[Trace detail view showing GET /api/weather span with 500ms duration, link=self, window=blank]
 With a single service this shows one span. In a real microservices application, you'd see multiple spans stacked in a waterfall - frontend → API → database - making it immediately obvious where latency is coming from.
 
 The collector is now ready for production use. Developers point their apps at `otel-collector.tracing-system.svc:4317` using OpenTelemetry SDKs, and traces automatically appear here.

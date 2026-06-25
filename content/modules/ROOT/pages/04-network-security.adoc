@@ -174,12 +174,10 @@ You should see both `deny-all` and `allow-from-frontend` policies.
 
 Now switch to the **OCP Console** tab and navigate to **Networking -> NetworkPolicies** (project: `netpol-backend`). Click on `deny-all` - the console clearly states "All incoming traffic is denied":
 
-image::netpol-deny-all.png[deny-all NetworkPolicy showing all incoming traffic denied]
-
+image::netpol-deny-all.png[deny-all NetworkPolicy showing all incoming traffic denied, link=self, window=blank]
 Click back and open `allow-from-frontend` - the console renders the ingress rule as a readable table showing the pod selector, namespace selector, and allowed port:
 
-image::netpol-allow-frontend.png[allow-from-frontend NetworkPolicy showing selectors and port rule]
-
+image::netpol-allow-frontend.png[allow-from-frontend NetworkPolicy showing selectors and port rule, link=self, window=blank]
 Compare this to the YAML you just wrote. In production, when you're auditing policies across 50 namespaces, this view is dramatically faster than reading raw YAML.
 
 === NetworkPolicy Best Practices
@@ -395,8 +393,7 @@ NOTE: Wildcard DNS names (e.g., `*.redhat.com`) are a Technology Preview feature
 
 === EgressIP: Predictable Source IPs
 
-image::diagrams/04_egress_ip.png[OpenShift EgressIP Architecture, align=center]
-
+image::diagrams/04_egress_ip.png[OpenShift EgressIP Architecture, align=center, link=self, window=blank]
 **EgressIP** assigns a fixed source IP for egress traffic from specific pods. Useful when external firewalls need to allowlist your cluster.
 
 **Understanding EgressIP**
