@@ -107,6 +107,7 @@ ATTRS="${ATTRS}    acs_portal_username: 'admin'"$'\n'
 ATTRS="${ATTRS}    acs_portal_password: '${ADMIN_PASSWORD:-}'"$'\n'
 ATTRS="${ATTRS}    argocd_url: 'https://openshift-gitops-server-openshift-gitops.${ROUTE_SUBDOMAIN:-}'"$'\n'
 ATTRS="${ATTRS}    devhub_url: 'https://backstage-developer-hub-backstage.${ROUTE_SUBDOMAIN:-}'"$'\n'
+ATTRS="${ATTRS}    ols_azure_url: '${OLS_AZURE_URL:-}'"$'\n'
 
 echo "Attributes to inject:"
 echo "$ATTRS"
