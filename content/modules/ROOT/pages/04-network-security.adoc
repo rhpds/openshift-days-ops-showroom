@@ -526,7 +526,7 @@ echo "Cleanup running in background - you can continue to the next module"
 
 **Key operational commands:**
 
-[source,bash]
+[source,bash,role="execute"]
 ----
 # View network configuration
 oc get network.config cluster -o yaml
