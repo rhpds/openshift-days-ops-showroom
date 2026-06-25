@@ -1,0 +1,5 @@
+= Workshop Complete
+
+**Thank you for attending the OpenShift Day Ops Track workshop.**
+
+We hope you found the hands-on exercises valuable. If you have any further questions, please ask your instructor.
