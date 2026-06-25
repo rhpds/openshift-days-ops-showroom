@@ -637,7 +637,7 @@ Together, metrics, logs, and traces give you the **three pillars of observabilit
 
 **Key operational commands:**
 
-[source,bash]
+[source,bash,role="execute"]
 ----
 # Cluster metrics
 oc adm top nodes
