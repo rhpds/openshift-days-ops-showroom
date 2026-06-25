@@ -64,7 +64,7 @@ hcp-emea
 +
 . Verify that is on the *clusters* space for the *Hosted cluster namespace*
 . Select *managed* for the *Cluster Set*
-. Next, select the release image *OpenShift 4.21.0* (or whatever the current 4.21.x release image is).
+. Next, select the release image *OpenShift 4.20.x* (latest available release image).
 . Select *ocs-external-storagecluster-ceph-rbd* for the Etcd Storage Class
 . Select *Single replica* for both the *Controller availability policy* and the *Infrastructure availability policy*.
 . Under Additional Labels enter *location=emea*
@@ -305,7 +305,7 @@ Let's deploy 3 policies to the EMEA cluster to address the core pillars of GDPR'
 .Procedure
 . From the Fleet Management Console Click on the *+ sign* -> *Import YAML* tab.
 +
-image::02-rhacm-yaml.png[link=self, window=blank, width=100%]
+image::02-rhacm-yaml.png[RHACM YAML policy editor, link=self, window=blank, width=100%]
 
 . Next, paste the following YAML Click *Create*
 +
@@ -405,7 +405,7 @@ subjects:
     kind: Policy
     apiGroup: policy.open-cluster-management.io
 ----
-image::02-rhacm-yaml-1.png[link=self, window=blank, width=100%]
+image::02-rhacm-yaml-1.png[RHACM YAML policy editor updated, link=self, window=blank, width=100%]
 +
 [IMPORTANT]
 ====
@@ -414,7 +414,7 @@ GDPR compliance starts with having clearly labeled namespaces. Labels and annota
 +
 . Verify that the YAML was added properly and there are no errors.
 +
-image::02-rhacm-yaml-2.png[link=self, window=blank, width=100%]
+image::02-rhacm-yaml-2.png[RHACM YAML policy editor final, link=self, window=blank, width=100%]
 +
 . Next, Select *Governance* item in the left panel and Navigate to the *Policies* tab. Select *Filter* and check the *policies* namespace, this will show only the policies on this namespace.
 +
