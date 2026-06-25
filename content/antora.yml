@@ -1,12 +1,12 @@
 name: openshift-days-ops-track
-title: OpenShift Day - Ops Track
+title: OpenShift Ops Day Roadshow
 version: main
 nav:
   - modules/ROOT/nav.adoc
 
 asciidoc:
   attributes:
-    lab_name: "OpenShift Day - Ops Track"
+    lab_name: "OpenShift Ops Day Roadshow"
     release-version: main
     page-pagination: true
     guid: my-guid

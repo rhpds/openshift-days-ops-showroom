@@ -1,5 +1,5 @@
 site:
-  title: OpenShift Day - Ops Track
+  title: OpenShift Ops Day Roadshow
   url: http://localhost:8080
   start_page: openshift-days-ops-track::index.adoc
 

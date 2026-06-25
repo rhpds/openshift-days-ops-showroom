@@ -1,6 +1,6 @@
-= OpenShift Days - Ops Track Workshop
+= OpenShift Ops Day Roadshow
 
-Showroom content for the OpenShift Days Ops Track workshop, covering Day 2 operations for OpenShift administrators.
+Showroom content for the OpenShift Ops Day Roadshow, covering Day 2 operations for OpenShift administrators.
 
 == Workshop Overview
 
