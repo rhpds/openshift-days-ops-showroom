@@ -61,8 +61,7 @@ TIP: If you were logged in as a different user in a previous module, log back in
 
 Wait for metrics to become available (~60 seconds after pod starts). While you wait, switch to the **OCP Console** tab and navigate to **Workloads -> Pods** (project: `performance-demo`). Click the pod name and look at the **Metrics** tab - you can watch memory usage populate in real-time. CPU will be near zero since this app barely uses any.
 
-image::perf-pod-metrics.png[Pod Metrics tab showing CPU and memory usage graphs]
-
+image::perf-pod-metrics.png[Pod Metrics tab showing CPU and memory usage graphs, link=self, window=blank]
 [source,bash,role="execute"]
 ----
 echo "Waiting 60s for metrics to populate..."
@@ -183,8 +182,7 @@ oc get deployment memory-hog -o jsonpath='{.spec.template.spec.containers[0].res
 
 == Part 3: Handle Variable Load with HPA
 
-image::diagrams/10_hpa.png[Horizontal Pod Autoscaler Flow, align=center]
-
+image::diagrams/10_hpa.png[Horizontal Pod Autoscaler Flow, align=center, link=self, window=blank]
 Now let's deploy an application that needs to scale horizontally based on traffic.
 
 === Deploy a Scalable Application
@@ -243,8 +241,7 @@ While the load generator runs, navigate to **Workloads -> Pods** (project: `perf
 
 Then navigate to **Observe -> Dashboards**, select **Kubernetes / Compute Resources / Namespace (Pods)** and choose project `performance-demo`. You'll see the load distributed across multiple pods in the **CPU Quota** table - each demo-app pod using ~40-50% CPU, with the `load-generator` pod consuming the most. The **CPU Utilisation (from requests)** percentage at the top will be well over 100% because total usage exceeds what was originally requested for a single pod.
 
-image::perf-hpa-pods-scaling.png[Pod list showing multiple demo-app pods after HPA scale-up]
-
+image::perf-hpa-pods-scaling.png[Pod list showing multiple demo-app pods after HPA scale-up, link=self, window=blank]
 You can also watch via CLI:
 
 [source,bash,role="execute"]
@@ -281,8 +278,7 @@ oc adm top nodes
 
 Look at the memory percentages across your nodes. In the **OCP Console**, navigate to **Observe -> Dashboards** and select **Kubernetes / Compute Resources / Namespace (Pods)**, then choose project `performance-demo`:
 
-image::hpa-scaling-dashboard.png[Dashboard showing CPU usage and pod count during HPA scaling event]
-
+image::hpa-scaling-dashboard.png[Dashboard showing CPU usage and pod count during HPA scaling event, link=self, window=blank]
 The graphs show how your HPA scaling event looked over time. In the **CPU Quota** table you can see how the load was distributed - each demo-app pod handling a portion of the traffic at roughly equal CPU usage, with the load-generator consuming the most. The **CPU Utilisation (from requests)** percentage at the top reflects total namespace usage vs total requests - during load this spikes well above 100%.
 
 After deleting the load generator, watch the HPA scale the demo-app replicas back down and the CPU utilisation drop. This is autoscaling working end-to-end.

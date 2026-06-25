@@ -27,8 +27,7 @@ By the end of this module, you will be able to:
 * Resync resources to restore the desired state
 * Enable self-healing so ArgoCD automatically reverts unauthorized changes
 
-image::diagrams/06_gitops.png[ArgoCD GitOps Sync Flow, align=center]
-
+image::diagrams/06_gitops.png[ArgoCD GitOps Sync Flow, align=center, link=self, window=blank]
 === How GitOps Works on OpenShift
 
 OpenShift GitOps uses link:https://argo-cd.readthedocs.io/en/stable/[ArgoCD, window=blank] to implement a continuous reconciliation loop:
@@ -56,19 +55,16 @@ If prompted about a certificate warning, proceed using the advanced options.
 
 Select **Log in via OpenShift**:
 
-image::gitops-argocd-login.png[ArgoCD login page with Log in via OpenShift button]
-
+image::gitops-argocd-login.png[ArgoCD login page with Log in via OpenShift button, link=self, window=blank]
 Enter your admin credentials:
 
 * *Username*: `{openshift_cluster_admin_username}`
 * *Password*: `{openshift_cluster_admin_password}`
 
-image::gitops-openshift-login.png[OpenShift login form]
-
+image::gitops-openshift-login.png[OpenShift login form, link=self, window=blank]
 Authorize access when prompted:
 
-image::gitops-authorize-access.png[OAuth authorize access page]
-
+image::gitops-authorize-access.png[OAuth authorize access page, link=self, window=blank]
 NOTE: You can also open ArgoCD in a separate browser tab - look for the grid icon (nine tiles) in the OpenShift console navigation bar and select **Cluster Argo CD** under OpenShift GitOps.
 
 **Verify from the CLI:**
@@ -141,16 +137,14 @@ EOF
 
 Switch to the ArgoCD UI. You will need to reload the **ArgoCD** tab to see the new application. You may see other applications on the dashboard - these are managed by the platform. To see only your workshop application, use the **PROJECTS** filter on the left sidebar and select **workshop**:
 
-image::gitops-project-filter.png[ArgoCD PROJECTS filter dropdown showing default and workshop options]
-
+image::gitops-project-filter.png[ArgoCD PROJECTS filter dropdown showing default and workshop options, link=self, window=blank]
 You should now see only the `managed-project` application tile. It will show **OutOfSync** because ArgoCD has not applied the resources to the cluster yet.
 
 Click on the tile, then click the **Sync** button in the top toolbar, then click **Synchronize** in the dialog that appears. ArgoCD will apply all four resources from Git to your cluster.
 
 Once the sync completes, the application should show:
 
-image::gitops-dashboard-synced.png[ArgoCD dashboard filtered by workshop project showing managed-project as Healthy and Synced]
-
+image::gitops-dashboard-synced.png[ArgoCD dashboard filtered by workshop project showing managed-project as Healthy and Synced, link=self, window=blank]
 * **Green heart** = Healthy
 * **Green circle with tick** = Synced
 
@@ -158,15 +152,13 @@ image::gitops-dashboard-synced.png[ArgoCD dashboard filtered by workshop project
 
 Click on the `managed-project` tile to open the application detail view. You'll see a **resource tree** showing the relationship between all managed resources:
 
-image::gitops-resource-tree-synced.png[ArgoCD resource tree showing managed-project with four child resources all Synced]
-
+image::gitops-resource-tree-synced.png[ArgoCD resource tree showing managed-project with four child resources all Synced, link=self, window=blank]
 * `managed-project` at the center
 * Branching out to: `default-limits` (LimitRange), `gitops-managed-project` (Namespace), `compute-quota` (ResourceQuota), `deny-from-other-namespaces` (NetworkPolicy)
 
 Each resource node shows its sync and health status with color-coded icons. Click on any resource - for example, the **compute-quota** ResourceQuota - to open a detail panel:
 
-image::gitops-quota-detail.png[ArgoCD detail panel for compute-quota showing Summary and Live Manifest tabs]
-
+image::gitops-quota-detail.png[ArgoCD detail panel for compute-quota showing Summary and Live Manifest tabs, link=self, window=blank]
 This panel shows:
 
 * **Summary** - kind, namespace, creation time, sync status
@@ -183,8 +175,7 @@ Click the **X** in the top-right corner to return to the `managed-project` appli
 
 Click the **Details** button in the top toolbar. This shows the application configuration:
 
-image::gitops-app-details.png[ArgoCD App Details showing project workshop, repo URL, path, and sync status]
-
+image::gitops-app-details.png[ArgoCD App Details showing project workshop, repo URL, path, and sync status, link=self, window=blank]
 * **Project** - `workshop` (our filtered workspace)
 * **Repo URL** - the Git repository ArgoCD is watching
 * **Path** - `support/gitops/cluster-config/` within that repo
@@ -249,18 +240,15 @@ Go back to the ArgoCD UI. The `managed-project` application now shows **OutOfSyn
 
 Click the tile to open the application. In the resource tree, **compute-quota** is highlighted in yellow - that's the resource that drifted:
 
-image::gitops-resource-tree-outofsync.png[ArgoCD resource tree showing OutOfSync status with compute-quota highlighted]
-
+image::gitops-resource-tree-outofsync.png[ArgoCD resource tree showing OutOfSync status with compute-quota highlighted, link=self, window=blank]
 **View the diff:**
 
 Click on the `compute-quota` ResourceQuota in the resource tree. In the detail panel, click the **Diff** tab:
 
-image::gitops-quota-outofsync.png[compute-quota detail showing OutOfSync status]
-
+image::gitops-quota-outofsync.png[compute-quota detail showing OutOfSync status, link=self, window=blank]
 You'll see a side-by-side comparison showing the exact difference:
 
-image::gitops-diff-view.png[ArgoCD diff view showing pods 100 on the left vs pods 20 on the right]
-
+image::gitops-diff-view.png[ArgoCD diff view showing pods 100 on the left vs pods 20 on the right, link=self, window=blank]
 * The live cluster has `pods: "100"` - the manual change
 * The desired state from Git has `pods: "20"` - what it should be
 
@@ -274,14 +262,12 @@ This is the power of GitOps for operations teams - across hundreds of resources,
 
 In the ArgoCD application view, click the **Sync** button in the top toolbar, then click **Synchronize** in the dialog that appears:
 
-image::gitops-sync-dialog.png[ArgoCD sync dialog showing all four resources checked for synchronization]
-
+image::gitops-sync-dialog.png[ArgoCD sync dialog showing all four resources checked for synchronization, link=self, window=blank]
 You can leave all defaults - ArgoCD will apply every resource from Git.
 
 Watch the resource tree - the ResourceQuota node will flash as it updates, then return to green (Synced):
 
-image::gitops-resynced.png[ArgoCD resource tree back to all Synced after resync]
-
+image::gitops-resynced.png[ArgoCD resource tree back to all Synced after resync, link=self, window=blank]
 **Verify the fix:**
 
 [source,bash,role="execute"]
@@ -327,14 +313,12 @@ Output: `20` - ArgoCD automatically detected the drift and reverted it without a
 
 Go back to the ArgoCD dashboard. The `managed-project` application still shows **Synced** and **Healthy** - it briefly went OutOfSync when you made the change, then ArgoCD immediately corrected it:
 
-image::gitops-selfheal-synced.png[ArgoCD dashboard showing managed-project still Synced after self-heal]
-
+image::gitops-selfheal-synced.png[ArgoCD dashboard showing managed-project still Synced after self-heal, link=self, window=blank]
 Click into the application and check the **Last Sync** timestamp - it will show a recent sync that was triggered by self-heal, not by you.
 
 You can also click on `managed-project` at the top of the resource tree and look at the **Events** tab to see the sync history - you'll see ArgoCD detected the drift and automatically resynced.
 
-image::gitops-events-sync-history.png[ArgoCD Events tab showing drift detection and automatic resync]
-
+image::gitops-events-sync-history.png[ArgoCD Events tab showing drift detection and automatic resync, link=self, window=blank]
 This is how production clusters stay compliant. No matter what manual changes someone makes, ArgoCD continuously enforces the configuration defined in Git.
 
 == When to Use GitOps

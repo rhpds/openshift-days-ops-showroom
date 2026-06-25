@@ -49,8 +49,7 @@ Your workshop runs in a split-panel interface with the following panels:
 * **Right panel** - Tabbed workspace with your cluster tools
 * **Draggable divider** - Drag the border between panels to resize
 
-image::showroom-tabs.png[Showroom interface showing tabs for OCP Console, Terminal, RHACS, ArgoCD, and Developer Hub]
-
+image::showroom-tabs.png[Showroom interface showing tabs for OCP Console, Terminal, RHACS, ArgoCD, and Developer Hub, link=self, window=blank]
 [cols="1,3"]
 |===
 |Tab |What it is
@@ -105,16 +104,14 @@ TIP: Highlighted command blocks are **clickable** - they switch to the Terminal 
 
 == Exploring the Platform
 
-image::diagrams/01_platform_architecture.png[OpenShift Platform Architecture, align=center]
-
+image::diagrams/01_platform_architecture.png[OpenShift Platform Architecture, align=center, link=self, window=blank]
 Your cluster is already running with monitoring, a container registry, ingress routing, and a web console - all built in. Let's see what's there.
 
 === Step 1: Access the Administrator Console
 
 The OpenShift Web Console provides a unified view of your entire cluster.
 
-image::ocp-console-overview.png[OpenShift Administrator Console Overview]
-
+image::ocp-console-overview.png[OpenShift Administrator Console Overview, link=self, window=blank]
 You can access the console in two ways:
 
 * **OCP Console tab** - Click the **OCP Console** tab at the top of this workshop. The console is embedded directly in the workshop interface so you can follow along without switching windows.
@@ -141,8 +138,7 @@ In the top-left corner of the console, you'll see a perspective switcher dropdow
 
 Once in the Administrator perspective, you'll see the **Overview** dashboard under **Home → Overview**.
 
-image::ocp-dashboard-overview.png[OpenShift Administrator Dashboard Overview]
-
+image::ocp-dashboard-overview.png[OpenShift Administrator Dashboard Overview, link=self, window=blank]
 **Key sections to notice:**
 
 1. **Cluster Status** - Overall health at a glance
@@ -154,8 +150,7 @@ This single dashboard gives you cluster health, utilisation, inventory, and rece
 
 == Platform Capabilities
 
-image::diagrams/01_control_plane.png[Control Plane Responsibilities, 300, align=center]
-
+image::diagrams/01_control_plane.png[Control Plane Responsibilities, 300, align=center, link=self, window=blank]
 Everything below - monitoring, a container registry, and ingress routing - was running before anyone logged in. Let's prove it.
 
 === Monitoring
@@ -190,8 +185,7 @@ prometheus-operator-bb6c949f9-6rpnl                     2/2     Running   0     
    - Network I/O
    - Filesystem I/O
 
-image::observe-cluster-metrics-dashboard.png[Kubernetes Cluster Metrics Dashboard]
-
+image::observe-cluster-metrics-dashboard.png[Kubernetes Cluster Metrics Dashboard, link=self, window=blank]
 **No configuration required.** This is built-in.
 
 **Query Prometheus (Advanced)**
@@ -212,8 +206,7 @@ NOTE: Look at which namespaces are consuming the most CPU. `openshift-monitoring
 
 All of this was available the moment the cluster came up.
 
-image::prometheus-cpu-by-namespace-query.png[Prometheus Query Results - CPU by Namespace]
-
+image::prometheus-cpu-by-namespace-query.png[Prometheus Query Results - CPU by Namespace, link=self, window=blank]
 === Container Registry
 
 Did anyone set up an image registry? Let's check:
@@ -332,8 +325,7 @@ NOTE: Node names and count vary by deployment. Production clusters typically hav
 
 1. Navigate to **Compute → Nodes**
 +
-image::compute-nodes-menu.png[Compute menu showing Nodes option]
-+
+image::compute-nodes-menu.png[Compute menu showing Nodes option, link=self, window=blank]+
 2. Click on any node
 3. The **Overview** tab immediately shows you:
    - **Status** - shows whether the node is healthy and flags any issues. On this workshop cluster you'll see overcommit warnings for CPU and memory - this means pod **limits** exceed the node's capacity, but that doesn't mean the node is in trouble. Check the **Utilization** section below to see actual usage vs available capacity. If actual usage is well within capacity, the overcommit is fine. You'll also see firing alerts - on a workshop cluster with many operators installed, this is expected.
@@ -345,8 +337,7 @@ However, look at the **Utilization graphs** below - actual CPU and memory usage 
 
 Active alerts, utilization graphs, and per-pod resource usage are all in one console view - no SSH to nodes required.
 
-image::nodes-console-view.png[Nodes Console View]
-
+image::nodes-console-view.png[Nodes Console View, link=self, window=blank]
 === Infrastructure Management
 
 **MachineSets - Automated Infrastructure Scaling**
@@ -371,8 +362,7 @@ In a production cloud deployment, you'd see multiple MachineSets (one per availa
 
 You can see this in the console at **Compute -> MachineSets**:
 
-image::machinesets-console.png[MachineSets view showing worker MachineSet with 0 of 0 machines on compact cluster]
-
+image::machinesets-console.png[MachineSets view showing worker MachineSet with 0 of 0 machines on compact cluster, link=self, window=blank]
 In a production cluster, this view shows the machine count, instance type, CPU, and memory for each MachineSet - and you can scale directly from the console by editing the desired count.
 
 You can also view the machine resources:
@@ -420,15 +410,13 @@ version   4.x       True        False         32m     Cluster version is 4.x
 
 1. Navigate to **Administration → Cluster Settings**
 +
-image::cluster-settings-details.png[Cluster Settings Details Tab]
-+
+image::cluster-settings-details.png[Cluster Settings Details Tab, link=self, window=blank]+
 2. Click **Select a version** button (if available)
 3. See available upgrade paths
 
 NOTE: If your cluster shows **Update status: Up to date**, the **Select a version** button will not appear. This means your cluster is already running the latest available version in its update channel.
 
-image::cluster-upgrade-versions.png[Available Upgrade Versions,width=600]
-
+image::cluster-upgrade-versions.png[Available Upgrade Versions,width=600, link=self, window=blank]
 OpenShift handles upgrades automatically:
 
 - Rolling upgrades of control plane
@@ -461,8 +449,7 @@ Hundreds of operators ready to install - a mix of Red Hat, certified partner, an
 4. Filter by **Type** and select **Operators** to see the full list of available operators
 5. Feel free to click any operator tile to browse its details - this is just for exploration, no need to install anything
 
-image::software-catalog-operators.png[Software Catalog filtered to Operators showing available operator tiles]
-
+image::software-catalog-operators.png[Software Catalog filtered to Operators showing available operator tiles, link=self, window=blank]
 Browse the tiles, click into anything that looks interesting - this is your cluster, explore it.
 
 == What's Next

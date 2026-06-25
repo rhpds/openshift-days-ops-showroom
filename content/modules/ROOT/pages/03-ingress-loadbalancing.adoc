@@ -10,8 +10,7 @@ include::partial$console-access.adoc[]
 
 Your apps are deployed and running - but how does external traffic actually reach them? In this module you'll examine the Ingress Controller, create routes with TLS, and then protect them: rate limiting under load, HTTP-to-HTTPS enforcement, and security headers. You'll prove each one works by testing before and after.
 
-image::diagrams/03_ingress.png[OpenShift Ingress Load Balancer Flow, align=center]
-
+image::diagrams/03_ingress.png[OpenShift Ingress Load Balancer Flow, align=center, link=self, window=blank]
 == Ingress Controller & Load Balancing
 
 The **Ingress Controller** (HAProxy by default, though other ingress controllers can be used) can handle HTTP/S traffic entering the cluster.
@@ -41,8 +40,7 @@ Router pods handle incoming HTTP/HTTPS traffic. On this cluster they run on the 
 
 You can also view these in the **OCP Console** at **Workloads -> Pods**. Toggle **Show default projects** in the project dropdown, then select `openshift-ingress`:
 
-image::ingress-images/ingress-router-pods.png[Router pods in the openshift-ingress namespace]
-
+image::ingress-images/ingress-router-pods.png[Router pods in the openshift-ingress namespace, link=self, window=blank]
 === Check Endpoint Publishing Strategy
 
 [source,bash,role="execute"]
@@ -83,12 +81,10 @@ NOTE: This may take a minute to complete. Only press **Ctrl+C** if it has been r
 
 Now let's examine its networking. In the **OCP Console**, navigate to **Networking -> Routes** (project: `ingress-demo`). You'll see the `test-app` route with its status, clickable URL, and target service:
 
-image::ingress-images/ingress-weathernow-route.png[test-app route in the console]
-
+image::ingress-images/ingress-weathernow-route.png[test-app route in the console, link=self, window=blank]
 Click the route name to see the full details including TLS settings and router information:
 
-image::ingress-images/ingress-route-details.png[test-app route details showing TLS edge termination]
-
+image::ingress-images/ingress-route-details.png[test-app route details showing TLS edge termination, link=self, window=blank]
 === View the Route Configuration
 
 [source,bash,role="execute"]
@@ -162,8 +158,7 @@ Notice different termination types: `edge`, `passthrough`, `reencrypt`.
 
 In the **OCP Console**, navigate to **Networking -> Routes** (select **All Projects**) to see all routes across the cluster:
 
-image::ingress-images/ingress-routes-all.png[All routes across the cluster with TLS termination badges]
-
+image::ingress-images/ingress-routes-all.png[All routes across the cluster with TLS termination badges, link=self, window=blank]
 == Advanced Configuration
 
 === Protect Your Routes
@@ -314,8 +309,7 @@ oc patch ingresscontroller default -n openshift-ingress-operator --type=merge -p
 
 You can view ingress controller health in the console at **Administration -> Cluster Settings -> ClusterOperators**, then click **ingress**:
 
-image::ingress-images/ingress-operator-conditions.png[Ingress operator conditions showing Available, Progressing, Degraded status]
-
+image::ingress-images/ingress-operator-conditions.png[Ingress operator conditions showing Available, Progressing, Degraded status, link=self, window=blank]
 == Cleanup & Summary
 
 [source,bash,role="execute"]

@@ -43,11 +43,9 @@ Now create a VM using the console - the same cloud-style experience your teams g
 . In the OpenShift console, switch to the **Fleet Virtualization** perspective from the top-left dropdown (named **Virtualization** if ACM is not enabled)
 . Click the **Create** dropdown and select **From InstanceType**
 +
-image::virt-create-dropdown.png[Create VirtualMachine dropdown showing From InstanceType option]
-. Verify the **Project** dropdown at the top shows `vm-demo` - if not, search for it and select it now
+image::virt-create-dropdown.png[Create VirtualMachine dropdown showing From InstanceType option, link=self, window=blank]. Verify the **Project** dropdown at the top shows `vm-demo` - if not, search for it and select it now
 +
-image::virt-select-project.png[Project dropdown showing vm-demo search and selection]
-
+image::virt-select-project.png[Project dropdown showing vm-demo search and selection, link=self, window=blank]
 **Step 2: Select Boot Source and InstanceType**
 
 1. At the top of the wizard, select the **Red Hat Enterprise Linux 9** boot source from the volume list
@@ -66,8 +64,7 @@ OpenShift Virtualization provides **InstanceTypes** - predefined compute profile
 |**N** (Network) |Network-intensive workloads
 |===
 
-image::virt-create-wizard.png[VM creation wizard showing InstanceType selection and VM details]
-
+image::virt-create-wizard.png[VM creation wizard showing InstanceType selection and VM details, link=self, window=blank]
 **Step 3: Configure and Create**
 
 IMPORTANT: Name the VM exactly `rhel9-vm` and ensure the project is set to `vm-demo`. The commands in the rest of this module use these names, so different values will cause them to fail.
@@ -81,22 +78,18 @@ In the **VirtualMachine details** section:
 
 The VM details page opens. You'll see the status change from **Provisioning** to **Running** as the VM boots:
 
-image::virt-provisioning.png[VM details page showing Provisioning status]
-
+image::virt-provisioning.png[VM details page showing Provisioning status, link=self, window=blank]
 **Step 4: Access the VM Console**
 
 Once the VM is running, click the **Console** tab. You'll see the VNC console with the VM's boot output:
 
-image::virt-vnc-boot.png[VNC console showing RHEL 9 boot output]
-
+image::virt-vnc-boot.png[VNC console showing RHEL 9 boot output, link=self, window=blank]
 Click **Open web console** to open the VM console in a new window:
 
-image::virt-open-web-console.png[Open web console link]
-
+image::virt-open-web-console.png[Open web console link, link=self, window=blank]
 The **Guest login credentials** are displayed at the top of the console - use these to log in:
 
-image::virt-console-creds.png[VNC console with guest credentials shown at top]
-
+image::virt-console-creds.png[VNC console with guest credentials shown at top, link=self, window=blank]
 You can also retrieve the credentials via CLI:
 
 [source,bash,role="execute"]
@@ -145,8 +138,7 @@ On the VM details page, click the **Metrics** tab to see:
 * Storage IOPS
 * Storage latency
 
-image::virt-metrics-tab.png[VM Metrics tab showing Memory CPU and Storage graphs]
-
+image::virt-metrics-tab.png[VM Metrics tab showing Memory CPU and Storage graphs, link=self, window=blank]
 Or query from CLI - the VM uses resources just like any pod:
 
 [source,bash,role="execute"]
@@ -225,17 +217,14 @@ oc get vmi rhel9-vm -n vm-demo -o jsonpath='Node: {.status.nodeName}' && echo ""
 . Hover over **Migration** to expand the submenu
 . Select **Compute** - this migrates the VM's running state (CPU/memory) to a different node
 +
-image::virt-actions-migrate.png[Actions dropdown showing Migration submenu with Compute and Storage options]
-. In the migration dialog, leave **Automatically selected Node** selected and click **Migrate VirtualMachine**
+image::virt-actions-migrate.png[Actions dropdown showing Migration submenu with Compute and Storage options, link=self, window=blank]. In the migration dialog, leave **Automatically selected Node** selected and click **Migrate VirtualMachine**
 +
-image::virt-migrate-auto-node.png[Migration dialog with Automatically selected Node option]
-
+image::virt-migrate-auto-node.png[Migration dialog with Automatically selected Node option, link=self, window=blank]
 **Step 4: Watch the Migration**
 
 The VM status changes to **Migrating** while the live migration is in progress:
 
-image::virt-migrating-status.png[VM details showing Migrating status]
-
+image::virt-migrating-status.png[VM details showing Migrating status, link=self, window=blank]
 The migration completes quickly - typically within 30 seconds. Once the status returns to **Running**, verify the node changed:
 
 [source,bash,role="execute"]
@@ -253,23 +242,19 @@ Need another copy of a VM - for testing, dev environments, or scaling out? Clone
 
 . On the **rhel9-vm** details page, click **Actions** -> **Clone**
 +
-image::virt-actions-clone.png[Actions dropdown with Clone option highlighted]
-. Change the name to `rhel9-vm-clone`
+image::virt-actions-clone.png[Actions dropdown with Clone option highlighted, link=self, window=blank]. Change the name to `rhel9-vm-clone`
 . Check the **Start VirtualMachine once created** checkbox
 . Click **Clone**
 +
-image::virt-clone-config.png[Clone VirtualMachine dialog with name and configuration]
-
+image::virt-clone-config.png[Clone VirtualMachine dialog with name and configuration, link=self, window=blank]
 **Step 2: Watch the Clone Progress**
 
 The dialog shows the clone progress: **Request sent** -> **In process** -> **Created**:
 
-image::virt-clone-in-progress.png[Clone progress showing In process status]
-
+image::virt-clone-in-progress.png[Clone progress showing In process status, link=self, window=blank]
 Once complete, the console navigates to the clone's details page. You'll see both VMs in the left sidebar:
 
-image::virt-clone-complete.png[Clone complete showing both rhel9-vm and rhel9-vm-clone in the VM list]
-
+image::virt-clone-complete.png[Clone complete showing both rhel9-vm and rhel9-vm-clone in the VM list, link=self, window=blank]
 The clone has its own independent disk - changes to one don't affect the other. This is how you'd create golden images: configure a VM exactly how you want it, then clone it for each environment.
 
 IMPORTANT: Click back to **rhel9-vm** in the left sidebar before continuing. The next steps (snapshot and restore) should be done on the original VM, not the clone.
@@ -282,19 +267,16 @@ Every operations team has been burned by a patch that broke something. Snapshots
 
 . Navigate to **rhel9-vm** (not the clone) and open its details page. Click **Actions** -> **Take snapshot**
 +
-image::virt-actions-snapshot.png[Actions dropdown with Take snapshot option]
-. Leave the default name (`rhel9-vm-snapshot`) and click **Save**
+image::virt-actions-snapshot.png[Actions dropdown with Take snapshot option, link=self, window=blank]. Leave the default name (`rhel9-vm-snapshot`) and click **Save**
 +
-image::virt-snapshot-config.png[Take snapshot dialog with default name and disk selection]
-
+image::virt-snapshot-config.png[Take snapshot dialog with default name and disk selection, link=self, window=blank]
 NOTE: The warning about `cloudinitdisk` not being included is expected - cloud-init only runs on first boot and doesn't need to be captured.
 
 **Step 2: Verify the Snapshot**
 
 Click the **Snapshots** tab. The snapshot shows **Ready** status once complete:
 
-image::virt-snapshot-ready.png[Snapshots tab showing rhel9-vm-snapshot with Ready status]
-
+image::virt-snapshot-ready.png[Snapshots tab showing rhel9-vm-snapshot with Ready status, link=self, window=blank]
 **Step 3: Break Something**
 
 The snapshot is your safety net - let's prove it works by breaking the VM. First, get the VM login credentials:
@@ -331,11 +313,9 @@ Now the VM has changed - a new file exists and the hostname has been modified. L
 . **Stop** the VM - click the **Stop** button (square icon) in the top-right action buttons
 . Once the VM shows **Stopped**, go to the **Snapshots** tab, click the kebab menu (three dots) next to the snapshot, and select **Restore VirtualMachine from snapshot**
 +
-image::virt-snapshot-restore-menu.png[Snapshot kebab menu showing Restore VirtualMachine from snapshot option]
-. Click **Restore** to confirm
+image::virt-snapshot-restore-menu.png[Snapshot kebab menu showing Restore VirtualMachine from snapshot option, link=self, window=blank]. Click **Restore** to confirm
 +
-image::virt-restore-confirmation.png[Restore snapshot confirmation dialog]
-. **Start** the VM again by clicking the **Start** button (play icon)
+image::virt-restore-confirmation.png[Restore snapshot confirmation dialog, link=self, window=blank]. **Start** the VM again by clicking the **Start** button (play icon)
 
 Once the VM is running, get the login credentials again:
 

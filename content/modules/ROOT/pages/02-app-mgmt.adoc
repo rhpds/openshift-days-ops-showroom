@@ -39,8 +39,7 @@ Now deploy the WeatherNow application using the OpenShift Console. WeatherNow is
 
 . In the top-right corner of the console, click the **+** (Add) button and select **Container images**. Under **Select project**, make sure **app-management** is selected:
 +
-image::app-mgmt-deploy-menu.png[Add menu showing Container images option]
-
+image::app-mgmt-deploy-menu.png[Add menu showing Container images option, link=self, window=blank]
 . In the **Deploy Image** form:
 * Select **Image name from external registry** and enter: `quay.io/openshift-workshop-applications/weathernow:latest`
 * Wait for the image to show **Validated**
@@ -48,22 +47,18 @@ image::app-mgmt-deploy-menu.png[Add menu showing Container images option]
 * Set the **Name** to `weathernow`
 * Scroll down and **uncheck** the **Create a route** checkbox. OpenShift can create a route for you automatically, but we want to do it ourselves so you understand how routing works.
 +
-image::app-mgmt-uncheck-route.png[Create a route checkbox unchecked]
-* Click **Create**
+image::app-mgmt-uncheck-route.png[Create a route checkbox unchecked, link=self, window=blank]* Click **Create**
 +
-image::app-mgmt-deploy-image.png[Deploy Image form with weathernow image validated]
-
+image::app-mgmt-deploy-image.png[Deploy Image form with weathernow image validated, link=self, window=blank]
 This creates two resources:
 
 * **Deployment** - defines what container to run and how many replicas
 * **Service** - internal load balancer that routes traffic to the pods
 
-image::diagrams/02_service.png[OpenShift Service Load Balancing, 500, align=center]
-
+image::diagrams/02_service.png[OpenShift Service Load Balancing, 500, align=center, link=self, window=blank]
 You'll be taken to the Topology view. Notice the pod is running and the service is created, but under **Routes** it says "No Routes found for this resource" - the application isn't accessible from outside the cluster yet.
 
-image::app-mgmt-deploy-no-route.png[Topology view showing weathernow with no route]
-
+image::app-mgmt-deploy-no-route.png[Topology view showing weathernow with no route, link=self, window=blank]
 Now switch to the terminal to see the same information via CLI:
 
 [source,bash,role="execute"]
@@ -77,10 +72,8 @@ You should see one pod in `Running` status - the same pod you just saw in the To
 
 Before moving on, get familiar with the two most important diagnostic commands. These work on any pod in any namespace. You can also see this in the console - you should already have the Topology view open from the previous step. Click the workload node, then click the **Resources** tab in the side panel on the right. Click the pod name to open the pod detail view with **Details**, **Events**, and **Logs** tabs. The console log viewer supports real-time streaming, text search, and downloading.
 
-image::app-mgmt-topology-pod-panel.png[Topology side panel showing pod name under Resources tab]
-
-image::app-mgmt-pod-details.png[Pod detail page showing Overview with Events and resource usage]
-
+image::app-mgmt-topology-pod-panel.png[Topology side panel showing pod name under Resources tab, link=self, window=blank]
+image::app-mgmt-pod-details.png[Pod detail page showing Overview with Events and resource usage, link=self, window=blank]
 Get detailed information about a pod - events, node placement, container status:
 
 [source,bash,role="execute"]
@@ -114,8 +107,7 @@ TIP: You can also see this in the console at **Networking > Services** (project:
 
 === Create a Route
 
-image::diagrams/02_route.png[OpenShift Route - Service - Pods, 500, align=center]
-
+image::diagrams/02_route.png[OpenShift Route - Service - Pods, 500, align=center, link=self, window=blank]
 A Route connects an external URL to your service through the OpenShift router (HAProxy-based ingress controller).
 
 [source,bash,role="execute"]
@@ -134,12 +126,10 @@ oc get route weathernow -n app-management
 
 Now go back to **Workloads → Topology** (project: `app-management`) in the console. You'll see the route icon has appeared on the application:
 
-image::app-mgmt-deploy-topology.png[Topology view showing weathernow application with route]
-
+image::app-mgmt-deploy-topology.png[Topology view showing weathernow application with route, link=self, window=blank]
 Click the route URL to open the WeatherNow app in your browser:
 
-image::app-mgmt-weathernow-app.png[WeatherNow application showing weather data]
-
+image::app-mgmt-weathernow-app.png[WeatherNow application showing weather data, link=self, window=blank]
 Your application is now accessible from outside the cluster.
 
 === Scale the Application
@@ -155,8 +145,7 @@ Now switch to the **OCP Console** tab: **Workloads -> Pods** (project: `app-mana
 
 TIP: If you don't see the **Workloads** menu, switch to the **Administrator** perspective using the dropdown in the top left.
 
-image::app-mgmt-scaling-pods.png[Pod list showing 3 weathernow pods after scaling]
-
+image::app-mgmt-scaling-pods.png[Pod list showing 3 weathernow pods after scaling, link=self, window=blank]
 You can also verify via CLI:
 
 [source,bash,role="execute"]
@@ -248,12 +237,10 @@ oc get pods -n app-management
 
 You should see pods showing `0/1 Running` - the container is running, but the readiness probe is failing so OpenShift won't send traffic to them. In the **OCP Console**, go to **Workloads -> Pods** (project: `app-management`):
 
-image::broken-probe-pods.png[Pod list showing 0/1 Running pod with failed readiness probe]
-
+image::broken-probe-pods.png[Pod list showing 0/1 Running pod with failed readiness probe, link=self, window=blank]
 Click the `0/1` pod, then the **Events** tab. You'll see repeated `Readiness probe failed: dial tcp ... connect: connection refused` messages:
 
-image::broken-probe-events.png[Events tab showing readiness probe failure messages]
-
+image::broken-probe-events.png[Events tab showing readiness probe failure messages, link=self, window=blank]
 Check via CLI too:
 
 [source,bash,role="execute"]
@@ -305,12 +292,10 @@ All pods now show `1/1 Running` - probes pass, traffic flows. You just diagnosed
 
 TIP: In the **OCP Console**, navigate to **Workloads -> Deployments**, click the three-dot menu on the `weathernow` deployment, and select **Edit Health Checks**:
 
-image::deployment-actions-menu.png[Deployment actions menu showing Edit Health Checks option]
-
+image::deployment-actions-menu.png[Deployment actions menu showing Edit Health Checks option, link=self, window=blank]
 The form visually shows the difference between liveness, readiness, and startup probes - and lets you configure them without writing JSON patches:
 
-image::edit-health-checks.png[Edit Health Checks form showing configured readiness and liveness probes]
-
+image::edit-health-checks.png[Edit Health Checks form showing configured readiness and liveness probes, link=self, window=blank]
 === Rollback a Bad Deployment
 
 Someone just pushed a bad image update. How do you undo it?
@@ -335,8 +320,7 @@ You'll see multiple revisions. Each time you change the deployment, a new revisi
 
 You can also see this visually in the console. Navigate to **Workloads -> Deployments -> weathernow** and click the **ReplicaSets** tab:
 
-image::app-mgmt-replicasets-history.png[ReplicaSets tab showing deployment revision history with active and scaled-down replicas]
-
+image::app-mgmt-replicasets-history.png[ReplicaSets tab showing deployment revision history with active and scaled-down replicas, link=self, window=blank]
 Each ReplicaSet represents a revision. The active one shows `1 of 1 pods` while previous revisions are scaled to `0 of 0 pods` - OpenShift keeps them so it can roll back instantly.
 
 Roll back to the previous working version:
