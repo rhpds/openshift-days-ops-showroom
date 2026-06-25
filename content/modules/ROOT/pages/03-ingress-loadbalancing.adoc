@@ -343,7 +343,7 @@ echo "Cleanup complete"
 
 **Key operational commands:**
 
-[source,bash]
+[source,bash,role="execute"]
 ----
 # Check ingress controller
 oc get ingresscontroller -n openshift-ingress-operator
