@@ -116,7 +116,7 @@ image::107-create-cluster-networking.png[link=self, window=blank, width=100%, Cr
 image::108-create-cluster-summary-create.png[link=self, window=blank, width=100%, Create Cluster Summary Page]
 
 [start=18]
-. Sit back and watch RHACM do it's thing. You should see the Cluster creation process starting in the UI.
+. Sit back and watch RHACM do its thing. You should see the Cluster creation process starting in the UI.
 +
 image::03-cluster-creation.png[link=self, window=blank, width=100%, View New Cluster]
 +
@@ -134,7 +134,7 @@ By the end of this exercise, you will:
 * Provision a new Virtual Machine using the RHACM Creation Wizard.
 * Perform Day 2 operations (Stop, Start, Migrate) directly from the multi-cluster view.
 
-NOTE: You might noticed that we have already deployed a Virtual Machine for you called *rhel-webserver* we will leverage this machine in later exercises do not delete or power off as it will affect the other modules. 
+NOTE: You might have noticed that we have already deployed a Virtual Machine for you called *rhel-webserver* we will leverage this machine in later exercises do not delete or power off as it will affect the other modules. 
 
 === Deploy Virtual Machines Using the RHACM Console
 

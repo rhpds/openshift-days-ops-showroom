@@ -340,7 +340,7 @@ ERROR: Failed to open apk database: Permission denied
 [demo-user@bastion ~]$
 ----
 +
-NOTE: It's normal to see *Unable to lock database: Permission denied*. This is becaus OpenShift is blocking the sudo behavior of the pod thanks to pod security policies.
+NOTE: It's normal to see *Unable to lock database: Permission denied*. This is because OpenShift is blocking the sudo behavior of the pod thanks to pod security policies.
 +
 . Examine the oc get events tmux pane (The pane on the bottom), and note that it shows that RHACS detected the package manager invocation and deleted the pod:
 +
