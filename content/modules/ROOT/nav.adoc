@@ -76,4 +76,4 @@ ifeval::["{module_enable_ztwim}" == "true"]
 endif::[]
 
 // Conclusion (always shown)
-* xref:99-conclusion.adoc[Workshop Complete]
+* xref:99-conclusion.adoc[Wrap Up]
