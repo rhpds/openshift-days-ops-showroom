@@ -75,3 +75,5 @@ ifeval::["{module_enable_ztwim}" == "true"]
 * xref:17-ztwim.adoc[Zero-Trust Workload Identity Manager]
 endif::[]
 
+// Conclusion (always shown)
+* xref:99-conclusion.adoc[Workshop Complete]
