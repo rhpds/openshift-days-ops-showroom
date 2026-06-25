@@ -55,7 +55,7 @@ oc get secret azure-api-keys -n openshift-lightspeed
 
 Now create the OLSConfig to enable OpenShift Lightspeed:
 
-[source,bash,role=execute]
+[source,bash,subs="attributes",role=execute]
 ----
 oc apply -f - <<EOF
 apiVersion: ols.openshift.io/v1alpha1
