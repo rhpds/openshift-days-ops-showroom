@@ -297,6 +297,7 @@ virtctl console rhel9-vm -n vm-demo
 
 After connecting, press **Enter** to get the login prompt. Log in with the credentials above, then run these commands inside the VM to make changes we can verify after restore:
 
+[source,bash]
 ----
 touch /home/rhel/important-data.txt
 cat /etc/hostname
@@ -337,6 +338,7 @@ NOTE: You may see boot output (kernel messages, systemd services) scrolling. Wai
 
 Log in with the credentials, then verify the restore worked:
 
+[source,bash]
 ----
 ls /home/rhel/important-data.txt
 cat /etc/hostname
