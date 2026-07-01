@@ -7,6 +7,8 @@
 **Format:** Hands-on lab +
 **Audience:** Security Engineers, Platform Engineers, IT Operations
 
+include::partial$console-access.adoc[]
+
 Your payment-processing service needs to reach PostgreSQL. The database team refuses to hand out another shared password in a Kubernetes `Secret`—and they're right to push back. Static credentials in Git, images, or long-lived Secrets are exactly what attackers hunt for after a breach.
 
 In the previous module you centralized secrets with Vault. Here you go one step further: **no database password at all**. The **Zero Trust Workload Identity Manager (ZTWIM)** issues short-lived X.509 certificates bound to each workload's Kubernetes identity. PostgreSQL trusts those certificates instead of a password vault entry.
