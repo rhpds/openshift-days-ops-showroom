@@ -6,6 +6,10 @@
 **Format:** Hands-on lab +
 **Audience:** Security Engineers, Platform Engineers, IT Operations
 
+include::partial$console-access.adoc[]
+
+NOTE: The same admin credentials are used for the RHACS console.
+
 == Learning Objectives
 
 By the end of this module, you will:
@@ -70,7 +74,7 @@ First, let's add a configuration to the local cluster so you can see the differe
 Let's focus on the *ocp4-e8* compliance standard and see how we can pass the `ocp4-e8-ocp-allowed-registries` control. Follow the steps below to pass the check for the production cluster.
 
 .Procedure
-. Copy and paste the following into the *Terminal* tab on the right.
+. Click the command below to execute it.
 +
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
@@ -175,7 +179,7 @@ image::acs-security-03.png[Scan schedule menu with Run scan option, link=self, w
 +
 image::acs-security-04.png[Compliance scan running, link=self, window=blank, width=100%]
 +
-NOTE: The scan may take a few minutes to complete.
+NOTE: The scan may take a few minutes to complete. If the scan status doesn't update, click on another section in the RHACS console and come back to refresh the view.
 +
 . Head over to the OpenShift coverage section where you can view all of the details from the scan. Click on the *Compliance* → *OpenShift Coverage* → *E8* tab to view the results.
 +
@@ -204,6 +208,7 @@ This view shows you the details of the check for the production cluster. As you 
 ====
 +
 . And you can run the verification step to ensure the check is passing.
++
 [source,sh,subs="attributes",role=execute]
 ----
 oc get image.config.openshift.io cluster -o jsonpath='{.spec.registrySources.allowedRegistries}'
