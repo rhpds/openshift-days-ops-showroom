@@ -109,11 +109,11 @@ TIP: Highlighted command blocks are **clickable** - they switch to the Terminal 
 image::diagrams/01_platform_architecture.png[OpenShift Platform Architecture, align=center, link=self, window=blank]
 Your cluster is already running with monitoring, a container registry, ingress routing, and a web console - all built in. Let's see what's there.
 
-=== Step 1: Access the Administrator Console
+=== Step 1: Access the Core Platform Console
 
 The OpenShift Web Console provides a unified view of your entire cluster.
 
-image::ocp-console-overview.png[OpenShift Administrator Console Overview, link=self, window=blank]
+image::ocp-console-overview.png[OpenShift Core Platform Console Overview, link=self, window=blank]
 You can access the console in two ways:
 
 * **OCP Console tab** - Click the **OCP Console** tab at the top of this workshop. The console is embedded directly in the workshop interface so you can follow along without switching windows.
@@ -132,15 +132,15 @@ Administrator login credentials:
 | *Password:* | {openshift_cluster_admin_password}
 |===
 
-=== Step 2: Switch to Administrator Perspective
+=== Step 2: Switch to Core Platform Perspective
 
-In the top-left corner of the console, you'll see a perspective switcher dropdown. Click the dropdown and select **Administrator**.
+In the top-left corner of the console, you'll see a perspective switcher dropdown. Click the dropdown and select **Core Platform**.
 
 === Step 3: Dashboard Overview
 
-Once in the Administrator perspective, you'll see the **Overview** dashboard under **Home → Overview**.
+Once in the Core Platform perspective, you'll see the **Overview** dashboard under **Home -> Overview**.
 
-image::ocp-dashboard-overview.png[OpenShift Administrator Dashboard Overview, link=self, window=blank]
+image::ocp-dashboard-overview.png[OpenShift Core Platform Dashboard Overview, link=self, window=blank]
 **Key sections to notice:**
 
 1. **Cluster Status** - Overall health at a glance

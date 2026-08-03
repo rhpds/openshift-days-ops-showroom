@@ -144,7 +144,7 @@ oc scale deployment weathernow --replicas=3
 
 Now switch to the **OCP Console** tab: **Workloads -> Pods** (project: `app-management`). Watch the new pods appear in real-time with status transitions (Pending → ContainerCreating → Running).
 
-TIP: If you don't see the **Workloads** menu, switch to the **Administrator** perspective using the dropdown in the top left.
+TIP: If you don't see the **Workloads** menu, switch to the **Core Platform** perspective using the dropdown in the top left.
 
 image::app-mgmt-scaling-pods.png[Pod list showing 3 weathernow pods after scaling, link=self, window=blank]
 You can also verify via CLI:
@@ -340,10 +340,10 @@ Verify the original image is restored:
 oc get deployment weathernow -n app-management -o jsonpath='{.spec.template.spec.containers[0].image}'
 ----
 
-You should see the original WeatherNow image (shown as a digest since OpenShift resolves image tags via the ImageStream):
+You should see the WeatherNow image resolved through the internal registry (OpenShift pulls the external image and stores it locally via the ImageStream):
 
 ----
-quay.io/openshift-workshop-applications/weathernow@sha256:362b6db3...
+image-registry.openshift-image-registry.svc:5000/app-management/weathernow@sha256:...
 ----
 
 [source,bash,role="execute"]

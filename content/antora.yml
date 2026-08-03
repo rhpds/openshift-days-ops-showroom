@@ -15,7 +15,7 @@ asciidoc:
     ssh_command: ''
     ols_azure_url: 'https://llm-gpt4-lightspeed.openai.azure.com/'
     page-links:
-    - url: https://docs.redhat.com/en/documentation/openshift_container_platform/4.20
+    - url: https://docs.redhat.com/en/documentation/openshift_container_platform/4.22
       text: OpenShift Docs
     - url: https://access.redhat.com
       text: Red Hat Customer Portal

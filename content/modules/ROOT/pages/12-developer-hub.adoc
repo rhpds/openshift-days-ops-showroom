@@ -121,7 +121,7 @@ You've seen what RHDH looks like. Now figure out how it's wired together - when 
 
 === Step 6: Check RHDH in the OpenShift Console
 
-Switch to the **OCP Console** tab. Make sure the **Administrator** perspective is selected, then go to **Workloads** -> **Pods** and select the **backstage** project from the dropdown.
+Switch to the **OCP Console** tab. Make sure the **Core Platform** perspective is selected, then go to **Workloads** -> **Pods** and select the **backstage** project from the dropdown.
 
 You'll see two pods:
 
@@ -363,7 +363,7 @@ oc patch backstage developer-hub -n backstage --type=merge -p '{"spec":{"monitor
 
 This doesn't restart the pod - it just tells the operator to create a ServiceMonitor so Prometheus starts scraping the metrics endpoint that RHDH already exposes.
 
-NOTE: This requires user workload monitoring to be enabled on the cluster (`enableUserWorkload: true` in `cluster-monitoring-config`). It's pre-configured on your workshop cluster. On your own cluster, see link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/monitoring/enabling-monitoring-for-user-defined-projects[Enabling monitoring for user-defined projects, window=blank].
+NOTE: This requires user workload monitoring to be enabled on the cluster (`enableUserWorkload: true` in `cluster-monitoring-config`). It's pre-configured on your workshop cluster. On your own cluster, see link:https://docs.redhat.com/en/documentation/monitoring_stack_for_red_hat_openshift/4.22/html/configuring_user_workload_monitoring/index[Enabling monitoring for user-defined projects, window=blank].
 
 Verify the ServiceMonitor was created:
 

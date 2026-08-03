@@ -14,7 +14,7 @@ In this module you'll lock things down: implement NetworkPolicy to isolate pods,
 
 == OpenShift Networking
 
-OpenShift uses **OVN-Kubernetes** as its network plugin (the only supported option in 4.20). It handles pod networking, network isolation via NetworkPolicy, egress traffic control, and optional IPsec encryption.
+OpenShift uses **OVN-Kubernetes** as its network plugin (the default network plugin). It handles pod networking, network isolation via NetworkPolicy, egress traffic control, and optional IPsec encryption.
 
 === View Cluster Network Configuration
 
@@ -251,7 +251,7 @@ Now prove it works. Try resolving DNS via the blocked external server:
 
 [source,bash,role="execute"]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/04-network-security/test-dns.sh)
+bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/04-network-security/test-dns.sh)
 ----
 
 Expected: `DNS to 8.8.8.8: BLOCKED (timed out)`. The ANP blocked outbound traffic to 8.8.8.8.
@@ -265,7 +265,7 @@ oc delete adminnetworkpolicy cluster-deny-external-dns
 
 [source,bash,role="execute"]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/04-network-security/test-dns.sh)
+bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/04-network-security/test-dns.sh)
 ----
 
 Expected: `DNS to 8.8.8.8: ALLOWED`. The ANP is gone, traffic flows again.
@@ -358,7 +358,7 @@ EOF
 
 This allows only traffic to `www.redhat.com` and `quay.io`, blocking everything else.
 
-NOTE: Wildcard DNS names (e.g., `*.redhat.com`) are a Technology Preview feature in OpenShift 4.20 and may not be enabled on all clusters. Use specific hostnames for production configurations.
+NOTE: Wildcard DNS names (e.g., `*.redhat.com`) are a Technology Preview feature in OpenShift 4.22 and may not be enabled on all clusters. Use specific hostnames for production configurations.
 
 **EgressFirewall Use Cases**
 
@@ -543,7 +543,7 @@ oc get dns cluster -o yaml
 
 === Additional Resources
 
-* **OVN-Kubernetes:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/ovn-kubernetes_network_plugin/index[OVN-Kubernetes network plugin, window=blank]
-* **NetworkPolicy:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/networking/network-policy[About network policy, window=blank]
-* **EgressFirewall:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/networking/configuring-egress-firewall-ovn[Configuring an egress firewall for a project, window=blank]
-* **EgressIP:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/networking/configuring-egress-ips-ovn[Configuring an egress IP address, window=blank]
+* **OVN-Kubernetes:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/ovn-kubernetes_network_plugin/index[OVN-Kubernetes network plugin, window=blank]
+* **NetworkPolicy:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/network_security/network-policy[About network policy, window=blank]
+* **EgressFirewall:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/network_security/egress-firewall[Configuring an egress firewall for a project, window=blank]
+* **EgressIP:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/ovn-kubernetes_network_plugin/configuring-egress-ips-ovn[Configuring an egress IP address, window=blank]

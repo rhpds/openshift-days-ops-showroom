@@ -22,7 +22,7 @@ oc get csv -n openshift-cnv | grep kubevirt
 
 Expected output shows `Succeeded`:
 ----
-kubevirt-hyperconverged-operator.v4.20.x   OpenShift Virtualization   4.20.x   Succeeded
+kubevirt-hyperconverged-operator.v4.x.x   OpenShift Virtualization   4.x.x   Succeeded
 ----
 
 == Create & Explore a VM
@@ -196,7 +196,7 @@ Live migration requires compatible CPU features on the source and target nodes. 
 
 [source,bash,role="execute"]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/11-virtualization/prepare-migration.sh)
+bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/11-virtualization/prepare-migration.sh)
 ----
 
 NOTE: This may take a minute if the VM needs to be moved to a different node. Wait for the `Ready - Node:` output before continuing.
@@ -403,7 +403,7 @@ echo "Cleanup running in background - you can continue to the next module"
 
 === Additional Resources
 
-* **OpenShift Virtualization:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/index[Virtualization documentation, window=blank]
-* **virtctl Reference:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/virt-using-the-cli-tools#virt-virtctl-commands_virt-using-the-cli-tools[virtctl commands, window=blank]
-* **Live Migration:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/live-migration[Live migration documentation, window=blank]
-* **VM Snapshots:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/backup-restore[Backup and restore documentation, window=blank]
+* **OpenShift Virtualization:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/index[Virtualization documentation, window=blank]
+* **virtctl Reference:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/getting-started#virt-using-the-cli-tools[virtctl commands, window=blank]
+* **Live Migration:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/live-migration[Live migration documentation, window=blank]
+* **VM Snapshots:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/backup-and-restore[Backup and restore documentation, window=blank]

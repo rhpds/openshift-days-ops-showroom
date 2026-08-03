@@ -26,7 +26,7 @@ The same concepts apply to Microsoft Entra ID, Okta, Google Workspace, and any O
 
 [source,bash,role="execute"]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/08-oidc-authentication/install-rhbk-operator.sh)
+bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/08-oidc-authentication/install-rhbk-operator.sh)
 ----
 
 NOTE: This takes a minute or two while the operator installs and the CRDs register. Please wait for it to complete - only press **Ctrl+C** if it has been running for more than 5 minutes.
@@ -168,7 +168,7 @@ You've seen how users and groups work in the Keycloak UI. Rather than repeating 
 
 [source,bash,role="execute"]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/08-oidc-authentication/setup-keycloak-oidc.sh)
+bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/08-oidc-authentication/setup-keycloak-oidc.sh)
 ----
 
 TIP: In production, you'd use a Keycloak realm export or the Keycloak Operator's `KeycloakRealmImport` CR to automate this entire setup declaratively.
@@ -183,7 +183,7 @@ The Keycloak setup script already created the `rhbk-client-secret` in `openshift
 
 [source,bash,role="execute"]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/08-oidc-authentication/configure-oauth-oidc.sh)
+bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/08-oidc-authentication/configure-oauth-oidc.sh)
 ----
 
 The key line is `claims.groups: [groups]` - this tells OpenShift to read the `groups` claim from the ID token and create OpenShift groups from it. This is why the script added the groups mapper to the OIDC client.
@@ -320,7 +320,7 @@ oc login -u {openshift_cluster_admin_username} -p {openshift_cluster_admin_passw
 
 [source,bash,role="execute"]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/cleanup-scripts/cleanup-oidc.sh)
+bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/cleanup-scripts/cleanup-oidc.sh)
 ----
 
 === Summary
@@ -342,7 +342,7 @@ Both methods are valid - choose based on your organization's identity infrastruc
 
 === Additional Resources
 
-* **OpenID Connect Configuration:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/configuring-oidc-identity-provider[Configuring an OpenID Connect identity provider, window=blank]
+* **OpenID Connect Configuration:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/authentication_and_authorization/configuring-identity-providers#configuring-oidc-identity-provider[Configuring an OpenID Connect identity provider, window=blank]
 * **Red Hat build of Keycloak:** link:https://docs.redhat.com/en/documentation/red_hat_build_of_keycloak/[RHBK Documentation, window=blank]
 * **RHBK Operator:** link:https://docs.redhat.com/en/documentation/red_hat_build_of_keycloak/26.0/html/operator_guide/index[RHBK Operator Guide, window=blank]
-* **RBAC Documentation:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/using-rbac[Using RBAC, window=blank]
+* **RBAC Documentation:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/authentication_and_authorization/using-rbac[Using RBAC, window=blank]
