@@ -437,6 +437,11 @@ image::histogram.png[Log histogram, link=self, window=blank]
 It may take 1-2 minutes for logs to start appearing after the collector pods are running. If you see "No datapoints found", wait a moment and refresh.
 ====
 
+[TIP]
+====
+If the severity histogram stops showing colour-coded levels after switching between log types, refresh the page (F5 or Ctrl+R) to restore it.
+====
+
 == OpenTelemetry for Distributed Tracing
 
 Metrics tell you *what* is happening. Logs tell you *why*. **Traces** tell you *where* - when a request crosses multiple microservices, traces show the exact path and timing across every service. If a user reports "checkout is slow", a trace shows you: frontend (2ms) → API gateway (5ms) → inventory service (800ms) → payment (3ms) - so you instantly see inventory is the bottleneck.
