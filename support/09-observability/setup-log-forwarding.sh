@@ -11,10 +11,11 @@ spec:
   collector:
     resources:
       limits:
-        memory: 8Gi                  # default 2Gi is too low for busy clusters
+        cpu: "1"
+        memory: 4Gi
       requests:
-        cpu: 500m
-        memory: 256Mi
+        cpu: "1"
+        memory: 4Gi                    # Guaranteed QoS prevents OOM killer targeting collectors
   serviceAccount:
     name: collector
   outputs:
@@ -23,9 +24,9 @@ spec:
     lokiStack:
       authentication:
         token:
-          from: serviceAccount       # authenticates to Loki using the SA token
+          from: serviceAccount         # authenticates to Loki using the SA token
       target:
-        name: logging-loki           # the LokiStack we created above
+        name: logging-loki             # the LokiStack we created above
         namespace: openshift-logging
     tls:
       ca:
@@ -34,9 +35,9 @@ spec:
   pipelines:
   - name: default-logstore
     inputRefs:
-    - application                    # logs from user workloads
-    - infrastructure                 # logs from OpenShift components
-    - audit                          # Kubernetes API audit logs
+    - application                      # logs from user workloads
+    - infrastructure                   # logs from OpenShift components
+    - audit                            # Kubernetes API audit logs
     outputRefs:
     - default-lokistack
 EOF
