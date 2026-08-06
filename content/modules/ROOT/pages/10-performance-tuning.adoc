@@ -232,16 +232,16 @@ Open a second terminal or run this in the background:
 
 [source,bash,role="execute"]
 ----
-oc run load-generator --image=registry.access.redhat.com/ubi9/ubi-minimal --restart=Never -- /bin/sh -c "while true; do curl -s -o /dev/null http://demo-app:8080; done"
+oc run load-generator --image=registry.access.redhat.com/ubi9/ubi-minimal --restart=Never -- /bin/sh -c "while true; do for i in 1 2 3 4 5; do curl -s -o /dev/null http://demo-app:8080 & done; wait; done"
 ----
 
 === Watch the Autoscaling
 
 While the load generator runs, navigate to **Workloads -> Pods** (project: `performance-demo`) in the console and watch new pods appear as the HPA scales up - this is the autoscaler in action.
 
-Then navigate to **Observe -> Dashboards**, select **Kubernetes / Compute Resources / Namespace (Pods)** and choose project `performance-demo`. You'll see the load distributed across multiple pods in the **CPU Quota** table - each demo-app pod using ~40-50% CPU, with the `load-generator` pod consuming the most. The **CPU Utilisation (from requests)** percentage at the top will be well over 100% because total usage exceeds what was originally requested for a single pod.
+Then navigate to **Observe -> Dashboards**, select **Kubernetes / Compute Resources / Namespace (Pods)** and choose project `performance-demo`. You'll see the load distributed across multiple pods in the **CPU Quota** table - the `load-generator` pod consuming the most CPU, with multiple demo-app replicas sharing the workload. The **CPU Utilisation (from requests)** percentage at the top will be well over 100% because total usage exceeds what was originally requested.
 
-image::perf-hpa-pods-scaling.png[Pod list showing multiple demo-app pods after HPA scale-up, link=self, window=blank]
+image::perf-hpa-pods-scaling.png[Namespace dashboard showing CPU Quota table with load-generator and demo-app pods, link=self, window=blank]
 You can also watch via CLI:
 
 [source,bash,role="execute"]
