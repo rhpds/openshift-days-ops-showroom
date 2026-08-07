@@ -73,8 +73,9 @@ This is what replaces the _"who owns this workload?"_ question. Every service ha
 
 === Step 3: Use the Catalog as an Ops Tool
 
-The catalog isn't just a list - it's a searchable, filterable inventory. Try using the filters on the left sidebar. If you don't see the filter options, click the filter icon or expand your browser window wider.
+The catalog isn't just a list - it's a searchable, filterable inventory. Click the **Filters** button to expand the filter sidebar.
 
+image::rhdh-catalog-filters.png[Filters button highlighted above the catalog list, link=self, window=blank]
 * **Owner** dropdown - select `payments-team`. The catalog narrows to just their service. _"The security team needs a list of everything the payments team runs."_ Done in two clicks.
 
 image::rhdh-catalog-filtered-payments.png[Catalog filtered by payments-team showing PCI-tagged service, link=self, window=blank]
@@ -198,9 +199,8 @@ One of the biggest values of RHDH for an ops team is that it handles requests yo
 In the **Developer Hub** tab, click **Home** and then scroll down on the Home page to **Explore Templates**. You'll see the **Deploy a New Service** template - this was built by the platform team to let developers provision their own namespaces following approved patterns.
 
 image::rhdh-explore-templates.png[Explore Templates section on the home page, link=self, window=blank]
-Click **Deploy a New Service**, then click **Launch Template** to open the form.
+Click **Deploy a New Service** to open the form.
 
-image::rhdh-template-launch.png[Template overview page with Launch Template button, link=self, window=blank]
 Fill in:
 
 * **Service Name:** `order-tracker`

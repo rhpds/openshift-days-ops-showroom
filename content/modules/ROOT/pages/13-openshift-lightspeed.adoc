@@ -208,7 +208,7 @@ Now let's use OpenShift Lightspeed to help diagnose the issue. For troubleshooti
 
 In the OpenShift web console, navigate to *Workloads* → *Pods* and make sure you are in the `lightspeed-demo` namespace. You'll find the pod that OpenShift Lightspeed listed before. Click on `broken-pod` to view the resource details.
 
-Now, in the chat window, click on the *clip* icon next to the typing bar and you will see a menu that allows you to attach different components. Select *Full YAML file*:
+Now, in the chat window, click the *+* button next to the typing bar and you will see a menu that allows you to attach different components. Select *Full YAML file*:
 
 image::ols-attachments.png[OpenShift Lightspeed attachments menu, link=self, window=blank]
 Once attached, try asking:
