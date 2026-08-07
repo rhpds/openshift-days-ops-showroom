@@ -39,7 +39,7 @@ OpenShift GitOps uses link:https://argo-cd.readthedocs.io/en/stable/[ArgoCD, win
 
 The result: Git becomes the single source of truth. Every change is tracked, auditable, and reversible.
 
-For more details, see link:https://docs.redhat.com/en/documentation/red_hat_openshift_gitops/1.19/html/understanding_openshift_gitops/index[Understanding OpenShift GitOps, window=blank].
+For more details, see link:https://docs.redhat.com/en/documentation/red_hat_openshift_gitops/1.21/html/understanding_openshift_gitops/index[Understanding OpenShift GitOps, window=blank].
 
 == Deploy with ArgoCD
 
@@ -330,7 +330,7 @@ GitOps is most valuable for:
 * **Disaster recovery** - rebuild a cluster's entire configuration by pointing ArgoCD at the Git repo
 * **Preventing configuration drift** - self-heal ensures manual changes don't persist
 
-For more information, see link:https://docs.redhat.com/en/documentation/red_hat_openshift_gitops/1.19/html/understanding_openshift_gitops/index[Understanding OpenShift GitOps, window=blank].
+For more information, see link:https://docs.redhat.com/en/documentation/red_hat_openshift_gitops/1.21/html/understanding_openshift_gitops/index[Understanding OpenShift GitOps, window=blank].
 
 == Cleanup & Summary
 

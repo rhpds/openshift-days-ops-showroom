@@ -22,7 +22,7 @@ oc get csv -n openshift-cnv | grep kubevirt
 
 Expected output shows `Succeeded`:
 ----
-kubevirt-hyperconverged-operator.v4.20.x   OpenShift Virtualization   4.20.x   Succeeded
+kubevirt-hyperconverged-operator.v4.x.x   OpenShift Virtualization   4.x.x   Succeeded
 ----
 
 == Create & Explore a VM
@@ -41,41 +41,67 @@ Now create a VM using the console - the same cloud-style experience your teams g
 **Step 1: Open the Create Wizard**
 
 . In the OpenShift console, switch to the **Fleet Virtualization** perspective from the top-left dropdown (named **Virtualization** if ACM is not enabled)
-. Click the **Create** dropdown and select **From InstanceType**
+. Navigate to **VirtualMachines** in the left sidebar
+. Click the **Create** button
 +
-image::virt-create-dropdown.png[Create VirtualMachine dropdown showing From InstanceType option, link=self, window=blank]
-. Verify the **Project** dropdown at the top shows `vm-demo` - if not, search for it and select it now
+The Create VirtualMachine wizard opens with a stepped workflow. Select **Custom configuration (default)** as the creation method.
 +
-image::virt-select-project.png[Project dropdown showing vm-demo search and selection, link=self, window=blank]
-**Step 2: Select Boot Source and InstanceType**
+image::virt-create-wizard-method.png[Create VirtualMachine wizard showing Custom configuration and Create from Template options, link=self, window=blank]
 
-1. At the top of the wizard, select the **Red Hat Enterprise Linux 9** boot source from the volume list
-2. Under **Select InstanceType**, choose **Red Hat provided** -> **General Purpose** -> **medium: 1 CPUs, 4 GiB Memory**
+IMPORTANT: Name the VM exactly `rhel9-vm` and ensure the project is set to `vm-demo`. The commands in the rest of this module use these names, so different values will cause them to fail.
 
+. Enter `rhel9-vm` as the **Name**
+. Verify the **Location** shows `Project vm-demo` - if not, click the edit icon to change it
+. Click **Next**
+
+**Step 2: Select Guest OS**
+
+. Select **RHEL** as the guest operating system
+. From the **Guest operating system type** dropdown, select **Red Hat Enterprise Linux 9**
+. Click **Next**
++
+image::virt-guest-os.png[Guest OS selection showing RHEL Microsoft Windows and Other Linux options, link=self, window=blank]
+
+**Step 3: Select Boot Source**
+
+. Select the **rhel9** volume from the list
+. Click **Next**
++
+image::virt-boot-source.png[Boot source selection showing rhel9 volume, link=self, window=blank]
+
+**Step 4: Select Compute Resources**
+
+Under the **Red Hat provided** tab, select **General Purpose (U series)**, then pick a size (e.g. **medium: 1 CPUs, 4 GiB Memory**).
+
+image::virt-compute-resources.png[Compute resources selection showing Red Hat provided InstanceType series, link=self, window=blank]
 OpenShift Virtualization provides **InstanceTypes** - predefined compute profiles similar to cloud instance families:
 
 [cols="1,2"]
 |===
 |Series |Use case
 
-|**U** (Universal) |General-purpose workloads
+|**U** (General Purpose) |General-purpose workloads
 |**O** (Overcommitted) |Dev/test with CPU overcommit
-|**CX** (Compute) |CPU-intensive workloads
-|**M** (Memory) |Memory-intensive (databases, caching)
+|**CX** (Compute Exclusive) |CPU-intensive workloads
+|**D** (Dedicated vCPU) |Workloads requiring dedicated CPU pinning
+|**M** (Memory Intensive) |Memory-intensive (databases, caching)
 |**N** (Network) |Network-intensive workloads
+|**RT** (Realtime) |Latency-sensitive realtime workloads
 |===
 
-image::virt-create-wizard.png[VM creation wizard showing InstanceType selection and VM details, link=self, window=blank]
-**Step 3: Configure and Create**
+. Click **Next**
 
-IMPORTANT: Name the VM exactly `rhel9-vm` and ensure the project is set to `vm-demo`. The commands in the rest of this module use these names, so different values will cause them to fail.
+**Step 5: Customization**
 
-In the **VirtualMachine details** section:
+. Leave defaults and click **Next**
 
-1. Change the **Name** to `rhel9-vm`
-2. Leave defaults: **30 GiB** disk, default storage class
-3. Leave **Start this VirtualMachine after creation** checked
-4. Click **Create VirtualMachine**
+**Step 6: Review and Create**
+
+. Review the VM configuration - you should see Name: `rhel9-vm`, Project: `vm-demo`
+. Leave **Start this VirtualMachine after creation** checked
+. Click **Create VirtualMachine**
++
+image::virt-review-create.png[Review and create step showing VM details and Start checkbox, link=self, window=blank]
 
 The VM details page opens. You'll see the status change from **Provisioning** to **Running** as the VM boots:
 
@@ -196,7 +222,7 @@ Live migration requires compatible CPU features on the source and target nodes. 
 
 [source,bash,role="execute"]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/11-virtualization/prepare-migration.sh)
+bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/11-virtualization/prepare-migration.sh)
 ----
 
 NOTE: This may take a minute if the VM needs to be moved to a different node. Wait for the `Ready - Node:` output before continuing.
@@ -250,11 +276,8 @@ image::virt-actions-clone.png[Actions dropdown with Clone option highlighted, li
 . Click **Clone**
 +
 image::virt-clone-config.png[Clone VirtualMachine dialog with name and configuration, link=self, window=blank]
-**Step 2: Watch the Clone Progress**
+**Step 2: Verify the Clone**
 
-The dialog shows the clone progress: **Request sent** -> **In process** -> **Created**:
-
-image::virt-clone-in-progress.png[Clone progress showing In process status, link=self, window=blank]
 Once complete, the console navigates to the clone's details page. You'll see both VMs in the left sidebar:
 
 image::virt-clone-complete.png[Clone complete showing both rhel9-vm and rhel9-vm-clone in the VM list, link=self, window=blank]
@@ -278,7 +301,7 @@ NOTE: The warning about `cloudinitdisk` not being included is expected - cloud-i
 
 **Step 2: Verify the Snapshot**
 
-Click the **Snapshots** tab. The snapshot shows **Ready** status once complete:
+Click the **Snapshots** tab. The snapshot shows **Succeeded** status once complete:
 
 image::virt-snapshot-ready.png[Snapshots tab showing rhel9-vm-snapshot with Ready status, link=self, window=blank]
 **Step 3: Break Something**
@@ -403,7 +426,7 @@ echo "Cleanup running in background - you can continue to the next module"
 
 === Additional Resources
 
-* **OpenShift Virtualization:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/index[Virtualization documentation, window=blank]
-* **virtctl Reference:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/virt-using-the-cli-tools#virt-virtctl-commands_virt-using-the-cli-tools[virtctl commands, window=blank]
-* **Live Migration:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/live-migration[Live migration documentation, window=blank]
-* **VM Snapshots:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/virtualization/backup-restore[Backup and restore documentation, window=blank]
+* **OpenShift Virtualization:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/index[Virtualization documentation, window=blank]
+* **virtctl Reference:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/getting-started#virt-using-the-cli-tools[virtctl commands, window=blank]
+* **Live Migration:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/live-migration[Live migration documentation, window=blank]
+* **VM Snapshots:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/virtualization/backup-and-restore[Backup and restore documentation, window=blank]
