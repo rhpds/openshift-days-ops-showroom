@@ -652,7 +652,7 @@ oc get tempomonolithic -n tracing-system
 
 === Additional Resources
 
-* **OpenShift Monitoring:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/monitoring/index[Monitoring, window=blank]
+* **OpenShift Monitoring:** link:https://docs.redhat.com/en/documentation/monitoring_stack_for_red_hat_openshift/4.22/html/about_monitoring/index[Monitoring, window=blank]
 * **OpenShift Logging Documentation:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/logging/index[Logging, window=blank]
 * **Logging 6.6 Stack:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/logging/about-logging[Logging 6.6, window=blank]
 * **OpenShift Distributed Tracing:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/distributed_tracing/index[Distributed Tracing, window=blank]

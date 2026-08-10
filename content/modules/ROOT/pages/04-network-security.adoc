@@ -109,6 +109,8 @@ EOF
 
 Three lines do all the work: `podSelector: {}` targets every pod, `policyTypes: Ingress` says we're controlling inbound traffic, and the empty `ingress: []` list means nothing is allowed through. This is the standard "default deny" pattern - start locked down, then punch specific holes.
 
+TIP: This isn't just a best practice - OpenShift uses the same pattern to protect its own platform namespaces. Check it: `oc get networkpolicies -n openshift-dns` - you'll see `openshift-dns-deny-all` already in place, with a second policy that allows only the traffic DNS needs. Every platform namespace ships with default-deny policies out of the box.
+
 === Test Connectivity Again (Should Fail)
 
 [source,bash,role="execute"]

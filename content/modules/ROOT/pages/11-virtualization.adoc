@@ -262,6 +262,8 @@ oc get vmi rhel9-vm -n vm-demo -o jsonpath='Node: {.status.nodeName}' && echo ""
 
 The VM moved while still running. No downtime, no reconnection needed.
 
+NOTE: You may have noticed **Storage** in the Migration submenu alongside Compute. Storage migration moves VM disks between storage classes without downtime - useful when migrating from one storage tier to another or moving workloads off a decommissioning storage backend. It works the same way: select the target storage class, and OpenShift copies the disk data and switches the VM over while it keeps running. We won't demo it here because it copies the full disk contents, which takes 15-20 minutes for a 30 GiB disk.
+
 === Clone a VM
 
 Need another copy of a VM - for testing, dev environments, or scaling out? Clone it. This creates a full copy of the VM's disk and configuration.

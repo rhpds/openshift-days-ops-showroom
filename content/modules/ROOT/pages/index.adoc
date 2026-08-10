@@ -316,9 +316,9 @@ Your environment uses a **compact cluster** - 3 nodes that serve as both control
 
 ----
 NAME                            STATUS   ROLES                         AGE   VERSION
-control-plane-cluster-xxxxx-1   Ready    control-plane,master,worker   20h   v1.33.6
-control-plane-cluster-xxxxx-2   Ready    control-plane,master,worker   20h   v1.33.6
-control-plane-cluster-xxxxx-3   Ready    control-plane,master,worker   20h   v1.33.6
+control-plane-cluster-xxxxx-1   Ready    control-plane,master,worker   20h   v1.x.x
+control-plane-cluster-xxxxx-2   Ready    control-plane,master,worker   20h   v1.x.x
+control-plane-cluster-xxxxx-3   Ready    control-plane,master,worker   20h   v1.x.x
 ----
 
 NOTE: Node names and count vary by deployment. Production clusters typically have separate control plane and worker nodes. This workshop uses a compact topology where all nodes serve both roles.
