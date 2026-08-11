@@ -6,6 +6,6 @@ We hope you found the hands-on exercises valuable. If you have any further quest
 
 == Additional Resources
 
-* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20[OpenShift Documentation, window=blank]
+* link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22[OpenShift Documentation, window=blank]
 * link:https://developers.redhat.com/learn/openshift[OpenShift Learning, window=blank]
 * link:https://www.redhat.com/en/services/training-and-certification[Red Hat Training & Certification, window=blank]

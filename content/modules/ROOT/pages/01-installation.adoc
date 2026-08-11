@@ -10,7 +10,7 @@ include::partial$console-access.adoc[]
 
 These are the same checks you'd run after an installation, after an upgrade, or when something feels off - ClusterOperators, node config, networking, storage, and etcd health.
 
-Your cluster was provisioned using IPI (Installer-Provisioned Infrastructure), which automates compute, network, storage, and DNS. OpenShift also supports UPI, Agent-based/Assisted Installer for bare metal, and managed offerings like Red Hat OpenShift Service on AWS (ROSA) and Azure Red Hat OpenShift (ARO). See the link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/installation_overview/index[Installation Documentation, window=blank] for details.
+Your cluster was provisioned using IPI (Installer-Provisioned Infrastructure), which automates compute, network, storage, and DNS. OpenShift also supports UPI, Agent-based/Assisted Installer for bare metal, and managed offerings like Red Hat OpenShift Service on AWS (ROSA) and Azure Red Hat OpenShift (ARO). See the link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/installation_overview/index[Installation Documentation, window=blank] for details.
 
 TIP: Two things that **cannot be changed** after installation: the **pod network CIDR** and the **service network CIDR**. If they overlap with your corporate network, you're rebuilding the cluster.
 
@@ -31,21 +31,21 @@ You'll see ~34 operators. Example output:
 
 ----
 NAME                         VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE
-authentication               4.20.x    True        False         False      3h
-cloud-credential             4.20.x    True        False         False      4h
-console                      4.20.x    True        False         False      3h
-dns                          4.20.x    True        False         False      4h
-etcd                         4.20.x    True        False         False      4h
-ingress                      4.20.x    True        False         False      3h
-kube-apiserver               4.20.x    True        False         False      4h
-kube-controller-manager      4.20.x    True        False         False      4h
-kube-scheduler               4.20.x    True        False         False      4h
-machine-api                  4.20.x    True        False         False      4h
-machine-config               4.20.x    True        False         False      4h
-monitoring                   4.20.x    True        False         False      3h
-network                      4.20.x    True        False         False      4h
-openshift-apiserver          4.20.x    True        False         False      3h
-storage                      4.20.x    True        False         False      4h
+authentication               4.x.x    True        False         False      3h
+cloud-credential             4.x.x    True        False         False      4h
+console                      4.x.x    True        False         False      3h
+dns                          4.x.x    True        False         False      4h
+etcd                         4.x.x    True        False         False      4h
+ingress                      4.x.x    True        False         False      3h
+kube-apiserver               4.x.x    True        False         False      4h
+kube-controller-manager      4.x.x    True        False         False      4h
+kube-scheduler               4.x.x    True        False         False      4h
+machine-api                  4.x.x    True        False         False      4h
+machine-config               4.x.x    True        False         False      4h
+monitoring                   4.x.x    True        False         False      3h
+network                      4.x.x    True        False         False      4h
+openshift-apiserver          4.x.x    True        False         False      3h
+storage                      4.x.x    True        False         False      4h
 ----
 
 **What to check:**
@@ -86,7 +86,7 @@ oc get clusterversion
 Your output will look similar to:
 ----
 NAME      VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
-version   4.20.x    True        False         3h      Cluster version is 4.20.x
+version   4.x.x    True        False         3h      Cluster version is 4.x.x
 ----
 
 Check which update channel you're subscribed to:
@@ -98,10 +98,10 @@ oc get clusterversion version -o jsonpath='{.spec.channel}'
 
 Common channels:
 
-* **stable-4.20** - Production-ready releases (recommended)
-* **fast-4.20** - Early access to stable releases
-* **eus-4.20** - Extended Update Support (14-month lifecycle)
-* **candidate-4.20** - Pre-release testing
+* **stable-4.x** - Production-ready releases (recommended)
+* **fast-4.x** - Early access to stable releases
+* **eus-4.x** - Extended Update Support (14-month lifecycle)
+* **candidate-4.x** - Pre-release testing
 
 View available updates:
 
@@ -316,7 +316,7 @@ oc get clusteroperator monitoring
 
 ----
 NAME         VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE   MESSAGE
-monitoring   4.20.x    True        False         False      3h
+monitoring   4.x.x    True        False         False      3h
 ----
 
 == Summary
@@ -352,10 +352,10 @@ This module focused on verifying a running cluster, but admins often get asked h
 
 **How the bootstrap process works:** Every OpenShift install starts with a temporary bootstrap node that runs the control plane components long enough to bring up the permanent control plane. Once the permanent control plane is running, the bootstrap node is removed. Each node boots from an Ignition config, a machine configuration file that tells RHCOS (Red Hat Enterprise Linux CoreOS) how to configure itself, what services to run, and where to find the cluster.
 
-For full details, see the link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html-single/installation_overview/index[Installation Overview, window=blank].
+For full details, see the link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html-single/installation_overview/index[Installation Overview, window=blank].
 
 === Additional Resources
 
-* **Installing OpenShift:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/installation_overview/index[Installation Documentation, window=blank]
-* **Verifying Cluster Status:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/support/troubleshooting#verifying-node-health[Troubleshooting Guide, window=blank]
-* **ClusterOperators Reference:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/operators/operator-reference[Operator Reference, window=blank]
+* **Installing OpenShift:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/installation_overview/index[Installation Documentation, window=blank]
+* **Verifying Cluster Status:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/support/troubleshooting#verifying-node-health[Troubleshooting Guide, window=blank]
+* **ClusterOperators Reference:** link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/operators/operator-reference[Operator Reference, window=blank]
