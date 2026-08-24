@@ -109,13 +109,17 @@ You can also view alerts in the console under **Observe -> Alerting**.
 
 === Create a Custom Alert
 
+The prometheusrule is not support for configurations for core platform alerts.
+https://docs.redhat.com/en/documentation/monitoring_stack_for_red_hat_openshift/4.20/html/support_for_monitoring/support-for-monitoring#support-considerations_support-for-monitoring
+So, we need to use the alertingrule instead.
+
 You can define your own alerts for application namespaces. Here's an example that fires when a pod has been restarting. We'll create it in the `openshift-monitoring` namespace where the built-in alerting rules live:
 
 [source,bash,role="execute"]
 ----
 cat <<EOF | oc apply -f -
-apiVersion: monitoring.coreos.com/v1
-kind: PrometheusRule
+apiVersion: monitoring.openshift.io/v1
+kind: AlertingRule
 metadata:
   name: ops-track-alerts
   namespace: openshift-monitoring
@@ -138,7 +142,7 @@ Verify the rule was created:
 
 [source,bash,role="execute"]
 ----
-oc get prometheusrule ops-track-alerts -n openshift-monitoring
+oc get alertingrule ops-track-alerts -n openshift-monitoring
 ----
 
 The rule exists but nothing is triggering it. Let's fix that - deploy a pod that crash-loops so you can see the alert go from inactive to pending to firing:
