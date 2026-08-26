@@ -118,6 +118,8 @@ oc create route edge weathernow --service=weathernow
 
 The `edge` termination means TLS is handled by the router - traffic is encrypted between the user and the router, then plain HTTP to the pod.
 
+NOTE: OpenShift also supports `passthrough` and `reencrypt` termination, where the pod itself serves TLS and the router forwards or re-encrypts it. WeatherNow only serves plain HTTP, so edge is the only option that applies here - in a real application capable of serving its own TLS, passthrough or reencrypt might be preferred instead.
+
 Check the route:
 
 [source,bash,role="execute"]
@@ -301,7 +303,14 @@ image::edit-health-checks.png[Edit Health Checks form showing configured readine
 
 Someone just pushed a bad image update. How do you undo it?
 
-Simulate a bad deploy by changing the image:
+The Deploy Image workflow you used earlier wired weathernow to an ImageStream trigger, which automatically resets the container image back to the `weathernow:latest` tag any time it drifts. That's the right behavior in production, but it would silently undo our simulated bad deploy before you ever saw it. Remove it for this exercise:
+
+[source,bash,role="execute"]
+----
+oc set triggers deployment/weathernow -n app-management --from-image=app-management/weathernow:latest --containers=weathernow --remove
+----
+
+Now simulate a bad deploy by changing the image:
 
 [source,bash,role="execute"]
 ----
@@ -310,6 +319,13 @@ oc set image deployment/weathernow weathernow=registry.access.redhat.com/ubi9/ng
 
 NOTE: If you see pod status streaming in the terminal, press **Ctrl+C** to get your prompt back.
 
+`ubi9/nginx-124` is an S2I builder image, not something meant to run standalone, so the new pods will crash-loop - a realistic "bad deploy." Annotate the deployment now so the revision history records why this happened. Doing this after the image change (not before) matters: annotating a deployment stamps the change-cause onto whichever revision is currently active, so annotating first would have mislabeled the *previous, good* revision instead:
+
+[source,bash,role="execute"]
+----
+oc annotate deployment/weathernow kubernetes.io/change-cause="Bad image update for rollback demo" -n app-management --overwrite
+----
+
 Check the rollout history - OpenShift tracks every change:
 
 [source,bash,role="execute"]
@@ -317,18 +333,23 @@ Check the rollout history - OpenShift tracks every change:
 oc rollout history deployment/weathernow -n app-management
 ----
 
-You'll see multiple revisions. Each time you change the deployment, a new revision is created.
+You'll see multiple revisions, each with a `CHANGE-CAUSE` showing why it was created. Every time you change the deployment, a new revision is created.
 
 You can also see this visually in the console. Navigate to **Workloads -> Deployments -> weathernow** and click the **ReplicaSets** tab:
 
 image::app-mgmt-replicasets-history.png[ReplicaSets tab showing deployment revision history with active and scaled-down replicas, link=self, window=blank]
-Each ReplicaSet represents a revision. The active one shows `1 of 1 pods` while previous revisions are scaled to `0 of 0 pods` - OpenShift keeps them so it can roll back instantly.
+Each ReplicaSet represents a revision. Because the new pods are crash-looping, the rollout is stuck partway: the previous (good) revision still shows pods running instead of scaling down to `0 of 0`, while the new (bad) revision shows pods that exist but never become ready. OpenShift won't finish cutting over until the new pods pass their health checks - and it keeps the old ReplicaSet around so it can roll back instantly.
 
-Roll back to the previous working version:
+Roll back to the previous working version, then annotate again - same reasoning as before, the annotation should follow the change, not precede it:
 
 [source,bash,role="execute"]
 ----
 oc rollout undo deployment/weathernow -n app-management
+----
+
+[source,bash,role="execute"]
+----
+oc annotate deployment/weathernow kubernetes.io/change-cause="Rolled back to previous known-good image" -n app-management --overwrite
 ----
 
 NOTE: If you see pod status streaming in the terminal, press **Ctrl+C** to get your prompt back.
@@ -340,10 +361,10 @@ Verify the original image is restored:
 oc get deployment weathernow -n app-management -o jsonpath='{.spec.template.spec.containers[0].image}'
 ----
 
-You should see the original WeatherNow image (shown as a digest since OpenShift resolves image tags via the ImageStream):
+You should see the original WeatherNow image, resolved to the internal registry mirror and pinned to a digest since OpenShift resolves image tags via the ImageStream:
 
 ----
-quay.io/openshift-workshop-applications/weathernow@sha256:362b6db3...
+image-registry.openshift-image-registry.svc:5000/app-management/weathernow@sha256:362b6db3...
 ----
 
 [source,bash,role="execute"]
