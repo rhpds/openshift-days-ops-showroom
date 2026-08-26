@@ -298,7 +298,7 @@ Clean up (runs in the background so we can move on):
 
 [source,bash,role="execute"]
 ----
-oc delete project quick-demo &>/dev/null &
+oc delete project quick-demo &>/dev/null & disown
 ----
 
 == Cluster Management
