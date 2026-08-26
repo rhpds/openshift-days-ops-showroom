@@ -289,7 +289,7 @@ Get the URL and test it:
 
 [source,bash,role="execute"]
 ----
-curl -sk https://$(oc get route hello -n quick-demo -o jsonpath='{.spec.host}') | head -3
+curl -sk https://$(oc get route hello -n quick-demo -o jsonpath='{.spec.host}') | grep title
 ----
 
 You should see the httpd test page HTML. That's a deployed app, with a service, a TLS-terminated route, and automatic DNS - in three commands.
@@ -298,7 +298,7 @@ Clean up (runs in the background so we can move on):
 
 [source,bash,role="execute"]
 ----
-oc delete project quick-demo &>/dev/null &
+oc delete project quick-demo &>/dev/null & disown
 ----
 
 == Cluster Management
