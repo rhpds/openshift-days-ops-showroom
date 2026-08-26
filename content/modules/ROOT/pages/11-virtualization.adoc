@@ -397,7 +397,7 @@ Deleting VM disks and namespaces takes a couple of minutes. This runs in the bac
   virtctl stop rhel9-vm-clone -n vm-demo 2>/dev/null || true
   sleep 10
   oc delete namespace vm-demo --ignore-not-found --wait=false
-) &>/dev/null &
+) &>/dev/null & disown
 echo "Cleanup running in background - you can continue to the next module"
 ----
 
