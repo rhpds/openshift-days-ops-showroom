@@ -614,7 +614,7 @@ bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showr
 **What you learned:**
 
 * OpenShift's built-in Prometheus stack provides metrics and dashboards with no setup
-* How to create custom alerting rules with PrometheusRule and configure email notifications
+* How to create custom alerting rules with AlertingRule and configure email notifications
 * How to install and configure the full logging stack (Loki + Vector)
 * How to view and filter logs in the OpenShift console
 * How to deploy the OpenTelemetry tracing pipeline (Tempo + OTel Collector)
