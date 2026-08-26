@@ -179,7 +179,7 @@ Test the route:
 
 [source,bash,role="execute"]
 ----
-curl -sk https://$(oc get route test-app -n install-test -o jsonpath='{.spec.host}') | head -3
+curl -sk https://$(oc get route test-app -n install-test -o jsonpath='{.spec.host}') | grep title
 ----
 
 **What this proves:** DNS works, router is functional, TLS certificates auto-generated, and the application is reachable from outside the cluster.
