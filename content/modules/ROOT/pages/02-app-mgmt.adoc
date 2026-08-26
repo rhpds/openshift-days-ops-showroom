@@ -319,7 +319,7 @@ oc set image deployment/weathernow weathernow=registry.access.redhat.com/ubi9/ng
 
 NOTE: If you see pod status streaming in the terminal, press **Ctrl+C** to get your prompt back.
 
-`ubi9/nginx-124` is an S2I builder image, not something meant to run standalone, so the new pods will crash-loop - a realistic "bad deploy." Annotate the deployment now so the revision history records why this happened. Doing this after the image change (not before) matters: annotating a deployment stamps the change-cause onto whichever revision is currently active, so annotating first would have mislabeled the *previous, good* revision instead:
+`ubi9/nginx-124` is an S2I builder image, not something meant to run standalone, so the new pods will crash-loop - a realistic "bad deploy." Annotate the deployment so the revision history records why this happened:
 
 [source,bash,role="execute"]
 ----
@@ -340,7 +340,7 @@ You can also see this visually in the console. Navigate to **Workloads -> Deploy
 image::app-mgmt-replicasets-history.png[ReplicaSets tab showing deployment revision history with active and scaled-down replicas, link=self, window=blank]
 Each ReplicaSet represents a revision. Because the new pods are crash-looping, the rollout is stuck partway: the previous (good) revision still shows pods running instead of scaling down to `0 of 0`, while the new (bad) revision shows pods that exist but never become ready. OpenShift won't finish cutting over until the new pods pass their health checks - and it keeps the old ReplicaSet around so it can roll back instantly.
 
-Roll back to the previous working version, then annotate again - same reasoning as before, the annotation should follow the change, not precede it:
+Roll back to the previous working version, then annotate again:
 
 [source,bash,role="execute"]
 ----
