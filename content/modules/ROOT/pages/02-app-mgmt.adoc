@@ -380,7 +380,7 @@ The deployment is back to the working version. In production, `oc rollout undo` 
 
 A PodDisruptionBudget (PDB) tells OpenShift: _"always keep at least N pods running, even during maintenance."_ When you drain a node for an upgrade or repair, the eviction API checks PDBs before removing pods. If evicting a pod would drop below the minimum, the drain blocks until it's safe.
 
-This matters to you because a misconfigured PDB is the #1 cause of stalled cluster upgrades - the upgrade process drains nodes one at a time, and a single bad PDB can block the entire upgrade indefinitely.
+This matters to you because a misconfigured PDB is one of the most common causes of stalled cluster upgrades - the upgrade process drains nodes one at a time, and a single bad PDB can block the entire upgrade indefinitely.
 
 === Create a PDB
 
@@ -505,7 +505,7 @@ You completed the core application lifecycle on OpenShift:
 * **Scale** - `oc scale` adjusts replicas, service auto-balances
 * **Self-heal** - delete a pod, OpenShift replaces it in seconds
 * **Health checks** - probes ensure only healthy pods receive traffic
-* **Rollback** - `oc rollout undo` reverts a bad deployment instantly
+* **Rollback** - `oc rollout undo` reverts a bad deployment in seconds
 * **PDB** - `minAvailable` protects availability during drains; misconfigured PDBs block upgrades
 
 **Key commands:**
