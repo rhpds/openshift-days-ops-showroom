@@ -37,7 +37,7 @@ oc new-project app-management
 
 Now deploy the WeatherNow application using the OpenShift Console. WeatherNow is a simple httpd-based container used as a test workload throughout the ops track.
 
-NOTE: This module intentionally switches between CLI and Console as you go - each task uses whichever is fastest to demonstrate, the same way an ops engineer would in practice. Deploying here is quicker to show visually in the Console; later steps return to the CLI where it's the more natural tool.
+NOTE: This module intentionally switches between CLI and Console as you go - the goal is to show both paths, since ops engineers reach for whichever is available or more convenient in the moment. Deploying here starts in the Console so you can see what gets created; most later steps perform the action via CLI and then show the same result in the Console for visual confirmation.
 
 . In the top-right corner of the console, click the **+** (Add) button and select **Container images**. Under **Select project**, make sure **app-management** is selected:
 +
