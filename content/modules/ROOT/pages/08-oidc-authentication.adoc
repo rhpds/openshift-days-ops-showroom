@@ -26,7 +26,11 @@ The same concepts apply to Microsoft Entra ID, Okta, Google Workspace, and any O
 
 [source,bash,role="execute"]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/08-oidc-authentication/install-rhbk-operator.sh)
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/install-rhbk-operator.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/08-oidc-authentication/install-rhbk-operator.sh; then
+  bash /tmp/install-rhbk-operator.sh
+else
+  echo "ERROR: Could not reach GitHub to download install-rhbk-operator.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+fi
 ----
 
 NOTE: This takes a minute or two while the operator installs and the CRDs register. Please wait for it to complete - only press **Ctrl+C** if it has been running for more than 5 minutes.
@@ -168,7 +172,11 @@ You've seen how users and groups work in the Keycloak UI. Rather than repeating 
 
 [source,bash,role="execute"]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/08-oidc-authentication/setup-keycloak-oidc.sh)
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-keycloak-oidc.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/08-oidc-authentication/setup-keycloak-oidc.sh; then
+  bash /tmp/setup-keycloak-oidc.sh
+else
+  echo "ERROR: Could not reach GitHub to download setup-keycloak-oidc.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+fi
 ----
 
 TIP: In production, you'd use a Keycloak realm export or the Keycloak Operator's `KeycloakRealmImport` CR to automate this entire setup declaratively.
@@ -183,7 +191,11 @@ The Keycloak setup script already created the `rhbk-client-secret` in `openshift
 
 [source,bash,role="execute"]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/08-oidc-authentication/configure-oauth-oidc.sh)
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/configure-oauth-oidc.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/08-oidc-authentication/configure-oauth-oidc.sh; then
+  bash /tmp/configure-oauth-oidc.sh
+else
+  echo "ERROR: Could not reach GitHub to download configure-oauth-oidc.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+fi
 ----
 
 The key line is `claims.groups: [groups]` - this tells OpenShift to read the `groups` claim from the ID token and create OpenShift groups from it. This is why the script added the groups mapper to the OIDC client.
@@ -320,7 +332,11 @@ oc login -u {openshift_cluster_admin_username} -p {openshift_cluster_admin_passw
 
 [source,bash,role="execute"]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/cleanup-scripts/cleanup-oidc.sh)
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/cleanup-oidc.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/cleanup-scripts/cleanup-oidc.sh; then
+  bash /tmp/cleanup-oidc.sh
+else
+  echo "ERROR: Could not reach GitHub to download cleanup-oidc.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+fi
 ----
 
 === Summary

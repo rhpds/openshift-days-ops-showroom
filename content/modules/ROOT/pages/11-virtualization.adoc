@@ -208,6 +208,8 @@ oc get svc rhel9-vm-ssh -n vm-demo
 
 The VM is now reachable via the service - the same way you'd expose a container. Same label selectors, same service types, same networking model.
 
+NOTE: This Service has no `type` set, so it defaults to `ClusterIP` - reachable only from other pods and VMs inside the cluster, not from outside. That's intentional here since SSH shouldn't be exposed to the internet. To reach a VM's SSH port from outside the cluster, you'd need a `NodePort` or `LoadBalancer` Service (or an SSH-capable bastion/jump host) with appropriate security controls - out of scope for this workshop.
+
 For VMs running web applications (Apache, IIS, Tomcat), you'd create a Service on port 80/443 and a Route with TLS edge termination - the same workflow you use for containers. When migrating multi-tier applications, move the VMs with MTV, wire them up with Services and Routes, and they're live on OpenShift without changing the application.
 
 == VM Lifecycle
@@ -222,7 +224,11 @@ Live migration requires compatible CPU features on the source and target nodes. 
 
 [source,bash,role="execute"]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/11-virtualization/prepare-migration.sh)
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/prepare-migration.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/11-virtualization/prepare-migration.sh; then
+  bash /tmp/prepare-migration.sh
+else
+  echo "ERROR: Could not reach GitHub to download prepare-migration.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+fi
 ----
 
 NOTE: This may take a minute if the VM needs to be moved to a different node. Wait for the `Ready - Node:` output before continuing.

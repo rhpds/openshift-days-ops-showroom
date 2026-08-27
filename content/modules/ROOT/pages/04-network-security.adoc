@@ -253,7 +253,11 @@ Now prove it works. Try resolving DNS via the blocked external server:
 
 [source,bash,role="execute"]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/04-network-security/test-dns.sh)
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/test-dns.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/04-network-security/test-dns.sh; then
+  bash /tmp/test-dns.sh
+else
+  echo "ERROR: Could not reach GitHub to download test-dns.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+fi
 ----
 
 Expected: `DNS to 8.8.8.8: BLOCKED (timed out)`. The ANP blocked outbound traffic to 8.8.8.8.
@@ -267,7 +271,11 @@ oc delete adminnetworkpolicy cluster-deny-external-dns
 
 [source,bash,role="execute"]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/04-network-security/test-dns.sh)
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/test-dns.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/04-network-security/test-dns.sh; then
+  bash /tmp/test-dns.sh
+else
+  echo "ERROR: Could not reach GitHub to download test-dns.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+fi
 ----
 
 Expected: `DNS to 8.8.8.8: ALLOWED`. The ANP is gone, traffic flows again.

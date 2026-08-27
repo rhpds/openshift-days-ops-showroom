@@ -12,6 +12,10 @@ image::ops-day-banner.png[OpenShift Ops Day, width=100%]
 
 You have cluster admin access to a live OpenShift cluster. Let's make sure everything's working - click the commands below:
 
+NOTE: This workshop uses cluster-admin throughout so you can explore platform-wide features (nodes, MachineSets, cluster operators) without hitting permission walls. In production, most day-2 application tasks - deploying, scaling, checking logs - only need project/namespace-admin. Cluster-admin is generally reserved for platform-level work.
+
+NOTE: `oc` is the OpenShift CLI - like `kubectl`, but with extra OpenShift-specific commands (Routes, Projects, and more). Every `oc` command below runs in the **Terminal** tab, which is a web-based shell already connected and authenticated to your cluster - no local install or login required. Clicking a highlighted command block automatically switches to that tab and runs it for you.
+
 [source,bash,role="execute"]
 ----
 oc whoami
@@ -347,7 +351,7 @@ image::nodes-console-view.png[Nodes Console View, link=self, window=blank]
 
 OpenShift uses **MachineSets** to automate infrastructure scaling. On cloud platforms (AWS, Azure, GCP), MachineSets manage worker nodes across availability zones - you can scale up by changing a replica count rather than manually provisioning machines.
 
-NOTE: When ACM is installed, `machinesets` exists in two API groups (Cluster API and OpenShift Machine API). We use the full resource name `machinesets.machine.openshift.io` to target OpenShift's Machine API.
+NOTE: When Advanced Cluster Management (ACM) is installed, `machinesets` exists in two API groups (Cluster API and OpenShift Machine API). We use the full resource name `machinesets.machine.openshift.io` to target OpenShift's Machine API.
 
 [source,bash,role="execute"]
 ----
@@ -445,7 +449,7 @@ Hundreds of operators ready to install - a mix of Red Hat, certified partner, an
 3. You'll see the unified software catalog with categories on the left:
    - **AI/Machine Learning** - Red Hat OpenShift AI, Open Data Hub
    - **CI/CD** - Red Hat OpenShift GitOps, Red Hat OpenShift Pipelines
-   - **Database** - Red Hat AMQ Streams (Kafka)
+   - **Streaming & Messaging** - Red Hat AMQ Streams (Kafka)
    - **Security** - Red Hat Advanced Cluster Security
    - **Storage** - Red Hat OpenShift Data Foundation
    - **Integration & Delivery** - Red Hat Integration, Red Hat Service Mesh, Red Hat Serverless

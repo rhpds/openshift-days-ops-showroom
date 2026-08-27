@@ -23,13 +23,13 @@ spec:
         email: [mail]
         name: [cn]                 # display name
         preferredUsername: [uid]    # what they type at the login prompt
-      bindDN: "uid=openshiftworkshop,ou=Users,o=5e615ba46b812e7da02e93b5,dc=jumpcloud,dc=com"
+      bindDN: "cn=openshiftworkshop,ou=svcaccts,ou=users,dc=openshiftworkshop,dc=com"
       bindPassword:
         name: ldap-secret          # references the Secret created earlier
       ca:
         name: ca-config-map        # CA cert to validate LDAP server's TLS
       insecure: false              # always false in production - validates TLS
-      url: "ldaps://ldap.jumpcloud.com/ou=Users,o=5e615ba46b812e7da02e93b5,dc=jumpcloud,dc=com?uid?sub?(memberOf=cn=ose-user,ou=Users,o=5e615ba46b812e7da02e93b5,dc=jumpcloud,dc=com)"
+      url: "ldaps://glauth.glauth.svc.cluster.local/ou=users,dc=openshiftworkshop,dc=com?uid?sub?(memberOf=ou=ose-user,ou=groups,dc=openshiftworkshop,dc=com)"
   tokenConfig:
     accessTokenMaxAgeSeconds: 86400  # tokens valid for 24 hours
 EOF

@@ -63,6 +63,8 @@ storage                      4.x.x    True        False         False      4h
 oc describe clusteroperator <operator-name>
 ----
 
+This one's copy/paste rather than click-to-run - replace `<operator-name>` with the actual degraded operator's name from the table above before running it.
+
 Check the `Conditions` section for details about why it's degraded.
 
 **Common issues:**
@@ -306,6 +308,8 @@ histogram_quantile(0.99, rate(etcd_disk_wal_fsync_duration_seconds_bucket[5m]))
 ----
 
 This shows the 99th percentile WAL fsync latency per etcd member. Values under 10ms are ideal. Workshop clusters may show higher values due to shared storage - that's expected.
+
+TIP: For an at-a-glance view instead of running individual queries, navigate to **Observe → Dashboards** and select **etcd** from the dashboard dropdown - it plots leader elections, fsync latency, and several other etcd health metrics together.
 
 Also verify the monitoring operator is healthy:
 

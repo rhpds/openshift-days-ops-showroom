@@ -40,9 +40,9 @@ oc delete group ose-fancy-dev ose-normal-dev ose-teamed-app ose-user --ignore-no
 oc adm policy remove-cluster-role-from-user cluster-admin fancyuser1 2>/dev/null || true
 oc adm policy remove-cluster-role-from-group cluster-reader ose-fancy-dev 2>/dev/null || true
 
-# Remove test projects and wait for OAuth rollout in the background
+# Remove test projects, the in-cluster LDAP server, and wait for OAuth rollout in the background
 (
-  oc delete project app-dev app-test app-prod --ignore-not-found
+  oc delete project app-dev app-test app-prod glauth --ignore-not-found
   oc rollout status deployment/oauth-openshift -n openshift-authentication --timeout=120s
 ) &>/dev/null &
 

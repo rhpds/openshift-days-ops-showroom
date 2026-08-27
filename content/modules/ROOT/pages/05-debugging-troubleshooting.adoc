@@ -47,7 +47,11 @@ First, create the namespace and deploy the intentionally broken applications:
 
 [source,bash,role="execute"]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/05-debugging/deploy-broken-apps.sh)
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/deploy-broken-apps.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/05-debugging/deploy-broken-apps.sh; then
+  bash /tmp/deploy-broken-apps.sh
+else
+  echo "ERROR: Could not reach GitHub to download deploy-broken-apps.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+fi
 ----
 
 === See What's Broken
@@ -448,7 +452,11 @@ Now that all six microservices are fixed, expose them and open the weather app:
 
 [source,bash,role="execute"]
 ----
-bash <(curl -sL https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/05-debugging/expose-weather-app.sh)
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/expose-weather-app.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/05-debugging/expose-weather-app.sh; then
+  bash /tmp/expose-weather-app.sh
+else
+  echo "ERROR: Could not reach GitHub to download expose-weather-app.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+fi
 ----
 
 Open the URL in a new browser tab. You should see The Weather App displaying live weather data - fetched by weather-api, processed by weather-backend, cached by weather-cache, and persisted by weather-db. All six microservices working together.

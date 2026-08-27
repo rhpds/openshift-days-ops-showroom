@@ -37,6 +37,8 @@ oc new-project app-management
 
 Now deploy the WeatherNow application using the OpenShift Console. WeatherNow is a simple httpd-based container used as a test workload throughout the ops track.
 
+NOTE: This module intentionally switches between CLI and Console as you go - each task uses whichever is fastest to demonstrate, the same way an ops engineer would in practice. Deploying here is quicker to show visually in the Console; later steps return to the CLI where it's the more natural tool.
+
 . In the top-right corner of the console, click the **+** (Add) button and select **Container images**. Under **Select project**, make sure **app-management** is selected:
 +
 image::app-mgmt-deploy-menu.png[Add menu showing Container images option, link=self, window=blank]
@@ -57,6 +59,8 @@ This creates two resources:
 * **Service** - internal load balancer that routes traffic to the pods
 
 image::diagrams/02_service.png[OpenShift Service Load Balancing, 500, align=center, link=self, window=blank]
+TIP: Once you're comfortable with the Console flow above, the same deployment collapses into a single CLI command: `oc new-app --name=weathernow quay.io/openshift-workshop-applications/weathernow:latest`. Good to have both in your toolkit - the Console for visibility into what's being created, the CLI for speed.
+
 You'll be taken to the Topology view. Notice the pod is running and the service is created, but under **Routes** it says "No Routes found for this resource" - the application isn't accessible from outside the cluster yet.
 
 image::app-mgmt-deploy-no-route.png[Topology view showing weathernow with no route, link=self, window=blank]
