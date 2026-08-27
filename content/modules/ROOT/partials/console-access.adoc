@@ -1,5 +1,5 @@
 .Console Access
-[%collapsible]
+[%collapsible%open]
 ====
 * *Username:* `{openshift_cluster_admin_username}`
 * *Password:* `{openshift_cluster_admin_password}`

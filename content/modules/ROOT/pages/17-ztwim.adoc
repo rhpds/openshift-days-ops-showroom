@@ -267,6 +267,8 @@ oc logs -n postgresql-spiffe-client -l app=postgresql-spiffe-client -c spiffe-he
 [IMPORTANT]
 ====
 `Ctrl+b` is the tmux prefix key. `o` switches to the next pane.
+
+TIP: If your terminal supports mouse mode, you can also just click into the pane you want.
 ====
 +
 . In the second pane, capture the current certificate serial number and expiry:
