@@ -326,8 +326,6 @@ oc get events -n patient-portal -w
 [IMPORTANT]
 ====
 `Ctrl+b` is the prefix key for tmux. `o` is the command to switch to the next pane.
-
-TIP: If your terminal supports mouse mode, you can also just click into the pane you want.
 ====
 +
 . Exec into our *patient-frontend* application by getting the pod details and adding them to the following command.
