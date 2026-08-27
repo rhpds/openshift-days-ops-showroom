@@ -220,7 +220,7 @@ Notice the routing:
 
 Click on any email to see the full alert details - alert name, namespace, severity, description, and a link to the Alertmanager UI.
 
-In production, you would replace `mailpit.alert-demo.svc:1025` with your organization's SMTP relay and use real email addresses. Alertmanager also supports Slack, PagerDuty, and webhooks using the same routing structure - see link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/postinstallation_configuration/configuring-alert-notifications#sending-notifications-to-external-systems_configuring-alert-notifications[Sending notifications to external systems, window=blank].
+In production, you would replace `mailpit.alert-demo.svc:1025` with your organization's SMTP relay and use real email addresses. Alertmanager also supports Slack, PagerDuty, and webhooks using the same routing structure - see link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.22/html/postinstallation_configuration/configuring-alert-notifications#sending-notifications-to-external-systems_configuring-alert-notifications[Sending notifications to external systems, window=blank].
 
 **Restore Alertmanager**
 
