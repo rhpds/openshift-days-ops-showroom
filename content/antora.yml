@@ -14,6 +14,7 @@ asciidoc:
     ssh_password: ''
     ssh_command: ''
     ols_azure_url: 'https://llm-gpt4-lightspeed.openai.azure.com/'
+    support_base_url: 'http://localhost:8080/support'
     page-links:
     - url: https://docs.redhat.com/en/documentation/openshift_container_platform/4.22
       text: OpenShift Docs

@@ -24,12 +24,12 @@ The same concepts apply to Microsoft Entra ID, Okta, Google Workspace, and any O
 
 === Step 1: Install the RHBK Operator
 
-[source,bash,role="execute"]
+[source,bash,subs="+attributes",role="execute"]
 ----
-if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/install-rhbk-operator.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/08-oidc-authentication/install-rhbk-operator.sh; then
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/install-rhbk-operator.sh {support_base_url}/08-oidc-authentication/install-rhbk-operator.sh; then
   bash /tmp/install-rhbk-operator.sh
 else
-  echo "ERROR: Could not reach GitHub to download install-rhbk-operator.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+  echo "ERROR: Could not download install-rhbk-operator.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
 fi
 ----
 
@@ -170,12 +170,12 @@ image::oidc-rhbk-user-join-group.png[User Groups tab showing Join Group button, 
 
 You've seen how users and groups work in the Keycloak UI. Rather than repeating those clicks, we'll use the Keycloak REST API to create the remaining users, groups, and the OIDC client - the same API you'd use to automate this in production.
 
-[source,bash,role="execute"]
+[source,bash,subs="+attributes",role="execute"]
 ----
-if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-keycloak-oidc.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/08-oidc-authentication/setup-keycloak-oidc.sh; then
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-keycloak-oidc.sh {support_base_url}/08-oidc-authentication/setup-keycloak-oidc.sh; then
   bash /tmp/setup-keycloak-oidc.sh
 else
-  echo "ERROR: Could not reach GitHub to download setup-keycloak-oidc.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+  echo "ERROR: Could not download setup-keycloak-oidc.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
 fi
 ----
 
@@ -189,12 +189,12 @@ Verify the setup in the Keycloak UI - click **Users** and **Groups** to confirm 
 
 The Keycloak setup script already created the `rhbk-client-secret` in `openshift-config` with the correct client secret. Now configure OAuth to use it:
 
-[source,bash,role="execute"]
+[source,bash,subs="+attributes",role="execute"]
 ----
-if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/configure-oauth-oidc.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/08-oidc-authentication/configure-oauth-oidc.sh; then
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/configure-oauth-oidc.sh {support_base_url}/08-oidc-authentication/configure-oauth-oidc.sh; then
   bash /tmp/configure-oauth-oidc.sh
 else
-  echo "ERROR: Could not reach GitHub to download configure-oauth-oidc.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+  echo "ERROR: Could not download configure-oauth-oidc.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
 fi
 ----
 
@@ -330,12 +330,12 @@ oc login -u {openshift_cluster_admin_username} -p {openshift_cluster_admin_passw
 
 === Cleanup
 
-[source,bash,role="execute"]
+[source,bash,subs="+attributes",role="execute"]
 ----
-if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/cleanup-oidc.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/cleanup-scripts/cleanup-oidc.sh; then
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/cleanup-oidc.sh {support_base_url}/cleanup-scripts/cleanup-oidc.sh; then
   bash /tmp/cleanup-oidc.sh
 else
-  echo "ERROR: Could not reach GitHub to download cleanup-oidc.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+  echo "ERROR: Could not download cleanup-oidc.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
 fi
 ----
 

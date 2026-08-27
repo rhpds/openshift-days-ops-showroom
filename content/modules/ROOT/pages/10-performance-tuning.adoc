@@ -32,9 +32,9 @@ A developer deployed an application requesting 2Gi of memory "just to be safe." 
 oc new-project performance-demo
 ----
 
-[source,bash,role="execute"]
+[source,bash,subs="+attributes",role="execute"]
 ----
-oc apply -f https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/memory-hog.yaml
+oc apply -f {support_base_url}/memory-hog.yaml
 ----
 
 Wait for it to run:
@@ -86,9 +86,9 @@ oc get pods -n openshift-vertical-pod-autoscaler
 
 If not installed:
 
-[source,bash,role="execute"]
+[source,bash,subs="+attributes",role="execute"]
 ----
-oc apply -f https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/vpa-operator.yaml
+oc apply -f {support_base_url}/vpa-operator.yaml
 ----
 
 Wait for the operator (~1 minute):
@@ -113,9 +113,9 @@ echo "VPA operator ready"
 
 Create a VPA resource targeting the memory-hog deployment. We're using `updateMode: "Off"` - this means VPA will **only recommend** values, it won't change your pods. In production, you'd start with `Off` to validate recommendations, then switch to `Auto` to let VPA resize pods automatically during restarts.
 
-[source,bash,role="execute"]
+[source,bash,subs="+attributes",role="execute"]
 ----
-oc apply -f https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/vpa-memory-hog.yaml
+oc apply -f {support_base_url}/vpa-memory-hog.yaml
 ----
 
 Wait for VPA to analyze the pod and produce a recommendation:
@@ -187,9 +187,9 @@ Now let's deploy an application that needs to scale horizontally based on traffi
 
 === Deploy a Scalable Application
 
-[source,bash,role="execute"]
+[source,bash,subs="+attributes",role="execute"]
 ----
-oc apply -f https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/demo-app.yaml
+oc apply -f {support_base_url}/demo-app.yaml
 ----
 
 Wait for it to be ready:

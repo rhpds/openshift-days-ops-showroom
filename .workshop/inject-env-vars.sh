@@ -108,6 +108,9 @@ ATTRS="${ATTRS}    acs_portal_password: '${ADMIN_PASSWORD:-}'"$'\n'
 ATTRS="${ATTRS}    argocd_url: 'https://openshift-gitops-server-openshift-gitops.${ROUTE_SUBDOMAIN:-}'"$'\n'
 ATTRS="${ATTRS}    devhub_url: 'https://backstage-developer-hub-backstage.${ROUTE_SUBDOMAIN:-}'"$'\n'
 ATTRS="${ATTRS}    ols_azure_url: '${OLS_AZURE_URL:-}'"$'\n'
+# Same-origin script hosting - served from this Showroom pod's own /showroom/www/support,
+# so module scripts don't depend on GitHub being reachable during the workshop
+ATTRS="${ATTRS}    support_base_url: 'https://showroom-showroom-${GUID:-}.${ROUTE_SUBDOMAIN:-}/support'"$'\n'
 
 echo "Attributes to inject:"
 echo "$ATTRS"
@@ -138,6 +141,17 @@ ANTORA_YML="${REPO_DIR}/content/antora.yml"
 if [ -f "$ANTORA_YML" ] && ! grep -q 'ols_azure_url' "$ANTORA_YML"; then
   echo "Injecting ols_azure_url into antora.yml..."
   echo "    ols_azure_url: '${OLS_AZURE_URL:-}'" >> "$ANTORA_YML"
+fi
+
+SUPPORT_BASE_URL="https://showroom-showroom-${GUID:-}.${ROUTE_SUBDOMAIN:-}/support"
+if [ -f "$ANTORA_YML" ]; then
+  if grep -q '^\s*support_base_url:' "$ANTORA_YML"; then
+    sed -i.bak "s|^\(\s*\)support_base_url:.*|\1support_base_url: '${SUPPORT_BASE_URL}'|" "$ANTORA_YML"
+    rm -f "${ANTORA_YML}.bak"
+  else
+    echo "Injecting support_base_url into antora.yml..."
+    echo "    support_base_url: '${SUPPORT_BASE_URL}'" >> "$ANTORA_YML"
+  fi
 fi
 
 echo "=== Antora injection complete ==="
@@ -201,6 +215,10 @@ fi
 
 # Copy to served location
 cp "$UI_CONFIG" /showroom/www/ui-config.yml 2>/dev/null || true
+
+# Serve support/ scripts from this same pod so modules don't depend on GitHub
+# being reachable during the workshop - see {support_base_url}
+cp -r "${REPO_DIR}/support" /showroom/www/support 2>/dev/null || true
 
 echo "Generated ui-config.yml:"
 cat "$UI_CONFIG"
