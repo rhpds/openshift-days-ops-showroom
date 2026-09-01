@@ -355,5 +355,6 @@ For more information, see link:https://docs.redhat.com/en/documentation/red_hat_
   oc delete appproject workshop -n openshift-gitops --ignore-not-found
   oc delete namespace gitops-managed-project --ignore-not-found
 ) &>/dev/null &
+disown
 echo "Cleanup running in background - you can continue to the next module."
 ----

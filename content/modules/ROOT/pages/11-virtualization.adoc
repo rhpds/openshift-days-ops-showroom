@@ -429,6 +429,7 @@ Deleting VM disks and namespaces takes a couple of minutes. This runs in the bac
   sleep 10
   oc delete namespace vm-demo --ignore-not-found --wait=false
 ) &>/dev/null &
+disown
 echo "Cleanup running in background - you can continue to the next module"
 ----
 

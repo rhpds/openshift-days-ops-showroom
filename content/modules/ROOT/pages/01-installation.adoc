@@ -193,6 +193,7 @@ Clean up:
 [source,bash,role="execute"]
 ----
 oc delete project install-test &>/dev/null &
+disown
 ----
 
 == Storage & etcd
@@ -282,6 +283,7 @@ Clean up:
 [source,bash,role="execute"]
 ----
 oc delete project storage-test &>/dev/null &
+disown
 ----
 
 === Step 6: Verify etcd Health
