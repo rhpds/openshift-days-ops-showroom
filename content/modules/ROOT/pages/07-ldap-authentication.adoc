@@ -70,12 +70,12 @@ To configure LDAP authentication, we need:
 
 **Deploy the LDAP server:**
 
-[source,bash,role="execute"]
+[source,bash,subs="+attributes",role="execute"]
 ----
-if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/deploy-glauth-ldap.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/07-ldap-authentication/deploy-glauth-ldap.sh; then
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/deploy-glauth-ldap.sh {support_base_url}/07-ldap-authentication/deploy-glauth-ldap.sh; then
   bash /tmp/deploy-glauth-ldap.sh
 else
-  echo "ERROR: Could not reach GitHub to download deploy-glauth-ldap.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+  echo "ERROR: Could not download deploy-glauth-ldap.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
 fi
 ----
 
@@ -111,12 +111,12 @@ oc create configmap ca-config-map \
 
 **Create and apply the OAuth configuration:**
 
-[source,bash,role="execute"]
+[source,bash,subs="+attributes",role="execute"]
 ----
-if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/configure-oauth-ldap.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/07-ldap-authentication/configure-oauth-ldap.sh; then
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/configure-oauth-ldap.sh {support_base_url}/07-ldap-authentication/configure-oauth-ldap.sh; then
   bash /tmp/configure-oauth-ldap.sh
 else
-  echo "ERROR: Could not reach GitHub to download configure-oauth-ldap.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+  echo "ERROR: Could not download configure-oauth-ldap.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
 fi
 ----
 
@@ -631,9 +631,9 @@ Restore the cluster to its original authentication state before proceeding to ot
 [source,bash,role="execute",subs="attributes"]
 ----
 oc login -u {openshift_cluster_admin_username} -p {openshift_cluster_admin_password} --insecure-skip-tls-verify
-if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/cleanup-ldap.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/cleanup-scripts/cleanup-ldap.sh; then
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/cleanup-ldap.sh {support_base_url}/cleanup-scripts/cleanup-ldap.sh; then
   bash /tmp/cleanup-ldap.sh
 else
-  echo "ERROR: Could not reach GitHub to download cleanup-ldap.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+  echo "ERROR: Could not download cleanup-ldap.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
 fi
 ----

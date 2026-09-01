@@ -251,12 +251,12 @@ The `PRIORITY` field determines evaluation order - lower numbers are evaluated f
 
 Now prove it works. Try resolving DNS via the blocked external server:
 
-[source,bash,role="execute"]
+[source,bash,subs="+attributes",role="execute"]
 ----
-if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/test-dns.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/04-network-security/test-dns.sh; then
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/test-dns.sh {support_base_url}/04-network-security/test-dns.sh; then
   bash /tmp/test-dns.sh
 else
-  echo "ERROR: Could not reach GitHub to download test-dns.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+  echo "ERROR: Could not download test-dns.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
 fi
 ----
 
@@ -269,12 +269,12 @@ Clean up and verify DNS recovers:
 oc delete adminnetworkpolicy cluster-deny-external-dns
 ----
 
-[source,bash,role="execute"]
+[source,bash,subs="+attributes",role="execute"]
 ----
-if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/test-dns.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/04-network-security/test-dns.sh; then
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/test-dns.sh {support_base_url}/04-network-security/test-dns.sh; then
   bash /tmp/test-dns.sh
 else
-  echo "ERROR: Could not reach GitHub to download test-dns.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+  echo "ERROR: Could not download test-dns.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
 fi
 ----
 

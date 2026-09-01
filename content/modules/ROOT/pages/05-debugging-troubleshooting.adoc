@@ -45,12 +45,12 @@ oc describe deployment <deployment-name> -n <namespace>
 
 First, create the namespace and deploy the intentionally broken applications:
 
-[source,bash,role="execute"]
+[source,bash,subs="+attributes",role="execute"]
 ----
-if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/deploy-broken-apps.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/05-debugging/deploy-broken-apps.sh; then
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/deploy-broken-apps.sh {support_base_url}/05-debugging/deploy-broken-apps.sh; then
   bash /tmp/deploy-broken-apps.sh
 else
-  echo "ERROR: Could not reach GitHub to download deploy-broken-apps.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+  echo "ERROR: Could not download deploy-broken-apps.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
 fi
 ----
 
@@ -450,12 +450,12 @@ weather-proxy-xxxxx                 1/1     Running   0          5m
 
 Now that all six microservices are fixed, expose them and open the weather app:
 
-[source,bash,role="execute"]
+[source,bash,subs="+attributes",role="execute"]
 ----
-if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/expose-weather-app.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/05-debugging/expose-weather-app.sh; then
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/expose-weather-app.sh {support_base_url}/05-debugging/expose-weather-app.sh; then
   bash /tmp/expose-weather-app.sh
 else
-  echo "ERROR: Could not reach GitHub to download expose-weather-app.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+  echo "ERROR: Could not download expose-weather-app.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
 fi
 ----
 

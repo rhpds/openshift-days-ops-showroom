@@ -222,12 +222,12 @@ This is the feature that makes OpenShift Virtualization production-ready. When y
 
 Live migration requires compatible CPU features on the source and target nodes. Workshop clusters can have mixed Intel and AMD nodes in the pool - VMs can only migrate between nodes with the same CPU vendor because the CPU instruction sets are incompatible. This script detects your VM's CPU vendor and pins it to the vendor with 2+ nodes so there's a valid migration target:
 
-[source,bash,role="execute"]
+[source,bash,subs="+attributes",role="execute"]
 ----
-if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/prepare-migration.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/11-virtualization/prepare-migration.sh; then
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/prepare-migration.sh {support_base_url}/11-virtualization/prepare-migration.sh; then
   bash /tmp/prepare-migration.sh
 else
-  echo "ERROR: Could not reach GitHub to download prepare-migration.sh. Check your network connection and re-run this command - GitHub may be experiencing a temporary outage."
+  echo "ERROR: Could not download prepare-migration.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
 fi
 ----
 
