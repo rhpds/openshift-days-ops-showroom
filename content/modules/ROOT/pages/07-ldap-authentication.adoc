@@ -74,8 +74,10 @@ To configure LDAP authentication, we need:
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/deploy-glauth-ldap.sh {support_base_url}/07-ldap-authentication/deploy-glauth-ldap.sh; then
   bash /tmp/deploy-glauth-ldap.sh
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/deploy-glauth-ldap.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/07-ldap-authentication/deploy-glauth-ldap.sh; then
+  bash /tmp/deploy-glauth-ldap.sh
 else
-  echo "ERROR: Could not download deploy-glauth-ldap.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
+  echo "ERROR: Could not download deploy-glauth-ldap.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
 fi
 ----
 
@@ -115,8 +117,10 @@ oc create configmap ca-config-map \
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/configure-oauth-ldap.sh {support_base_url}/07-ldap-authentication/configure-oauth-ldap.sh; then
   bash /tmp/configure-oauth-ldap.sh
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/configure-oauth-ldap.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/07-ldap-authentication/configure-oauth-ldap.sh; then
+  bash /tmp/configure-oauth-ldap.sh
 else
-  echo "ERROR: Could not download configure-oauth-ldap.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
+  echo "ERROR: Could not download configure-oauth-ldap.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
 fi
 ----
 
@@ -633,7 +637,9 @@ Restore the cluster to its original authentication state before proceeding to ot
 oc login -u {openshift_cluster_admin_username} -p {openshift_cluster_admin_password} --insecure-skip-tls-verify
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/cleanup-ldap.sh {support_base_url}/cleanup-scripts/cleanup-ldap.sh; then
   bash /tmp/cleanup-ldap.sh
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/cleanup-ldap.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/cleanup-scripts/cleanup-ldap.sh; then
+  bash /tmp/cleanup-ldap.sh
 else
-  echo "ERROR: Could not download cleanup-ldap.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
+  echo "ERROR: Could not download cleanup-ldap.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
 fi
 ----

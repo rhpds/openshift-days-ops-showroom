@@ -49,8 +49,10 @@ First, create the namespace and deploy the intentionally broken applications:
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/deploy-broken-apps.sh {support_base_url}/05-debugging/deploy-broken-apps.sh; then
   bash /tmp/deploy-broken-apps.sh
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/deploy-broken-apps.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/05-debugging/deploy-broken-apps.sh; then
+  bash /tmp/deploy-broken-apps.sh
 else
-  echo "ERROR: Could not download deploy-broken-apps.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
+  echo "ERROR: Could not download deploy-broken-apps.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
 fi
 ----
 
@@ -454,8 +456,10 @@ Now that all six microservices are fixed, expose them and open the weather app:
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/expose-weather-app.sh {support_base_url}/05-debugging/expose-weather-app.sh; then
   bash /tmp/expose-weather-app.sh
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/expose-weather-app.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/05-debugging/expose-weather-app.sh; then
+  bash /tmp/expose-weather-app.sh
 else
-  echo "ERROR: Could not download expose-weather-app.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
+  echo "ERROR: Could not download expose-weather-app.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
 fi
 ----
 

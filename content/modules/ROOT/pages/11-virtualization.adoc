@@ -226,8 +226,10 @@ Live migration requires compatible CPU features on the source and target nodes. 
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/prepare-migration.sh {support_base_url}/11-virtualization/prepare-migration.sh; then
   bash /tmp/prepare-migration.sh
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/prepare-migration.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/11-virtualization/prepare-migration.sh; then
+  bash /tmp/prepare-migration.sh
 else
-  echo "ERROR: Could not download prepare-migration.sh. Check your network connection and re-run this command - the Showroom instance may be temporarily unavailable."
+  echo "ERROR: Could not download prepare-migration.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
 fi
 ----
 
