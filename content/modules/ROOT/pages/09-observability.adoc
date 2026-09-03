@@ -265,14 +265,21 @@ Three operators are needed. Each one manages a different part of the pipeline. F
 ----
 oc create namespace openshift-operators-redhat 2>/dev/null || true
 oc create namespace openshift-logging 2>/dev/null || true
-cat <<EOF | oc apply -f -
+
+# Create OperatorGroups only if they don't already exist
+if ! oc get operatorgroup -n openshift-operators-redhat --no-headers 2>/dev/null | grep -q .; then
+  cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
   name: openshift-operators-redhat
   namespace: openshift-operators-redhat
 spec: {}
----
+EOF
+fi
+
+if ! oc get operatorgroup -n openshift-logging --no-headers 2>/dev/null | grep -q .; then
+  cat <<EOF | oc apply -f -
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
@@ -282,6 +289,7 @@ spec:
   targetNamespaces:
   - openshift-logging
 EOF
+fi
 ----
 
 Install the Loki Operator from the Software Catalog - this is the same process for any operator in OperatorHub.
@@ -320,6 +328,7 @@ Verify all operators are installed:
 
 [source,bash,role="execute"]
 ----
+oc get csv -n openshift-operators-redhat --no-headers | grep -i loki && \
 oc get csv -n openshift-logging --no-headers | grep -i logging && \
 oc get csv -n openshift-operators --no-headers | grep -iE 'tempo|opentelemetry|observability'
 ----

@@ -481,7 +481,7 @@ oc get rolebindings -n app-dev
 oc describe rolebinding -n app-dev | grep -A 5 ose-teamed-app
 ----
 
-**Verify in the console.** Navigate to **User Management -> RoleBindings**, select project `app-dev`, and filter by **Namespace RoleBindings**:
+**Verify in the console.** Navigate to **User Management -> RoleBindings**, select project `app-dev`, and filter by kind and select **Namespace RoleBindings**:
 
 image::ldap-rolebindings-app-dev.png[RoleBindings for app-dev showing ose-teamed-app group with edit role, link=self, window=blank]
 You can immediately see that `ose-teamed-app` has the `edit` role in `app-dev`. Now switch the project to `app-prod`:
