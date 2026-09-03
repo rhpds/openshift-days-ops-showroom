@@ -51,13 +51,13 @@ image::virt-create-wizard-method.png[Create VirtualMachine wizard showing Custom
 IMPORTANT: Name the VM exactly `rhel9-vm` and ensure the project is set to `vm-demo`. The commands in the rest of this module use these names, so different values will cause them to fail.
 
 . Enter `rhel9-vm` as the **Name**
-. Verify the **Location** shows `Project vm-demo` - if not, click the edit icon to change it
+. Verify the **Location** shows Project `vm-demo` - if not, click the edit icon to change it
 . Click **Next**
 
 **Step 2: Select Guest OS**
 
 . Select **RHEL** as the guest operating system
-. From the **Guest operating system type** dropdown, select **Red Hat Enterprise Linux 9**
+. From the **Guest operating system type** dropdown, select **rhel.9**
 . Click **Next**
 +
 image::virt-guest-os.png[Guest OS selection showing RHEL Microsoft Windows and Other Linux options, link=self, window=blank]
@@ -355,6 +355,48 @@ image::virt-snapshot-restore-menu.png[Snapshot kebab menu showing Restore Virtua
 . Click **Restore** to confirm
 +
 image::virt-restore-confirmation.png[Restore snapshot confirmation dialog, link=self, window=blank]
+
+The storage class used in this environment only creates the underlying volume once a pod actually consumes the PVC (`WaitForFirstConsumer` binding mode). The restore normally triggers this itself, but occasionally doesn't - leaving the disk `Pending` forever with nothing to consume it. The restore also replaces the disk with a newly-named PVC (not the original `rhel9-vm-volume`), so we look up the current name first. Run this to confirm the disk bound, or force it if it didn't:
+
+[source,bash,role="execute"]
+----
+PVC_NAME=$(oc get vm rhel9-vm -n vm-demo -o jsonpath='{.spec.template.spec.volumes[?(@.name=="rootdisk")].dataVolume.name}')
+echo "Waiting for restored disk ($PVC_NAME) to bind..."
+ELAPSED=0
+until oc get pvc "$PVC_NAME" -n vm-demo -o jsonpath='{.status.phase}' 2>/dev/null | grep -q Bound; do
+  sleep 5; ELAPSED=$((ELAPSED+5))
+  if [ $ELAPSED -ge 30 ]; then
+    echo "Disk didn't bind on its own - starting a temporary pod to force it to bind:"
+    oc apply -f - <<EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: force-volume-bind
+  namespace: vm-demo
+spec:
+  restartPolicy: Never
+  containers:
+  - name: force-bind
+    image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+    command: ["sleep", "120"]
+    volumeDevices:
+    - name: disk
+      devicePath: /dev/forcebind
+  volumes:
+  - name: disk
+    persistentVolumeClaim:
+      claimName: $PVC_NAME
+EOF
+    until oc get pvc "$PVC_NAME" -n vm-demo -o jsonpath='{.status.phase}' 2>/dev/null | grep -q Bound; do
+      sleep 5
+    done
+    oc delete pod force-volume-bind -n vm-demo --ignore-not-found
+    break
+  fi
+done
+echo "Disk bound"
+----
+
 . **Start** the VM again by clicking the **Start** button (play icon)
 
 Once the VM is running, get the login credentials again:
