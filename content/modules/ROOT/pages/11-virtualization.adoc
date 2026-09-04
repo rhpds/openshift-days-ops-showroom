@@ -42,7 +42,7 @@ Now create a VM using the console - the same cloud-style experience your teams g
 
 . In the OpenShift console, switch to the **Fleet Virtualization** perspective from the top-left dropdown (named **Virtualization** if ACM is not enabled)
 . Navigate to **VirtualMachines** in the left sidebar
-. Click the **Create** button
+. Click the **Create** dropdown and select **From template**
 +
 The Create VirtualMachine wizard opens with a stepped workflow. Select **Custom configuration (default)** as the creation method.
 +

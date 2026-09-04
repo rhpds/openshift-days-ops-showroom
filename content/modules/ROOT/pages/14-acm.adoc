@@ -143,7 +143,7 @@ NOTE: You might have noticed that we have already deployed a Virtual Machine for
 +
 image::08-dropdown-menu.png[link=self, window=blank, width=100%, Create VM]
 +
-. Click the *Create* dropdown and select *From template*
+. Click the *Create* button
 +
 image::09-create-menu.png[link=self, window=blank, width=100%, Create VM]
 
@@ -234,7 +234,7 @@ image::03-argoconfig.png[link=self, window=blank, width=100%, ArgoCD Config]
 +
 image::03-app-gitops.png[link=self, window=blank, width=100%, App GitOps]
 +
-. Click *Next* to continue to the *Repository*
+. Click *Next* to continue to the *Template*
 . Under repository types, select the *Git* repository type
 . Enter the URL and select *Create new option* for the dropdown
 +
