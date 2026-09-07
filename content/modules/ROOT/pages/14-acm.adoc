@@ -143,29 +143,33 @@ NOTE: You might have noticed that we have already deployed a Virtual Machine for
 +
 image::08-dropdown-menu.png[link=self, window=blank, width=100%, Create VM]
 +
-. Click the *Create* button
-+
-image::09-create-menu.png[link=self, window=blank, width=100%, Create VM]
-
-. Under default template select *Red Hat Enterprise Linux 9 VM*
-+
-image::10-template-menu.png[link=self, window=blank, width=100%, Create VM]
-+
-NOTE: Notice all of the available templates to use, Windows VMs are fully supported as well.
-
-. Under Virtual machine name, enter the following and leave all other options as default (Disk size, Disk Source):
+. Click the *Create* button, select *Create from Template*, and under Name enter the following:
 +
 [source,sh,role="copypaste"]
 ----
 rhel9-lab-vm
 ----
 +
+image::09-create-menu.png[link=self, window=blank, width=100%, Create VM]
+
+. Click *Next* and under Template select *Red Hat Enterprise Linux 9 VM*
++
+image::10-template-menu.png[link=self, window=blank, width=100%, Create VM]
++
+NOTE: Notice all of the available templates to use, Windows VMs are fully supported as well.
+
+. Click *Next* to reach the Customization step and leave all options as default (Disk size, Disk Source, Network, etc):
++
+image::acm-vm-customization.png[link=self, window=blank, width=100%, Create VM]
++
 [CAUTION]
 ====
 Please notice all of the available options to configure the VM with, these will change depending on your operating system
 ====
+
+. Click *Next* to reach Review and create, leave *Start this VirtualMachine after creation* checked, and click *Create VirtualMachine*. Watch for progress, this should take a couple of minutes to complete.
 +
-. Click *Quick create Virtual Machine* and watch for progress, this should take a couple of minutes to complete.
+image::acm-vm-review-create.png[link=self, window=blank, width=100%, Create VM]
 
 . Once completed you will see the live console as well as stats about your VM.
 +
