@@ -100,7 +100,7 @@ The Lightspeed pods take 3-5 minutes to start while TLS certificates are generat
 ----
 echo "Waiting for Lightspeed to start (this takes 3-5 minutes)..."
 ELAPSED=0
-until oc get pods -n openshift-lightspeed -l app.kubernetes.io/component=application-server --no-headers 2>/dev/null | grep -q "3/3.*Running"; do
+until oc get pods -n openshift-lightspeed -l app.kubernetes.io/component=application-server --no-headers 2>/dev/null | grep -q "2/2.*Running"; do
   sleep 10; ELAPSED=$((ELAPSED+10))
   [ $ELAPSED -ge 600 ] && echo "ERROR: Timed out after 10 minutes" && break
 done
@@ -112,13 +112,15 @@ You should see all pods `Running`:
 
 ----
 NAME                                                     READY   STATUS    RESTARTS        AGE
-lightspeed-app-server-xxxxx                              3/3     Running   0               3m
+lightspeed-app-server-xxxxx                              2/2     Running   1               3m
 lightspeed-console-plugin-xxxxx                          1/1     Running   0               3m
 lightspeed-operator-controller-manager-xxxxx              1/1     Running   0               83m
 lightspeed-postgres-server-xxxxx                         1/1     Running   1               3m
+lightspeed-rhokp-xxxxx                                   1/1     Running   0               3m
+openshift-mcp-server-xxxxx                               1/1     Running   0               3m
 ----
 
-NOTE: The postgres pod may show 1 restart - this is normal during initial startup.
+NOTE: The postgres and app-server pods may each show 1 restart - this is normal during initial startup.
 
 Check the OLSConfig status:
 
