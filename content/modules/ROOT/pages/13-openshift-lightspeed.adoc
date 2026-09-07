@@ -159,11 +159,11 @@ You can start by asking, for example:
 [quote]
 What's the difference between a Deployment and a StatefulSet?
 
-OpenShift Lightspeed will search for the most relevant sections of the documentation in its vector database. This information is then sent along with your query to the model, enabling it to provide an accurate response.
+Under the hood, OpenShift Lightspeed searches the official OpenShift documentation using the Offline Knowledge Portal (OKP), which replaced the product's earlier custom RAG implementation. OKP uses tool-based retrieval - the model decides during its reasoning whether to invoke the documentation-search tool, rather than every response always attaching a fixed list of source links.
 
-OpenShift Lightspeed will likely provide a response explaining what both Deployment and StatefulSet resources are, along with a comparison between them. If you scroll down to the end of the response, OpenShift Lightspeed will display links to the most relevant documentation, allowing you to quickly access those sections and explore further:
+OpenShift Lightspeed will likely provide a response explaining what both Deployment and StatefulSet resources are, along with a comparison between them.
 
-image::ols-related-docs.png[Related documentation in OpenShift Lightspeed, link=self, window=blank]
+NOTE: Because OKP uses tool-based retrieval, the model decides per-question whether to invoke the documentation-search tool - so you won't always see a list of linked source documents at the end of the response, even for accurate answers.
 == Capabilities
 
 === Assisted YAML generation
