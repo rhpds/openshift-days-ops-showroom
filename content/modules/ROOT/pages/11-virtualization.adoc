@@ -356,48 +356,11 @@ image::virt-snapshot-restore-menu.png[Snapshot kebab menu showing Restore Virtua
 +
 image::virt-restore-confirmation.png[Restore snapshot confirmation dialog, link=self, window=blank]
 
-The storage class used in this environment only creates the underlying volume once a pod actually consumes the PVC (`WaitForFirstConsumer` binding mode). The restore normally triggers this itself, but occasionally doesn't - leaving the disk `Pending` forever with nothing to consume it. The restore also replaces the disk with a newly-named PVC (not the original `rhel9-vm-volume`), so we look up the current name first. Run this to confirm the disk bound, or force it if it didn't:
+The VM will show **WaitingForVolumeBinding** after the restore - the storage only attaches the restored disk once something tries to run on it.
 
-[source,bash,role="execute"]
-----
-PVC_NAME=$(oc get vm rhel9-vm -n vm-demo -o jsonpath='{.spec.template.spec.volumes[?(@.name=="rootdisk")].dataVolume.name}')
-echo "Waiting for restored disk ($PVC_NAME) to bind..."
-ELAPSED=0
-until oc get pvc "$PVC_NAME" -n vm-demo -o jsonpath='{.status.phase}' 2>/dev/null | grep -q Bound; do
-  sleep 5; ELAPSED=$((ELAPSED+5))
-  if [ $ELAPSED -ge 30 ]; then
-    echo "Disk didn't bind on its own - starting a temporary pod to force it to bind:"
-    oc apply -f - <<EOF
-apiVersion: v1
-kind: Pod
-metadata:
-  name: force-volume-bind
-  namespace: vm-demo
-spec:
-  restartPolicy: Never
-  containers:
-  - name: force-bind
-    image: registry.access.redhat.com/ubi9/ubi-minimal:latest
-    command: ["sleep", "120"]
-    volumeDevices:
-    - name: disk
-      devicePath: /dev/forcebind
-  volumes:
-  - name: disk
-    persistentVolumeClaim:
-      claimName: $PVC_NAME
-EOF
-    until oc get pvc "$PVC_NAME" -n vm-demo -o jsonpath='{.status.phase}' 2>/dev/null | grep -q Bound; do
-      sleep 5
-    done
-    oc delete pod force-volume-bind -n vm-demo --ignore-not-found
-    break
-  fi
-done
-echo "Disk bound"
-----
-
-. **Start** the VM again by clicking the **Start** button (play icon)
+. **Start** the VM again by clicking the **Start** button (play icon) - this triggers the disk to bind
++
+image::virt-restore-waiting-for-volume-binding.png[VM showing WaitingForVolumeBinding status after restore, link=self, window=blank]
 
 Once the VM is running, get the login credentials again:
 
