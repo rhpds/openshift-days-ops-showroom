@@ -152,6 +152,11 @@ rhel9-lab-vm
 +
 image::09-create-menu.png[link=self, window=blank, width=100%, Create VM]
 
+[NOTE]
+====
+A pop-up window may appear at this point, close this pop-up and it will show as selected.
+====
+
 . Click *Next* and under Template select *Red Hat Enterprise Linux 9 VM*
 +
 image::10-template-menu.png[link=self, window=blank, width=100%, Create VM]
@@ -204,7 +209,7 @@ This is all to demonstrate automated, Git-driven multi-cluster consistency while
 .Procedure
 . From the **Fleet Management** tab, navigate to *Applications* from the left side menu.
 . Click *Create application*, select *ArgoCD ApplicationSet - Push Model*.
-. Enter the following information: `skupper-patient-demo`
+. Under the *Name* field, enter the following: `skupper-patient-demo`
 +
 [source,sh,subs="attributes",role="copypaste"]
 ----
@@ -437,6 +442,21 @@ image::02-rhacm-yaml-5.png[link=self, window=blank, width=100%]
 ====
 By creating and informing on the policies you have now ensured that the EMEA cluster is in compliance with the GDPR requirements. All new clusters with the same label will be in compliance with the GDPR requirements.
 ====
+
+== Cleanup & Summary
+
+Remove the resources you created in this module (the EMEA hosted cluster, lab VM, GitOps application, and GDPR policy). This does not affect the pre-existing `managed-hcp` cluster or `rhel-webserver` VM.
+
+[source,bash,subs="+attributes",role="execute"]
+----
+if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/cleanup-acm.sh {support_base_url}/cleanup-scripts/cleanup-acm.sh; then
+  bash /tmp/cleanup-acm.sh
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/cleanup-acm.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/cleanup-scripts/cleanup-acm.sh; then
+  bash /tmp/cleanup-acm.sh
+else
+  echo "ERROR: Could not download cleanup-acm.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
+fi
+----
 
 === Multicluster Management Takeaways
 
