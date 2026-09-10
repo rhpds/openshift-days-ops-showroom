@@ -152,6 +152,11 @@ rhel9-lab-vm
 +
 image::09-create-menu.png[link=self, window=blank, width=100%, Create VM]
 
+[NOTE]
+====
+A pop-up window may appear at this point, close this pop-up and it will show as selected.
+====
+
 . Click *Next* and under Template select *Red Hat Enterprise Linux 9 VM*
 +
 image::10-template-menu.png[link=self, window=blank, width=100%, Create VM]
@@ -204,7 +209,7 @@ This is all to demonstrate automated, Git-driven multi-cluster consistency while
 .Procedure
 . From the **Fleet Management** tab, navigate to *Applications* from the left side menu.
 . Click *Create application*, select *ArgoCD ApplicationSet - Push Model*.
-. Enter the following information: `skupper-patient-demo`
+. Under the *Name* field, enter the following: `skupper-patient-demo`
 +
 [source,sh,subs="attributes",role="copypaste"]
 ----
