@@ -437,6 +437,37 @@ image::histogram.png[Log histogram, link=self, window=blank]
 It may take 1-2 minutes for logs to start appearing after the collector pods are running. If you see "No datapoints found", wait a moment and refresh.
 ====
 
+
+=== (Optional) Create Log File Metrics Exporter
+
+Create a LogFileMetricExporter custom resource (CR) to generate metrics about the logs produced by running containers. The Operator does not deploy the exporter by default, so you must create it manually.
+
+NOTE: If you do not create the LogFileMetricExporter CR, the Produced Logs field in the OpenShift Container Platform web console dashboard shows No datapoints found.
+
+[source,bash,role="execute"]
+----
+cat <<EOF | oc apply -f -
+apiVersion: logging.openshift.io/v1alpha1
+kind: LogFileMetricExporter
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  nodeSelector: {}
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 200m
+      memory: 128Mi
+  tolerations:
+    - operator: Exists
+EOF
+----
+
+image::logging-produced-logs.png[Produced Logs field in the OpenShift Container Platform web console dashboard, link=self, window=blank]
+
 == OpenTelemetry for Distributed Tracing
 
 Metrics tell you *what* is happening. Logs tell you *why*. **Traces** tell you *where* - when a request crosses multiple microservices, traces show the exact path and timing across every service. If a user reports "checkout is slow", a trace shows you: frontend (2ms) → API gateway (5ms) → inventory service (800ms) → payment (3ms) - so you instantly see inventory is the bottleneck.
