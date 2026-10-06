@@ -28,7 +28,7 @@ The same concepts apply to Microsoft Entra ID, Okta, Google Workspace, and any O
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/install-rhbk-operator.sh {support_base_url}/08-oidc-authentication/install-rhbk-operator.sh; then
   bash /tmp/install-rhbk-operator.sh
-elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/install-rhbk-operator.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/08-oidc-authentication/install-rhbk-operator.sh; then
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/install-rhbk-operator.sh https://raw.githubusercontent.com/rhpds/deliver-openshift-ops-day/main/support/08-oidc-authentication/install-rhbk-operator.sh; then
   bash /tmp/install-rhbk-operator.sh
 else
   echo "ERROR: Could not download install-rhbk-operator.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
@@ -176,7 +176,7 @@ You've seen how users and groups work in the Keycloak UI. Rather than repeating 
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-keycloak-oidc.sh {support_base_url}/08-oidc-authentication/setup-keycloak-oidc.sh; then
   bash /tmp/setup-keycloak-oidc.sh
-elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-keycloak-oidc.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/08-oidc-authentication/setup-keycloak-oidc.sh; then
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-keycloak-oidc.sh https://raw.githubusercontent.com/rhpds/deliver-openshift-ops-day/main/support/08-oidc-authentication/setup-keycloak-oidc.sh; then
   bash /tmp/setup-keycloak-oidc.sh
 else
   echo "ERROR: Could not download setup-keycloak-oidc.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
@@ -197,7 +197,7 @@ The Keycloak setup script already created the `rhbk-client-secret` in `openshift
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/configure-oauth-oidc.sh {support_base_url}/08-oidc-authentication/configure-oauth-oidc.sh; then
   bash /tmp/configure-oauth-oidc.sh
-elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/configure-oauth-oidc.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/08-oidc-authentication/configure-oauth-oidc.sh; then
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/configure-oauth-oidc.sh https://raw.githubusercontent.com/rhpds/deliver-openshift-ops-day/main/support/08-oidc-authentication/configure-oauth-oidc.sh; then
   bash /tmp/configure-oauth-oidc.sh
 else
   echo "ERROR: Could not download configure-oauth-oidc.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
@@ -340,7 +340,7 @@ oc login -u {openshift_cluster_admin_username} -p {openshift_cluster_admin_passw
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/cleanup-oidc.sh {support_base_url}/cleanup-scripts/cleanup-oidc.sh; then
   bash /tmp/cleanup-oidc.sh
-elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/cleanup-oidc.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/cleanup-scripts/cleanup-oidc.sh; then
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/cleanup-oidc.sh https://raw.githubusercontent.com/rhpds/deliver-openshift-ops-day/main/support/cleanup-scripts/cleanup-oidc.sh; then
   bash /tmp/cleanup-oidc.sh
 else
   echo "ERROR: Could not download cleanup-oidc.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
