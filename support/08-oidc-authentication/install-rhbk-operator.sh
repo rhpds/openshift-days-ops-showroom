@@ -25,7 +25,9 @@ spec:
   channel: stable-v26
   installPlanApproval: Automatic
   name: rhbk-operator
-  source: redhat-operators
+  # rhbk-operator is not in the live redhat-operators index;
+  # only available in the pinned snapshot catalog.
+  source: redhat-operators-snapshot
   sourceNamespace: openshift-marketplace
 EOF
 
