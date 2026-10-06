@@ -2,7 +2,7 @@
 set -euo pipefail
 
 oc create namespace debug-lab 2>/dev/null || true
-oc apply -f https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/main/support/broken-apps-v2.yaml
+oc apply -f https://raw.githubusercontent.com/rhpds/deliver-openshift-ops-day/main/support/broken-apps-v2.yaml
 
 echo ""
 echo "Waiting for pods to reach their error states..."

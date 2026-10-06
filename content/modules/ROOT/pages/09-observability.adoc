@@ -192,7 +192,7 @@ Deploy Mailpit - a lightweight mail server that catches emails and shows them in
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/deploy-mailpit.sh {support_base_url}/09-observability/deploy-mailpit.sh; then
   bash /tmp/deploy-mailpit.sh
-elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/deploy-mailpit.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/09-observability/deploy-mailpit.sh; then
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/deploy-mailpit.sh https://raw.githubusercontent.com/rhpds/deliver-openshift-ops-day/main/support/09-observability/deploy-mailpit.sh; then
   bash /tmp/deploy-mailpit.sh
 else
   echo "ERROR: Could not download deploy-mailpit.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
@@ -207,7 +207,7 @@ Now configure Alertmanager to send emails through Mailpit. This routes warning a
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/configure-alertmanager-email.sh {support_base_url}/09-observability/configure-alertmanager-email.sh; then
   bash /tmp/configure-alertmanager-email.sh
-elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/configure-alertmanager-email.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/09-observability/configure-alertmanager-email.sh; then
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/configure-alertmanager-email.sh https://raw.githubusercontent.com/rhpds/deliver-openshift-ops-day/main/support/09-observability/configure-alertmanager-email.sh; then
   bash /tmp/configure-alertmanager-email.sh
 else
   echo "ERROR: Could not download configure-alertmanager-email.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
@@ -234,7 +234,7 @@ Reset Alertmanager to its default configuration and clean up:
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/restore-alertmanager.sh {support_base_url}/09-observability/restore-alertmanager.sh; then
   bash /tmp/restore-alertmanager.sh
-elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/restore-alertmanager.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/09-observability/restore-alertmanager.sh; then
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/restore-alertmanager.sh https://raw.githubusercontent.com/rhpds/deliver-openshift-ops-day/main/support/09-observability/restore-alertmanager.sh; then
   bash /tmp/restore-alertmanager.sh
 else
   echo "ERROR: Could not download restore-alertmanager.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
@@ -317,7 +317,7 @@ You've seen how OperatorHub works. The remaining operators use the same process 
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/install-operators.sh {support_base_url}/09-observability/install-operators.sh; then
   bash /tmp/install-operators.sh
-elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/install-operators.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/09-observability/install-operators.sh; then
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/install-operators.sh https://raw.githubusercontent.com/rhpds/deliver-openshift-ops-day/main/support/09-observability/install-operators.sh; then
   bash /tmp/install-operators.sh
 else
   echo "ERROR: Could not download install-operators.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
@@ -366,7 +366,7 @@ Now extract the S3 credentials, create the CA cert ConfigMap, and deploy the Lok
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-loki-storage.sh {support_base_url}/09-observability/setup-loki-storage.sh; then
   bash /tmp/setup-loki-storage.sh
-elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-loki-storage.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/09-observability/setup-loki-storage.sh; then
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-loki-storage.sh https://raw.githubusercontent.com/rhpds/deliver-openshift-ops-day/main/support/09-observability/setup-loki-storage.sh; then
   bash /tmp/setup-loki-storage.sh
 else
   echo "ERROR: Could not download setup-loki-storage.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
@@ -407,7 +407,7 @@ Create the ClusterLogForwarder - this defines the pipeline:
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-log-forwarding.sh {support_base_url}/09-observability/setup-log-forwarding.sh; then
   bash /tmp/setup-log-forwarding.sh
-elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-log-forwarding.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/09-observability/setup-log-forwarding.sh; then
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-log-forwarding.sh https://raw.githubusercontent.com/rhpds/deliver-openshift-ops-day/main/support/09-observability/setup-log-forwarding.sh; then
   bash /tmp/setup-log-forwarding.sh
 else
   echo "ERROR: Could not download setup-log-forwarding.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
@@ -551,7 +551,7 @@ The tracing pipeline needs two sets of permissions: the collector needs write ac
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-tracing-rbac.sh {support_base_url}/09-observability/setup-tracing-rbac.sh; then
   bash /tmp/setup-tracing-rbac.sh
-elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-tracing-rbac.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/09-observability/setup-tracing-rbac.sh; then
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-tracing-rbac.sh https://raw.githubusercontent.com/rhpds/deliver-openshift-ops-day/main/support/09-observability/setup-tracing-rbac.sh; then
   bash /tmp/setup-tracing-rbac.sh
 else
   echo "ERROR: Could not download setup-tracing-rbac.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
@@ -566,7 +566,7 @@ The collector is the central receiving station for trace data. Apps send traces 
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-otel-collector.sh {support_base_url}/09-observability/setup-otel-collector.sh; then
   bash /tmp/setup-otel-collector.sh
-elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-otel-collector.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/09-observability/setup-otel-collector.sh; then
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/setup-otel-collector.sh https://raw.githubusercontent.com/rhpds/deliver-openshift-ops-day/main/support/09-observability/setup-otel-collector.sh; then
   bash /tmp/setup-otel-collector.sh
 else
   echo "ERROR: Could not download setup-otel-collector.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
@@ -666,7 +666,7 @@ Remove the observability resources you deployed. The Prometheus monitoring stack
 ----
 if curl -fsSL --retry 3 --retry-delay 2 -o /tmp/cleanup-observability.sh {support_base_url}/cleanup-scripts/cleanup-observability.sh; then
   bash /tmp/cleanup-observability.sh
-elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/cleanup-observability.sh https://raw.githubusercontent.com/rhpds/openshift-days-ops-showroom/dev/support/cleanup-scripts/cleanup-observability.sh; then
+elif curl -fsSL --retry 3 --retry-delay 2 -o /tmp/cleanup-observability.sh https://raw.githubusercontent.com/rhpds/deliver-openshift-ops-day/main/support/cleanup-scripts/cleanup-observability.sh; then
   bash /tmp/cleanup-observability.sh
 else
   echo "ERROR: Could not download cleanup-observability.sh from the Showroom instance or GitHub. Check your network connection and re-run this command."
