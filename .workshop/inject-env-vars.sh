@@ -25,27 +25,27 @@ fi
 # These control which nav items are shown via ifeval conditionals
 
 echo "Module settings (getting started):"
-echo "  MODULE_ENABLE_INSTALL=${MODULE_ENABLE_INSTALL:-true}"
+echo "  MODULE_ENABLE_INSTALL=${MODULE_ENABLE_INSTALL:-false}"
 echo "Module settings (core operations):"
-echo "  MODULE_ENABLE_APPMGMT=${MODULE_ENABLE_APPMGMT:-true}"
-echo "  MODULE_ENABLE_INGRESS=${MODULE_ENABLE_INGRESS:-true}"
-echo "  MODULE_ENABLE_NETSEC=${MODULE_ENABLE_NETSEC:-true}"
-echo "  MODULE_ENABLE_DEBUGGING=${MODULE_ENABLE_DEBUGGING:-true}"
-echo "  MODULE_ENABLE_GITOPS=${MODULE_ENABLE_GITOPS:-true}"
+echo "  MODULE_ENABLE_APPMGMT=${MODULE_ENABLE_APPMGMT:-false}"
+echo "  MODULE_ENABLE_INGRESS=${MODULE_ENABLE_INGRESS:-false}"
+echo "  MODULE_ENABLE_NETSEC=${MODULE_ENABLE_NETSEC:-false}"
+echo "  MODULE_ENABLE_DEBUGGING=${MODULE_ENABLE_DEBUGGING:-false}"
+echo "  MODULE_ENABLE_GITOPS=${MODULE_ENABLE_GITOPS:-false}"
 echo "Module settings (identity & access):"
-echo "  MODULE_ENABLE_LDAP=${MODULE_ENABLE_LDAP:-true}"
-echo "  MODULE_ENABLE_OIDC=${MODULE_ENABLE_OIDC:-true}"
+echo "  MODULE_ENABLE_LDAP=${MODULE_ENABLE_LDAP:-false}"
+echo "  MODULE_ENABLE_OIDC=${MODULE_ENABLE_OIDC:-false}"
 echo "Module settings (day 2 operations):"
-echo "  MODULE_ENABLE_OBSERVABILITY=${MODULE_ENABLE_OBSERVABILITY:-true}"
-echo "  MODULE_ENABLE_PERFORMANCE=${MODULE_ENABLE_PERFORMANCE:-true}"
+echo "  MODULE_ENABLE_OBSERVABILITY=${MODULE_ENABLE_OBSERVABILITY:-false}"
+echo "  MODULE_ENABLE_PERFORMANCE=${MODULE_ENABLE_PERFORMANCE:-false}"
 echo "Module settings (advanced topics):"
-echo "  MODULE_ENABLE_VIRT=${MODULE_ENABLE_VIRT:-true}"
-echo "  MODULE_ENABLE_DEVHUB=${MODULE_ENABLE_DEVHUB:-true}"
-echo "  MODULE_ENABLE_OLS=${MODULE_ENABLE_OLS:-true}"
-echo "  MODULE_ENABLE_ACM=${MODULE_ENABLE_ACM:-true}"
-echo "  MODULE_ENABLE_SECURITY=${MODULE_ENABLE_SECURITY:-true}"
-echo "  MODULE_ENABLE_ZTWIM=${MODULE_ENABLE_ZTWIM:-true}"
-echo "  MODULE_ENABLE_VAULT=${MODULE_ENABLE_VAULT:-true}"
+echo "  MODULE_ENABLE_VIRT=${MODULE_ENABLE_VIRT:-false}"
+echo "  MODULE_ENABLE_DEVHUB=${MODULE_ENABLE_DEVHUB:-false}"
+echo "  MODULE_ENABLE_OLS=${MODULE_ENABLE_OLS:-false}"
+echo "  MODULE_ENABLE_ACM=${MODULE_ENABLE_ACM:-false}"
+echo "  MODULE_ENABLE_SECURITY=${MODULE_ENABLE_SECURITY:-false}"
+echo "  MODULE_ENABLE_ZTWIM=${MODULE_ENABLE_ZTWIM:-false}"
+echo "  MODULE_ENABLE_VAULT=${MODULE_ENABLE_VAULT:-false}"
 
 # Create attributes section for Antora
 # ifeval checks: ifeval::["{module_enable_virt}" == "true"]
@@ -54,27 +54,27 @@ ATTRS=""
 
 # Module flags
 # Getting Started
-ATTRS="${ATTRS}    module_enable_install: '${MODULE_ENABLE_INSTALL:-true}'"$'\n'
+ATTRS="${ATTRS}    module_enable_install: '${MODULE_ENABLE_INSTALL:-false}'"$'\n'
 # Core Operations
-ATTRS="${ATTRS}    module_enable_appmgmt: '${MODULE_ENABLE_APPMGMT:-true}'"$'\n'
-ATTRS="${ATTRS}    module_enable_ingress: '${MODULE_ENABLE_INGRESS:-true}'"$'\n'
-ATTRS="${ATTRS}    module_enable_netsec: '${MODULE_ENABLE_NETSEC:-true}'"$'\n'
-ATTRS="${ATTRS}    module_enable_debugging: '${MODULE_ENABLE_DEBUGGING:-true}'"$'\n'
-ATTRS="${ATTRS}    module_enable_gitops: '${MODULE_ENABLE_GITOPS:-true}'"$'\n'
+ATTRS="${ATTRS}    module_enable_appmgmt: '${MODULE_ENABLE_APPMGMT:-false}'"$'\n'
+ATTRS="${ATTRS}    module_enable_ingress: '${MODULE_ENABLE_INGRESS:-false}'"$'\n'
+ATTRS="${ATTRS}    module_enable_netsec: '${MODULE_ENABLE_NETSEC:-false}'"$'\n'
+ATTRS="${ATTRS}    module_enable_debugging: '${MODULE_ENABLE_DEBUGGING:-false}'"$'\n'
+ATTRS="${ATTRS}    module_enable_gitops: '${MODULE_ENABLE_GITOPS:-false}'"$'\n'
 # Identity & Access
-ATTRS="${ATTRS}    module_enable_ldap: '${MODULE_ENABLE_LDAP:-true}'"$'\n'
-ATTRS="${ATTRS}    module_enable_oidc: '${MODULE_ENABLE_OIDC:-true}'"$'\n'
+ATTRS="${ATTRS}    module_enable_ldap: '${MODULE_ENABLE_LDAP:-false}'"$'\n'
+ATTRS="${ATTRS}    module_enable_oidc: '${MODULE_ENABLE_OIDC:-false}'"$'\n'
 # Day 2 Operations
-ATTRS="${ATTRS}    module_enable_observability: '${MODULE_ENABLE_OBSERVABILITY:-true}'"$'\n'
-ATTRS="${ATTRS}    module_enable_performance: '${MODULE_ENABLE_PERFORMANCE:-true}'"$'\n'
+ATTRS="${ATTRS}    module_enable_observability: '${MODULE_ENABLE_OBSERVABILITY:-false}'"$'\n'
+ATTRS="${ATTRS}    module_enable_performance: '${MODULE_ENABLE_PERFORMANCE:-false}'"$'\n'
 # Advanced Topics
-ATTRS="${ATTRS}    module_enable_virt: '${MODULE_ENABLE_VIRT:-true}'"$'\n'
-ATTRS="${ATTRS}    module_enable_devhub: '${MODULE_ENABLE_DEVHUB:-true}'"$'\n'
-ATTRS="${ATTRS}    module_enable_ols: '${MODULE_ENABLE_OLS:-true}'"$'\n'
-ATTRS="${ATTRS}    module_enable_acm: '${MODULE_ENABLE_ACM:-true}'"$'\n'
-ATTRS="${ATTRS}    module_enable_security: '${MODULE_ENABLE_SECURITY:-true}'"$'\n'
-ATTRS="${ATTRS}    module_enable_ztwim: '${MODULE_ENABLE_ZTWIM:-true}'"$'\n'
-ATTRS="${ATTRS}    module_enable_vault: '${MODULE_ENABLE_VAULT:-true}'"$'\n'
+ATTRS="${ATTRS}    module_enable_virt: '${MODULE_ENABLE_VIRT:-false}'"$'\n'
+ATTRS="${ATTRS}    module_enable_devhub: '${MODULE_ENABLE_DEVHUB:-false}'"$'\n'
+ATTRS="${ATTRS}    module_enable_ols: '${MODULE_ENABLE_OLS:-false}'"$'\n'
+ATTRS="${ATTRS}    module_enable_acm: '${MODULE_ENABLE_ACM:-false}'"$'\n'
+ATTRS="${ATTRS}    module_enable_security: '${MODULE_ENABLE_SECURITY:-false}'"$'\n'
+ATTRS="${ATTRS}    module_enable_ztwim: '${MODULE_ENABLE_ZTWIM:-false}'"$'\n'
+ATTRS="${ATTRS}    module_enable_vault: '${MODULE_ENABLE_VAULT:-false}'"$'\n'
 
 # TOC depth - only show main sections
 ATTRS="${ATTRS}    toclevels: 2"$'\n'
@@ -177,7 +177,7 @@ tabs:
 UIEOF
 
 # Add RHACS tab if security module is enabled
-if [ "${MODULE_ENABLE_SECURITY:-true}" = "true" ]; then
+if [ "${MODULE_ENABLE_SECURITY:-false}" = "true" ]; then
 cat >> "$UI_CONFIG" <<UIEOF
 
   - name: RHACS
@@ -186,7 +186,7 @@ UIEOF
 fi
 
 # Add ArgoCD tab if ACM or GitOps module is enabled
-if [ "${MODULE_ENABLE_ACM:-true}" = "true" ] || [ "${MODULE_ENABLE_GITOPS:-true}" = "true" ]; then
+if [ "${MODULE_ENABLE_ACM:-false}" = "true" ] || [ "${MODULE_ENABLE_GITOPS:-false}" = "true" ]; then
 cat >> "$UI_CONFIG" <<UIEOF
 
   - name: ArgoCD
@@ -195,7 +195,7 @@ UIEOF
 fi
 
 # Add Developer Hub tab if devhub module is enabled
-if [ "${MODULE_ENABLE_DEVHUB:-true}" = "true" ]; then
+if [ "${MODULE_ENABLE_DEVHUB:-false}" = "true" ]; then
 cat >> "$UI_CONFIG" <<UIEOF
 
   - name: Developer Hub
