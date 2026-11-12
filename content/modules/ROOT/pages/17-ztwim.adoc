@@ -19,6 +19,7 @@ By the end of this lab you will:
 * Deploy PostgreSQL with SPIFFE-issued certificates and a separate client workload identity
 * Establish mutual TLS (mTLS) database connections using short-lived SPIFFE certificates instead of passwords
 * Inspect certificate properties, identity binding, and automatic certificate rotation
+* Verify that every SPIRE agent attested with `k8s_psat`, that each agent is tied to a real cluster node, and that each PostgreSQL registration entry is parented to one of those agents
 * Confirm that connections without valid certificates are rejected
 
 Zero-trust principles require cryptographic proof of workload identity. SPIFFE (Secure Production Identity Framework for Everyone) is the open standard behind this approach; ZTWIM brings SPIRE—the SPIFFE runtime—to OpenShift so every pod gets a cryptographic identity without you managing a private CA by hand.
@@ -148,6 +149,159 @@ oc rsh -n postgresql-spiffe-client -c postgresql-spiffe-client deployment/postgr
 ----
 
 The `spiffe-helper` sidecar fetches a new certificate approximately 30 minutes before expiration. Short lifetimes are a feature—if an attacker steals a cert, the window of abuse is measured in minutes, not months until someone rotates a password.
+
+== See how the identity was attested
+
+The certificate you just read is only meaningful if SPIRE was right to issue it. Workload selectors decide which pod may receive an identity. The SPIRE agent on the node is the component that reports which pod called the Workload API, so that agent has to prove it belongs on this cluster before its report counts.
+
+*The proof is a projected service account token that the kubelet minted for the SPIRE agent pod.* 
+
+The SPIRE server validates that token with the Kubernetes TokenReview API and records what the API server returns: cluster, agent namespace, agent service account, and node name. The agent's SPIFFE ID is `spiffe://<trust-domain>/spire/agent/k8s_psat/<cluster>/<node-uid>`. That ID is bound to the node. Workload certificates are issued only with that attested agent as their Parent ID. A node that fails the check receives no agent identity, and pods on that node receive no certificates. A stolen workload certificate still expires in about an hour. Minting a new one requires a node the API server will vouch for.
+
+[IMPORTANT]
+====
+Node attestation is what makes the database certificate trustworthy. SPIRE issues the `postgresql-spiffe-client` certificate only after the Kubernetes API server has validated the agent on that node. A machine that fails the check never receives an agent identity, so it cannot mint a client certificate that would pass the `sslmode=verify-full` connection in the next section.
+====
+
+=== Verify node attestation
+
+Confirm the control is on, that every SPIRE agent passed it, and that the attested identity is pinned to a real node in this cluster. Each command locates the operator namespace on its own, so you can re-run a step in a new terminal.
+
+. Find the namespace where ZTWIM installed SPIRE:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+ZTWIM_NS=$(oc get spireserver -A -o jsonpath='{.items[0].metadata.namespace}')
+echo "$ZTWIM_NS"
+----
++
+The name is `openshift-zero-trust-workload-identity-manager` or `zero-trust-workload-identity-manager`.
++
+. Confirm projected service account token (PSAT) node attestation is enabled. The output is the single word `true`:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+ZTWIM_NS=$(oc get spireserver -A -o jsonpath='{.items[0].metadata.namespace}')
+oc get spireagent cluster -n "$ZTWIM_NS" -o jsonpath='{.spec.nodeAttestor.k8sPSATEnabled}{"\n"}'
+----
++
+[source,text]
+----
+true
+----
++
+. List the SPIRE agent pods, then list the agents the SPIRE server has attested:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+ZTWIM_NS=$(oc get spireserver -A -o jsonpath='{.items[0].metadata.namespace}')
+echo "Running SPIRE agent pods: $(oc get pods -n "$ZTWIM_NS" -l app.kubernetes.io/name=spire-agent --field-selector=status.phase=Running --no-headers | wc -l | tr -d ' ')"
+oc get pods -n "$ZTWIM_NS" -l app.kubernetes.io/name=spire-agent
+oc exec -n "$ZTWIM_NS" spire-server-0 -c spire-server -- \
+  /opt/spire/bin/spire-server agent list \
+  -socketPath /tmp/spire-server/private/api.sock
+----
++
+The trust domain, node UID, serial number, and expiration time differ on your cluster. The shape of each entry looks like this:
++
+[source,text]
+----
+SPIFFE ID         : spiffe://<trust-domain>/spire/agent/k8s_psat/<cluster>/<node-uid>
+Attestation type  : k8s_psat
+Expiration time   : <timestamp in the future>
+Serial number     : <serial>
+Can re-attest     : true
+----
++
+Confirm all of the following:
++
+* The number of attested agents equals the number of `Running` `spire-agent` pods, and that number is at least 1.
+* Every entry says `Attestation type: k8s_psat`. Any other type means a node was trusted without the API server check.
+* Every SPIFFE ID contains `/spire/agent/k8s_psat/`.
+* `Expiration time` is later than the current time. Node identity expires. An expired agent is no longer attested.
++
+. Show the cluster nodes, then show the first attested agent. The command selects the first agent from the list. The same checks apply to every agent:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+ZTWIM_NS=$(oc get spireserver -A -o jsonpath='{.items[0].metadata.namespace}')
+echo "Operator namespace: ${ZTWIM_NS}"
+oc get nodes -o custom-columns=NAME:.metadata.name,UID:.metadata.uid --no-headers
+AGENT_ID=$(oc exec -n "$ZTWIM_NS" spire-server-0 -c spire-server -- \
+  /opt/spire/bin/spire-server agent list \
+  -socketPath /tmp/spire-server/private/api.sock \
+  | awk '/SPIFFE ID/ { print $NF; exit }')
+echo "Attested agent: ${AGENT_ID}"
+oc exec -n "$ZTWIM_NS" spire-server-0 -c spire-server -- \
+  /opt/spire/bin/spire-server agent show \
+  -socketPath /tmp/spire-server/private/api.sock \
+  -spiffeID "${AGENT_ID}"
+----
++
+Confirm all of the following on the agent you inspected:
++
+* `k8s_psat:agent_node_name:<name>` matches a name from `oc get nodes`. The API server supplied that name.
+* The node UID at the end of the agent SPIFFE ID matches the UID of that same node.
+* `k8s_psat:agent_ns:<namespace>` is the operator namespace printed above.
+* `k8s_psat:agent_sa:spire-agent` is the SPIRE agent service account. The token was minted for the agent. The PostgreSQL client service account cannot present it.
+* `Can re-attest: true`. When the attestation expires, the agent must prove itself to the API server again.
++
+A machine that cannot produce that token never appears in the agent list, and nothing on that machine can be issued a PostgreSQL client certificate.
+
+=== Verify workload attestation
+
+Node attestation decides which machines may ask for identities. Workload attestation decides which pods on those machines receive the PostgreSQL certificate.
+
+. Show the client registration policy. The namespace, pod label, and SPIFFE ID template are the rules the agent enforces:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc get clusterspiffeid postgresql-spiffe-client \
+  -o jsonpath='namespace={.spec.namespaceSelector.matchLabels.kubernetes\.io/metadata\.name}{"\n"}pod-label={.spec.podSelector.matchLabels.app}{"\n"}template={.spec.spiffeIDTemplate}{"\n"}'
+----
++
+Expected output:
++
+[source,text]
+----
+namespace=postgresql-spiffe-client
+pod-label=postgresql-spiffe-client
+template=spiffe://{{ .TrustDomain }}/ns/{{ .PodMeta.Namespace }}/sa/{{ .PodSpec.ServiceAccountName }}
+----
++
+The template is the SPIFFE ID you saw in the client certificate URI. The selectors restrict that ID to this namespace and to pods labeled `app=postgresql-spiffe-client`.
++
+. Show the live registration entry for the client:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+ZTWIM_NS=$(oc get spireserver -A -o jsonpath='{.items[0].metadata.namespace}')
+oc exec -n "$ZTWIM_NS" spire-server-0 -c spire-server -- \
+  /opt/spire/bin/spire-server entry show \
+  -socketPath /tmp/spire-server/private/api.sock \
+  -selector k8s:ns:postgresql-spiffe-client
+----
++
+Confirm all of the following. Extra selectors, such as pod name or pod UID, may also be present:
++
+* The SPIFFE ID matches the certificate URI from the previous section: `spiffe://<trust-domain>/ns/postgresql-spiffe-client/sa/postgresql-spiffe-client`.
+* The Parent ID is one of the `k8s_psat` agent SPIFFE IDs from the node attestation list. That parent is the proof that node attestation is in the chain. SPIRE issued the certificate under an agent the API server already validated.
+* Selectors include `k8s:ns:postgresql-spiffe-client`, `k8s:sa:postgresql-spiffe-client`, and `k8s:pod-label:app:postgresql-spiffe-client`.
++
+. Repeat the check for the database server:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+ZTWIM_NS=$(oc get spireserver -A -o jsonpath='{.items[0].metadata.namespace}')
+oc exec -n "$ZTWIM_NS" spire-server-0 -c spire-server -- \
+  /opt/spire/bin/spire-server entry show \
+  -socketPath /tmp/spire-server/private/api.sock \
+  -selector k8s:ns:postgresql-spiffe
+----
++
+Apply the same three checks to `spiffe://<trust-domain>/ns/postgresql-spiffe/sa/postgresql-spiffe`. The Parent ID is again a `k8s_psat` agent ID. The selectors name the `postgresql-spiffe` namespace, service account, and `app=postgresql-spiffe` pod label.
+
+The mutual TLS connection in the next section uses a certificate SPIRE issued only after both of these checks. A pod that misses the selectors never receives an SVID, which is why the unauthorized pod later in this lab cannot connect. PostgreSQL still maps the certificate common name to the database user. Attestation is what made SPIRE willing to issue the certificate.
 
 == Connect and verify mutual TLS
 
@@ -319,6 +473,8 @@ To summarize:
 
 * *ZTWIM* on this cluster provides SPIRE server, agents, CSI driver, and OIDC discovery for workload identity.
 * *SPIFFE workload identity* binds X.509 certificates to Kubernetes namespace and service account, replacing static database passwords.
+* *Node attestation* (`k8s_psat`) makes the Kubernetes API server vouch for each SPIRE agent. An unattested machine cannot mint workload certificates, so it cannot obtain a PostgreSQL client certificate that would pass mutual TLS.
+* *Workload attestation* limits those certificates to the PostgreSQL namespace, service account, and pod label. Mutual TLS is only as strong as that chain.
 * *Mutual TLS* enforces bidirectional certificate verification—both client and server prove cryptographic identity.
 * *Short-lived certificates* (approximately 1 hour) limit exposure windows and rotate automatically via `spiffe-helper` sidecars.
 * *Zero-trust enforcement*: connections without valid SPIFFE certificates are rejected regardless of network access.
