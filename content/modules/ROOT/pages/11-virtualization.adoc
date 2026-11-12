@@ -43,7 +43,8 @@ Now create a VM using the console - the same cloud-style experience your teams g
 . In the OpenShift console, switch to the **Fleet Virtualization** perspective from the top-left dropdown (named **Virtualization** if ACM is not enabled)
 . Click the **Create** dropdown and select **From InstanceType**
 +
-image::virt-create-dropdown.png[Create VirtualMachine dropdown showing From InstanceType option, link=self, window=blank]. Verify the **Project** dropdown at the top shows `vm-demo` - if not, search for it and select it now
+image::virt-create-dropdown.png[Create VirtualMachine dropdown showing From InstanceType option, link=self, window=blank]
+. Verify the **Project** dropdown at the top shows `vm-demo` - if not, search for it and select it now
 +
 image::virt-select-project.png[Project dropdown showing vm-demo search and selection, link=self, window=blank]
 **Step 2: Select Boot Source and InstanceType**
@@ -217,7 +218,8 @@ oc get vmi rhel9-vm -n vm-demo -o jsonpath='Node: {.status.nodeName}' && echo ""
 . Hover over **Migration** to expand the submenu
 . Select **Compute** - this migrates the VM's running state (CPU/memory) to a different node
 +
-image::virt-actions-migrate.png[Actions dropdown showing Migration submenu with Compute and Storage options, link=self, window=blank]. In the migration dialog, leave **Automatically selected Node** selected and click **Migrate VirtualMachine**
+image::virt-actions-migrate.png[Actions dropdown showing Migration submenu with Compute and Storage options, link=self, window=blank]
+. In the migration dialog, leave **Automatically selected Node** selected and click **Migrate VirtualMachine**
 +
 image::virt-migrate-auto-node.png[Migration dialog with Automatically selected Node option, link=self, window=blank]
 **Step 4: Watch the Migration**
@@ -242,7 +244,8 @@ Need another copy of a VM - for testing, dev environments, or scaling out? Clone
 
 . On the **rhel9-vm** details page, click **Actions** -> **Clone**
 +
-image::virt-actions-clone.png[Actions dropdown with Clone option highlighted, link=self, window=blank]. Change the name to `rhel9-vm-clone`
+image::virt-actions-clone.png[Actions dropdown with Clone option highlighted, link=self, window=blank]
+. Change the name to `rhel9-vm-clone`
 . Check the **Start VirtualMachine once created** checkbox
 . Click **Clone**
 +
@@ -267,7 +270,8 @@ Every operations team has been burned by a patch that broke something. Snapshots
 
 . Navigate to **rhel9-vm** (not the clone) and open its details page. Click **Actions** -> **Take snapshot**
 +
-image::virt-actions-snapshot.png[Actions dropdown with Take snapshot option, link=self, window=blank]. Leave the default name (`rhel9-vm-snapshot`) and click **Save**
+image::virt-actions-snapshot.png[Actions dropdown with Take snapshot option, link=self, window=blank]
+. Leave the default name (`rhel9-vm-snapshot`) and click **Save**
 +
 image::virt-snapshot-config.png[Take snapshot dialog with default name and disk selection, link=self, window=blank]
 NOTE: The warning about `cloudinitdisk` not being included is expected - cloud-init only runs on first boot and doesn't need to be captured.
@@ -314,9 +318,11 @@ Now the VM has changed - a new file exists and the hostname has been modified. L
 . **Stop** the VM - click the **Stop** button (square icon) in the top-right action buttons
 . Once the VM shows **Stopped**, go to the **Snapshots** tab, click the kebab menu (three dots) next to the snapshot, and select **Restore VirtualMachine from snapshot**
 +
-image::virt-snapshot-restore-menu.png[Snapshot kebab menu showing Restore VirtualMachine from snapshot option, link=self, window=blank]. Click **Restore** to confirm
+image::virt-snapshot-restore-menu.png[Snapshot kebab menu showing Restore VirtualMachine from snapshot option, link=self, window=blank]
+. Click **Restore** to confirm
 +
-image::virt-restore-confirmation.png[Restore snapshot confirmation dialog, link=self, window=blank]. **Start** the VM again by clicking the **Start** button (play icon)
+image::virt-restore-confirmation.png[Restore snapshot confirmation dialog, link=self, window=blank]
+. **Start** the VM again by clicking the **Start** button (play icon)
 
 Once the VM is running, get the login credentials again:
 
@@ -391,7 +397,7 @@ Deleting VM disks and namespaces takes a couple of minutes. This runs in the bac
   virtctl stop rhel9-vm-clone -n vm-demo 2>/dev/null || true
   sleep 10
   oc delete namespace vm-demo --ignore-not-found --wait=false
-) &>/dev/null &
+) &>/dev/null & disown
 echo "Cleanup running in background - you can continue to the next module"
 ----
 

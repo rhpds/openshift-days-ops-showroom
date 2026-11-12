@@ -411,12 +411,14 @@ EgressIP requires:
 
 **View EgressIP Capability**
 
+You can check which nodes in a cluster are configured to host EgressIPs by querying for the required label.
+
 [source,bash,role="execute"]
 ----
-oc get nodes -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.metadata.annotations.k8s\.ovn\.org/node-egress-label}{"\n"}{end}'
+oc get nodes -l k8s.ovn.org/egress-assignable
 ----
 
-Nodes must have the label `k8s.ovn.org/egress-assignable=""` to be eligible to host EgressIPs.
+NOTE: In this lab environment, it is expected for this command to return `No resources found`. In a production setup, nodes must have the label `k8s.ovn.org/egress-assignable=""` to be eligible to host EgressIPs.
 
 **EgressIP Configuration Example**
 

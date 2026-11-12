@@ -47,7 +47,8 @@ image::app-mgmt-deploy-menu.png[Add menu showing Container images option, link=s
 * Set the **Name** to `weathernow`
 * Scroll down and **uncheck** the **Create a route** checkbox. OpenShift can create a route for you automatically, but we want to do it ourselves so you understand how routing works.
 +
-image::app-mgmt-uncheck-route.png[Create a route checkbox unchecked, link=self, window=blank]* Click **Create**
+image::app-mgmt-uncheck-route.png[Create a route checkbox unchecked, link=self, window=blank]
+* Click **Create**
 +
 image::app-mgmt-deploy-image.png[Deploy Image form with weathernow image validated, link=self, window=blank]
 This creates two resources:

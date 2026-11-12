@@ -97,7 +97,7 @@ Output is generated in `./www/`. Serve with `./local-build/serve.sh` or any stat
 This workshop uses a custom theme with click-to-execute functionality:
 
 * Theme repo: https://github.com/jnewsome97/rhdp_showroom_theme_execute
-* Release: `rh-one-2025-execute-v3`
+* Release: `rh-one-2025-execute-v4`
 
 The execute button allows code blocks with `role="execute"` to send commands directly to the wetty terminal via `socket.emit`.
 

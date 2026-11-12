@@ -11,7 +11,7 @@ spec:
   collector:
     resources:
       limits:
-        memory: 8Gi                  # default 2Gi is too low for busy clusters
+        memory: 10Gi                 # default 2Gi is too low for busy clusters; 8Gi still OOMs repeatably
       requests:
         cpu: 500m
         memory: 256Mi

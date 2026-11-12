@@ -305,6 +305,7 @@ Congrats! You've seen new serial number, same trust chain, uninterrupted accessâ
 
 .Procedure
 . Run the cleanup script:
++
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
 cd ~/openshift-days-ops-showroom/setup-scripts/ztwim-config-scripts

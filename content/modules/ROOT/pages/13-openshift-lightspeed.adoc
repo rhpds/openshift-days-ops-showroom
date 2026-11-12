@@ -67,7 +67,7 @@ spec:
     providers:
       - name: Azure
         type: azure_openai
-        url: '{ols_azure_url}'
+        url: 'https://llm-gpt4-lightspeed.openai.azure.com/'
         deploymentName: gpt-4
         credentialsSecretRef:
           name: azure-api-keys
