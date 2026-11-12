@@ -2,13 +2,9 @@
 
 == Module Overview
 
-**Duration:** 15-20 minutes +
+**Duration:** 20-30 minutes +
 **Format:** Hands-on lab +
 **Audience:** Security Engineers, Platform Engineers, IT Operations
-
-include::partial$console-access.adoc[]
-
-NOTE: The same admin credentials are used for the RHACS console.
 
 == Learning Objectives
 
@@ -17,6 +13,8 @@ By the end of this module, you will:
 * Deploy a bunch of insecure applications
 * Setup compliance reporting and compliance checks
 * Scan workloads with Red Hat Advanced Cluster Security (RHACS)
+* Detect a file change with file activity monitoring
+* Ask OpenShift Lightspeed about a vulnerability RHACS has already found
 
 == Ensure access to the ACS console
 
@@ -32,36 +30,35 @@ RHACS administrator login credentials:
 | *Password:* | {openshift_cluster_admin_password}
 |===
 
-== Deploy a bunch of insecure applications
+== Set up the ACS module
 
-Let's deploy a bunch of insecure applications to the cluster. This will help us demonstrate the capabilities of RHACS.
+The setup script in the demo applications repository deploys the workloads for this module. It also turns on the RHACS 5 pieces the later sections use: file activity monitoring, the ACS MCP server for OpenShift Lightspeed when an `OLSConfig` already exists, and Lightspeed-assisted risk enrichment. Risk enrichment lets RHACS explain a deployment risk score with the OpenShift Lightspeed model on this cluster. It does not turn on init-container evaluation.
+
+If you complete the Lightspeed module after this one, run the script again. The second run registers the MCP server, enables risk enrichment, and leaves the workloads in place.
 
 .Procedure
-. Run the following command in your terminal to deploy the insecure applications:
+. Run the setup script from your home directory:
 +
 [source,bash,subs="+macros,+attributes",role=execute]
 ----
-git clone https://github.com/mfosterrox/demo-applications.git
-cd ~/demo-applications
-oc apply -f k8s-deployment-manifests/-namespaces --recursive
-oc apply -f k8s-deployment-manifests/emojivoto --recursive
-oc apply -f k8s-deployment-manifests/apache-struts --recursive
-oc apply -f k8s-deployment-manifests/dvwa --recursive
-oc apply -f k8s-deployment-manifests/log4shell --recursive
-oc apply -f skupper-demo/ --recursive
+cd ~
+if [ -d ~/demo-applications/.git ]; then
+  git -C ~/demo-applications pull --ff-only
+else
+  git clone https://github.com/mfosterrox/demo-applications.git ~/demo-applications
+fi
+bash ~/demo-applications/scripts/setup-acs-module.sh
 ----
 +
-You'll see applications being deployed (output truncated):
+The script prints a short summary when it finishes. A first run with Lightspeed already configured includes:
 +
 ----
-namespace/emojivoto created
-namespace/apache-struts created
-namespace/dvwa created
-namespace/emojivoto configured
-namespace/juice-shop created
-namespace/log4shell created
-namespace/nodejs-goof-vuln-main created
+File activity monitoring: Enabled
+ACS MCP server: rhacs-mcp/stackrox-mcp
+Lightspeed: OLSConfig updated with acs-mcp
+Lightspeed risk enrichment: enabled
 ----
+
 
 == Security and Environment Insights
 
@@ -70,7 +67,7 @@ namespace/nodejs-goof-vuln-main created
 === *RHACS Basics*
 RHACS provides essential tools for security workflows in Kubernetes, including:
 
-- Vulnerability management (Platform, workloads, Nodes, and Virtual Machines)
+- Vulnerability management (Platform, workloads, and Nodes)
 - Policy lifecycle management (Policy-as-Code)
 - Compliance auditing
 - Risk profiling
@@ -174,10 +171,7 @@ Daily compliance scan for all profiles covering CIS, E8, Moderate, NERC-CIP, PCI
 * `ocp4-pci-dss` 
 * `ocp4-stig` 
 
-[NOTE]
-====
- There are many profiles to select but here we are selecting the most common profiles that are used in most organizations. If you want to only add the ones necessary for the lab. Select `ocp4-cis` & `ocp4-e8` only.
-====
+NOTE: There are many profiles to select but here we are selecting the most common profiles that are used in most organizations. If you want to only add the ones necessary for the lab. Select `ocp4-cis` & `ocp4-e8` only.
 
 [start=8]
 . Click *Next*
@@ -243,7 +237,7 @@ RHACS includes built-in policies that detect and block risky behaviors such as u
 
 == Use Policy-as-Code to Block Anomalous Behavior at Runtime
 
-Package managers such as apt, apk, yum, and dnf are useful on virtual machines, but they have no place in production containers. Allowing them enables uncontrolled software installation, increases the attack surface in your cluster, and breaks auditability and immutability -- core expectations for production workloads.
+Package managers such as apt, apk, yum, and dnf have no place in production containers. Allowing them enables uncontrolled software installation, increases the attack surface in your cluster, and breaks auditability and immutability -- core expectations for production workloads.
 
 *Policy-as-Code is an effective way to scale this protection across your clusters.*
 
@@ -416,6 +410,57 @@ image::acs-security-09.png[RHACS violation detail for package manager policy, li
 If configured properly, each violation record should be pushed to a Security Information and Event Management (SIEM) application and is available to be retrieved via the API. The forensic data shown in the UI is recorded, including the timestamp, process user IDs, process arguments, process ancestors, and enforcement action.
 ====
 
+== File activity monitoring
+
+File activity monitoring watches reads, writes, and renames on paths you choose. A runtime policy can alert when a process touches those paths inside a container. That is the signal image scanning cannot give you: something changed after the pod started.
+
+The setup script enabled file activity monitoring on the secured cluster and applied a runtime policy named *Deployment File Activity*. That policy watches `/etc` inside workloads and excludes `openshift-*` namespaces. The `acs-fam-demo` workload is the target. It runs privileged so a debug shell can write a monitored file.
+
+.Procedure
+. Confirm the target pod is running:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc get deploy,pods -n acs-fam-demo
+----
++
+. Write a file on a monitored path. This is recorded as a deployment file-activity event:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+oc debug -n acs-fam-demo deploy/fam-target --as-root -- touch /etc/passwd
+----
++
+. In the RHACS console, open *Violations* and look for *Deployment File Activity*.
++
+Open the violation and review the file path, process, deployment, and time.
+
+== Ask Lightspeed about a RHACS finding
+
+OpenShift Lightspeed can answer questions about the cluster in the console. The setup script registers an ACS MCP server named `acs-mcp` on the `OLSConfig` from the Lightspeed module, so the chat can ask RHACS about the cluster. The Log4Shell workload you deployed is a concrete finding to check: RHACS should report CVE-2021-44228 on that image, and Lightspeed should be able to talk about the same CVE.
+
+Complete the Lightspeed module first if the chat icon is not in the console yet. That module creates the `OLSConfig` this chat uses.
+
+.Procedure
+. If you created the `OLSConfig` after the setup script ran, register the MCP server now. This is safe to run again:
++
+[source,bash,subs="+macros,+attributes",role=execute]
+----
+bash ~/demo-applications/scripts/setup-acs-module.sh
+----
++
+. In the OpenShift console, open *OpenShift Lightspeed*.
+. Ask:
++
+[source,role="copypaste"]
+----
+Is CVE-2021-44228 (Log4Shell) present in the log4shell namespace? Which deployment is affected?
+----
++
+. Compare the answer with RHACS. Open *Vulnerability Management* and search for `CVE-2021-44228`.
++
+The vulnerable image is the one you deployed in the `log4shell` namespace. The two views should point at the same workload.
+
 === Clean up
 
 .Procedure
@@ -428,7 +473,10 @@ oc delete -f k8s-deployment-manifests/emojivoto --recursive
 oc delete -f k8s-deployment-manifests/apache-struts --recursive
 oc delete -f k8s-deployment-manifests/dvwa --recursive
 oc delete -f k8s-deployment-manifests/log4shell --recursive
+oc delete -f k8s-deployment-manifests/webgoat --recursive
+oc delete -f k8s-deployment-manifests/acs-fam-demo --recursive
 oc delete -f skupper-demo/ --recursive
+oc delete namespace rhacs-mcp --ignore-not-found --wait=false
 oc patch image.config.openshift.io cluster --type=json -p='[{"op":"remove","path":"/spec/registrySources"}]'
 oc delete securitypolicy --all -n stackrox --ignore-not-found
 ----
